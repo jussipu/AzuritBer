@@ -29,6 +29,7 @@ class RpiRemote
     void writePi(String stringLine);
     void sendCommandToPi(String stringLine);
     void SendStatusToPi();
+    void RaspberryPISendBat (); // moved from private
 
   private:
     unsigned long nextTimeRaspberryPISendStat; // delay between 2 data send to RPI for stat
@@ -77,7 +78,7 @@ class RpiRemote
     void RaspberryPISendMot ();
     void RaspberryPISendMow ();
     void RaspberryPISendPeri ();
-    void RaspberryPISendBat ();
+    //void RaspberryPISendBat (); // moved to public
     void RaspberryPISendByLane ();
     
 };
