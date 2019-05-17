@@ -26,6 +26,7 @@ from config import RfidConnectedOnPi
 from config import NanoConnectedOnPi
 from config import DueConnectedOnPi
 from config import GpsIsM6n
+from config import UseWeatherStation
 
 
 
@@ -244,7 +245,50 @@ def find_rfid_tag():
                 send_pfo_message('ry','1','2','3','4','5','6',)
                 #stopsender can freeze the Pi so better to put it after the remote
                 ButtonStopArea2_click()
+                
+#################################### WEATHER STATION MANAGEMENT ############################################
 
+def readWS():
+    if int(myRobot.wsRainData)==2: rainData="last60m_rain0_total_mm"
+    elif int(myRobot.wsRainData)==3: rainData="hour1_rain0_total_mm"
+    else: rainData="last15m_rain0_total_mm"
+    tempvar=int(mymower.millis)+6000 # delay ms
+    wsrain = subprocess.Popen("curl http://192.168.1.11/meteograph.cgi?text="+str(rainData), stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+    output, error_output = wsrain.communicate()
+    if str(output)!="b''":
+        if float(output)>0:
+            send_var_message('w','rainWS','1','nextTimeTimer',''+str(int(tempvar))+'','0','0','0','0','0')
+            if int(myRobot.wsRainData)==1:
+                print(str(float(output))+" mm rain in last 15 minutes")
+                consoleInsertText(str(float(output))+" mm rain in last 15 minutes" + '\n')
+            elif int(myRobot.wsRainData)==2:
+                print(str(float(output))+" mm rain in last 60 minutes")
+                consoleInsertText(str(float(output))+" mm rain in last 60 minutes" + '\n')
+            elif int(myRobot.wsRainData)==3:
+                print(float(output)+" mm rain on actual hour")
+                consoleInsertText(str(float(output))+" mm rain in actual hour" + '\n')
+            else:
+                print("WS data not updated yet")
+                consoleInsertText("WS data not updated yet" + '\n')
+        else:
+            send_var_message('w','rainWS','0','0','0','0','0','0','0','0')   
+            if int(myRobot.wsRainData)==1:
+                print("No rain in last 15 minutes")
+                consoleInsertText("No rain in last 15 minutes" + '\n')
+            elif int(myRobot.wsRainData)==2:
+                print("No rain in last 60 minutes")
+                consoleInsertText("No rain in last 60 minutes" + '\n')
+            elif int(myRobot.wsRainData)==3:
+                print("No rain in actual hour")
+                consoleInsertText("No rain in actual hour" + '\n')
+            else:
+                print("WS data not updated yet")
+                consoleInsertText("WS data not updated yet" + '\n')
+            
+    else:
+        print("Weather station connection problem..")
+        consoleInsertText("Weather station connection problem.." + '\n')
+        
 #################################### VARIABLE INITIALISATION ###############################################
    
 
@@ -283,6 +327,7 @@ SonVar2=tk.IntVar()
 SonVar3=tk.IntVar()
 BatVar1=tk.IntVar()
 MowVar1=tk.IntVar()
+MowVar2=tk.IntVar()
 PlotVar1=tk.IntVar()
 CamVar1=tk.IntVar()
 
@@ -314,7 +359,8 @@ tk_motorLeftSenseCurrent=tk.DoubleVar()
 tk_motorRightSenseCurrent=tk.DoubleVar()
 tk_motorLeftPWMCurr=tk.IntVar()
 tk_motorRightPWMCurr=tk.IntVar()
-tk_motorMowSense=tk.DoubleVar()
+tk_motor1MowSense=tk.DoubleVar()
+tk_motor2MowSense=tk.DoubleVar()
 tk_motorMowPWMCurr=tk.IntVar()
 #tk_batVoltage=tk.IntVar()
 tk_chgVoltage=tk.DoubleVar()
@@ -343,6 +389,7 @@ tk_rollDir=tk.StringVar()
 tk_laneInUse= tk.IntVar()
 tk_YawActual=tk.DoubleVar()
 tk_YawCible=tk.DoubleVar()
+tk_wsRainData=tk.IntVar()
 
 firstFixFlag=False
 firstFixDate=0
@@ -384,7 +431,8 @@ class mower:
         mower.motorRightSenseCurrent=0
         mower.motorLeftPWMCurr=0
         mower.motorRightPWMCurr=0
-        mower.motorMowSense=0
+        mower.motor1MowSense=0
+        mower.motor2MowSense=0
         mower.motorMowPWMCurr=0
         mower.mowPatternCurr=0
         mower.Dht22Temp=0
@@ -419,6 +467,9 @@ class mower:
         mower.dueSerialReceived=''
         #//bber17
         mower.autoRecordBatChargeOn=False
+        # WS
+        mower.rainWS=False
+        mower.timeToReadWS=0
         
         
         
@@ -523,7 +574,12 @@ def checkSerial():  #the main loop is that
     if ((mower.speedIsReduce) & (time.time() > mower.timeToResetSpeed)):
         mower.speedIsReduce=False
         send_var_message('w','motorSpeedMaxPwm',''+str(myRobot.motorSpeedMaxPwm)+'','0','0','0','0','0','0','0')
-        
+    
+    if  UseWeatherStation:
+        if  (time.time() > mower.timeToReadWS):
+            mower.timeToReadWS=time.time() +60 # 60s delay
+            readWS()
+            
     txtRecu.delete('500.0',tk.END) #keep only 500 lines
     txtSend.delete('500.0',tk.END) #keep only  lines
     txtConsoleRecu.delete('500.0',tk.END) #keep only  lines
@@ -675,14 +731,16 @@ def decode_message(message):  #decode the nmea message
                 global firstplotMowx
                 
                 mymower.millis=message.millis
-                mymower.motorMowSense=message.motorMowSense
+                mymower.motor1MowSense=message.motor1MowSense
+                mymower.motor2MowSense=message.motor2MowSense
                 mymower.motorMowPWMCurr=message.motorMowPWMCurr
                 mymower.batVoltage=message.batVoltage
                 
                 if firstplotMowx==0:
                     firstplotMowx=int(mymower.millis)
                 tk_millis.set(mymower.millis)
-                tk_motorMowSense.set(mymower.motorMowSense)
+                tk_motor1MowSense.set(mymower.motor1MowSense)
+                tk_motor2MowSense.set(mymower.motor2MowSense)
                 tk_motorMowPWMCurr.set(mymower.motorMowPWMCurr)
                 tk_batVoltage.set(mymower.batVoltage)
 
@@ -891,7 +949,7 @@ def decode_message(message):  #decode the nmea message
                         myRobot.motorMowSpeedMaxPwm=message.val3
                         myRobot.motorMowPowerMax=message.val4
                         myRobot.motorMowRPMSet=message.val5
-                        myRobot.motorMowSenseScale=message.val6
+                        myRobot.motor1MowSenseScale=message.val6
                         myRobot.motorLeftPID_Kp=message.val7
                         myRobot.motorLeftPID_Ki=message.val8
                         myRobot.motorLeftPID_Kd=message.val9
@@ -1012,6 +1070,11 @@ def decode_message(message):  #decode the nmea message
                         myRobot.DistPeriOutStop=message.val3
                         myRobot.DHT22Use=message.val4
                         myRobot.RaspberryPIUse=message.val5
+                        myRobot.motor2MowSenseScale=message.val6
+                        myRobot.secondMowMotor=message.val7
+                        myRobot.rainReadDelay=message.val8
+                        myRobot.maxTemperature=message.val9
+                        myRobot.wsRainData=message.val10
                         refreshAllSettingPage() 
  
 
@@ -1073,6 +1136,7 @@ def refreshAllSettingPage():
     refreshMowMotorSettingPage()
     refreshByLaneSettingPage()
     refreshTimerSettingPage()
+    refreshRainTempPage()
     
 
 
@@ -1171,7 +1235,11 @@ def ButtonSetSonarApply_click():
         myRobot.sonarRightUse='1'
     ButtonSendSettingToDue_click()   
     
-
+    
+def ButtonSetRainTempApply_click():
+    myRobot.rainReadDelay=sliderrainReadDelay.get()
+    myRobot.maxTemperature=slidermaxTemperature.get()
+    myRobot.wsRainData=tk_wsRainData.get()
 
 
 def ButtonSetOdometryApply_click():
@@ -1380,14 +1448,19 @@ def refreshMowMotorSettingPage():
     slidermotorMowSpeedMaxPwm.set(myRobot.motorMowSpeedMaxPwm)
     slidermotorMowPowerMax.set(myRobot.motorMowPowerMax)
     slidermotorMowRPMSet.set(myRobot.motorMowRPMSet)    
-    slidermotorMowSenseScale.set(myRobot.motorMowSenseScale)
+    slidermotor1MowSenseScale.set(myRobot.motor1MowSenseScale)
+    slidermotor2MowSenseScale.set(myRobot.motor2MowSenseScale)
     slidermotorMowPID_Kp.set(myRobot.motorMowPID_Kp)
     slidermotorMowPID_Ki.set(myRobot.motorMowPID_Ki)
     slidermotorMowPID_Kd.set(myRobot.motorMowPID_Kd)
         
     ChkBtnmotorMowForceOff.deselect()
     if myRobot.motorMowForceOff=='1':
-        ChkBtnmotorMowForceOff.select()   
+        ChkBtnmotorMowForceOff.select()
+        
+    ChkBtnsecondMowMotor.deselect()
+    if myRobot.secondMowMotor=='1':
+        ChkBtnsecondMowMotor.select()
 
 def refreshBatterySettingPage():
 
@@ -1421,7 +1494,12 @@ def refreshSonarSettingPage():
     ChkBtnsonarCenterUse.deselect()
     if myRobot.sonarCenterUse=='1':
         ChkBtnsonarCenterUse.select()
-
+        
+def refreshRainTempPage():
+    sliderrainReadDelay.set(myRobot.rainReadDelay)
+    slidermaxTemperature.set(myRobot.maxTemperature)
+    tk_wsRainData.set(myRobot.wsRainData)
+    
 def refreshImuSettingPage():
     sliderimuDirPID_Kp.set(myRobot.imuDirPID_Kp)
     sliderimuDirPID_Ki.set(myRobot.imuDirPID_Ki)
@@ -1750,7 +1828,7 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.motorMowSpeedMaxPwm)+\
                             '',''+str(myRobot.motorMowPowerMax)+\
                             '',''+str(myRobot.motorMowRPMSet)+\
-                            '',''+str(myRobot.motorMowSenseScale)+\
+                            '',''+str(myRobot.motor1MowSenseScale)+\
                             '',''+str(myRobot.motorLeftPID_Kp)+\
                             '',''+str(myRobot.motorLeftPID_Ki)+\
                             '',''+str(myRobot.motorLeftPID_Kd)+\
@@ -1876,11 +1954,11 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.DistPeriOutStop)+\
                             '',''+str(myRobot.DHT22Use)+\
                             '',''+str(myRobot.RaspberryPIUse)+\
-                            '',''+str(0)+\
-                            '',''+str(0)+\
-                            '',''+str(0)+\
-                            '',''+str(0)+\
-                            '',''+str(0)+'',)
+                            '',''+str(myRobot.motor2MowSenseScale)+\
+                            '',''+str(myRobot.secondMowMotor)+\
+                            '',''+str(myRobot.rainReadDelay)+\
+                            '',''+str(myRobot.maxTemperature)+\
+                            '',''+str(myRobot.wsRainData)+'',)
     consoleInsertText("All Setting are change into the Due but not save for the moment" + '\n') 
     
 
@@ -2048,7 +2126,7 @@ tabOdometry=tk.Frame(TabSetting,width=800,height=380)
 tabDateTime=tk.Frame(TabSetting,width=800,height=380)
 tabByLane=tk.Frame(TabSetting,width=800,height=380)
 #tabRfid=tk.Frame(TabSetting,width=800,height=380)
-
+tabRainTemp=tk.Frame(TabSetting,width=800,height=380)
 
 
 
@@ -2064,7 +2142,7 @@ TabSetting.add(tabOdometry,text="Odometry")
 TabSetting.add(tabDateTime,text="Date Time")
 TabSetting.add(tabByLane,text="ByLane")
 #TabSetting.add(tabRfid,text="Rfid")
-
+TabSetting.add(tabRainTemp,text="Rain/Temp")
 
 
 #print (TabSetting.index(TabSetting.select()))
@@ -2199,10 +2277,12 @@ slidermotorMowPID_Ki.place(x=10,y=160,width=250, height=50)
 slidermotorMowPID_Kd = tk.Scale(tabMowMotor, from_=0, to=1, label='Mow RPM Regulation Pid D',relief=tk.SOLID,orient='horizontal')
 slidermotorMowPID_Kd.place(x=10,y=210,width=250, height=50)
 
-slidermotorMowSenseScale = tk.Scale(tabMowMotor, from_=0, to=3,resolution=0.1, label='Motor Sense Factor',relief=tk.SOLID,orient='horizontal')
-slidermotorMowSenseScale.place(x=270,y=10,width=250, height=50)
+slidermotor1MowSenseScale = tk.Scale(tabMowMotor, from_=0, to=3,resolution=0.1, label='Motor 1 Sense Factor',relief=tk.SOLID,orient='horizontal')
+slidermotor1MowSenseScale.place(x=270,y=10,width=250, height=50)
+slidermotor2MowSenseScale = tk.Scale(tabMowMotor, from_=0, to=3,resolution=0.1, label='Motor 2 Sense Factor',relief=tk.SOLID,orient='horizontal')
+slidermotor2MowSenseScale.place(x=270,y=60,width=250, height=50)
 slidermotorMowPowerMax = tk.Scale(tabMowMotor, from_=0, to=100, label='Power Max in Watt',relief=tk.SOLID,orient='horizontal')
-slidermotorMowPowerMax.place(x=270,y=60,width=250, height=50)
+slidermotorMowPowerMax.place(x=270,y=110,width=250, height=50)
 
 slidermowPatternDurationMax = tk.Scale(tabMowMotor, from_=0, to=360, label='Mow Pattern Max Duration (Minutes)',relief=tk.SOLID,orient='horizontal')
 slidermowPatternDurationMax.place(x=270,y=160,width=250, height=50)
@@ -2289,6 +2369,30 @@ sliderbatChgFactor = tk.Scale(tabBattery, from_=9, to=12,resolution=0.1, label='
 sliderbatChgFactor.place(x=270,y=60,width=250, height=50)
 sliderbatSenseFactor = tk.Scale(tabBattery, from_=0, to=12,resolution=0.1, label='Battery Sense Factor',relief=tk.SOLID,orient='horizontal')
 sliderbatSenseFactor.place(x=270,y=110,width=250, height=50)
+
+# battery voltage
+batteryFrame= tk.Frame(tabBattery)
+batteryFrame.place(x=530, y=10, height=50, width=100)
+batteryFrame.configure(borderwidth="3",relief=tk.GROOVE,background="#d9d9d9",highlightbackground="#d9d9d9",highlightcolor="black")
+
+tk.Label(batteryFrame,text="BATTERY (V)",fg='green').pack(side='top',anchor='n')
+tk.Label(batteryFrame,textvariable=tk_batVoltage, fg='red',font=("Arial", 18)).pack(side='bottom',anchor='n')
+
+# charging voltage
+batteryFrame= tk.Frame(tabBattery)
+batteryFrame.place(x=530, y=60, height=50, width=100)
+batteryFrame.configure(borderwidth="3",relief=tk.GROOVE,background="#d9d9d9",highlightbackground="#d9d9d9",highlightcolor="black")
+
+tk.Label(batteryFrame,text="CHARGE (V)",fg='green').pack(side='top',anchor='n')
+tk.Label(batteryFrame,textvariable=tk_chgVoltage, fg='red',font=("Arial", 18)).pack(side='bottom',anchor='n')
+
+# charge current
+batteryFrame= tk.Frame(tabBattery)
+batteryFrame.place(x=530, y=110, height=50, width=100)
+batteryFrame.configure(borderwidth="3",relief=tk.GROOVE,background="#d9d9d9",highlightbackground="#d9d9d9",highlightcolor="black")
+
+tk.Label(batteryFrame,text="CURRENT (A)",fg='green').pack(side='top',anchor='n')
+tk.Label(batteryFrame,textvariable=tk_chgSense, fg='red',font=("Arial", 18)).pack(side='bottom',anchor='n')
 
 ButtonRequestMainSettingFomMower = tk.Button(tabBattery,command = read_all_setting,text="Read All From Mower")
 ButtonRequestMainSettingFomMower.place(x=10,y=350, height=25, width=150)
@@ -2611,7 +2715,36 @@ ButtonSetByLaneApply.place(x=300,y=350, height=25, width=150)
 ButtonSetByLaneApply.configure(command = ButtonSendSettingByLaneToDue_click,text="Send By Lane To Mower")
 
 
+"""************* Rain/Temp setting *****************************"""
 
+sliderrainReadDelay = tk.Scale(tabRainTemp,orient='horizontal',relief=tk.SOLID, from_=1, to=3600, label='Rain sensor reading delay, seconds')
+sliderrainReadDelay.place(x=10,y=70,width=360, height=50)
+
+wsFrame = tk.Frame(tabRainTemp)
+wsFrame.place(x=10, y=130, height=150, width=130)
+tk.Label(wsFrame,text="WS Rain data",fg='green').pack(side='top',anchor='w')
+RdBtn_ws1=tk.Radiobutton(wsFrame, text="Last 15 min.", variable=tk_wsRainData, value=1).pack(side='top',anchor='w')
+RdBtn_ws2=tk.Radiobutton(wsFrame, text="Last 60 min.", variable=tk_wsRainData, value=2).pack(side='top',anchor='w')
+RdBtn_ws3=tk.Radiobutton(wsFrame, text="Actual hour", variable=tk_wsRainData, value=3).pack(side='top',anchor='w')
+
+slidermaxTemperature = tk.Scale(tabRainTemp,orient='horizontal',relief=tk.SOLID, from_=20, to=80, label='Shut down temperature, celsius')
+slidermaxTemperature.place(x=10,y=10,width=250, height=50)
+
+temperatureFrame= tk.Frame(tabRainTemp)
+temperatureFrame.place(x=270, y=10, height=50, width=100)
+temperatureFrame.configure(borderwidth="1",relief=tk.SOLID,background="#d9d9d9",highlightbackground="#d9d9d9",highlightcolor="black")
+
+tk.Label(temperatureFrame,text="Actual TEMP:",fg='black').pack(side='top',anchor='n')
+tk.Label(temperatureFrame,textvariable=tk_Dht22Temp, fg='red',font=("Arial", 16)).pack(side='bottom',anchor='n')
+
+ButtonRequestMainSettingFomMower = tk.Button(tabRainTemp)
+ButtonRequestMainSettingFomMower.place(x=10,y=350, height=25, width=150)
+ButtonRequestMainSettingFomMower.configure(command = read_all_setting)
+ButtonRequestMainSettingFomMower.configure(text="Read All From Mower")
+
+ButtonSetMainApply = tk.Button(tabRainTemp)
+ButtonSetMainApply.place(x=300,y=350, height=25, width=100)
+ButtonSetMainApply.configure(command = ButtonSetRainTempApply_click,text="Send To Mower")
 
 
 
@@ -2910,7 +3043,7 @@ SldMainMowRefresh = tk.Scale(Frame13, from_=1, to=10, label='Refresh Rate per se
 SldMainMowRefresh.place(x=70,y=0,width=250, height=50)
 
 tk.Label(Frame13, text='Sense',fg='green').place(x=400,y=0)
-tk.Label(Frame13, textvariable=tk_motorMowSense).place(x=400,y=15)
+tk.Label(Frame13, textvariable=tk_motor1MowSense).place(x=400,y=15)
 tk.Label(Frame13, text='PWM',fg='green').place(x=550,y=0)
 tk.Label(Frame13, textvariable=tk_motorMowPWMCurr).place(x=550,y=15)
 
