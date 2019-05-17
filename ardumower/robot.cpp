@@ -127,10 +127,17 @@ Robot::Robot() {
 
   motorMowSpeedPWMSet = 255;  //use to set the speed of the mow motor
   motorMowPWMCurr = 0;
-  motorMowSenseADC = 0;
-  motorMowSenseCurrent  = 0;
-  motorMowSense = 0;
-  motorMowSenseCounter = 0;
+  // mow motor 1
+  motor1MowSenseADC = 0;
+  motor1MowSenseCurrent  = 0;
+  motor1MowSense = 0;
+  motor1MowSenseCounter = 0;
+  // mow motor 2
+  motor2MowSenseADC = 0;
+  motor2MowSenseCurrent  = 0;
+  motor2MowSense = 0;
+  motor2MowSenseCounter = 0;
+  
   motorMowSenseErrorCounter = 0;
   motorMowRpmCurr = 0;
   lastMowSpeedPWM = 0;
@@ -167,6 +174,7 @@ Robot::Robot() {
   lawnSensorFront = lawnSensorFrontOld = lawnSensorBack = lawnSensorBackOld = 0;
 
   rain = false;
+  rainWS = false;  // weather station rain variable
   rainCounter = 0;
 
   sonarLeftUse = sonarRightUse = sonarCenterUse = false;
@@ -205,6 +213,7 @@ Robot::Robot() {
   nextTimeDrop = 0;                                                                                                                    // Dropsensor - Absturzsensor
   //nextTimeSonar = 0;
   nextTimeBattery = 0;
+  nextTimeChgRasPISendBat = millis();  // sendbat to pi delay var
   nextTimeCheckBattery = 0;
   nextTimePerimeter = 0;
   nextTimeLawnSensor = 0;
@@ -353,7 +362,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, motorMowSpeedMaxPwm);
   eereadwrite(readflag, addr, motorMowPowerMax);
   eereadwrite(readflag, addr, motorMowRPMSet);
-  eereadwrite(readflag, addr, motorMowSenseScale);
+  eereadwrite(readflag, addr, motor1MowSenseScale);
   eereadwrite(readflag, addr, motorLeftPID.Kp);
   eereadwrite(readflag, addr, motorLeftPID.Ki);
   eereadwrite(readflag, addr, motorLeftPID.Kd);
@@ -469,7 +478,10 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, RaspberryPIUse);
   eereadwrite(readflag, addr, sonarToFrontDist);
   eereadwrite(readflag, addr, maxTemperature);
-
+  eereadwrite(readflag, addr, secondMowMotor);  // second mow motor
+  eereadwrite(readflag, addr, motor2MowSenseScale);  // second mow motor scale
+  eereadwrite(readflag, addr, rainReadDelay);  // reain sensor reading delay
+  eereadwrite(readflag, addr, wsRainData);  // weather station var
 
 
 
@@ -517,7 +529,7 @@ void Robot::printSettingSerial() {
   Console.println(DistPeriOutStop);
   Console.print  (F("motorForwTimeMax                           : "));
   Console.println(motorForwTimeMax);
-  Console.print  (F("DistPeriObstacleAvoid                     : "));
+  Console.print  (F("DistPeriObstacleAvoid                      : "));
   Console.println(DistPeriObstacleAvoid);
   Console.print  (F("circleTimeForObstacle                      : "));
   Console.println(circleTimeForObstacle);
@@ -546,7 +558,7 @@ void Robot::printSettingSerial() {
   Console.println(motorRightSwapDir);
   Console.print  (F("motorLeftSwapDir                           : "));
   Console.println(motorLeftSwapDir);
-  Console.print  (F("motorRightOffsetFwd                          : "));
+  Console.print  (F("motorRightOffsetFwd                        : "));
   Console.println(motorRightOffsetFwd);
   Console.print  (F("motorRightOffsetRev                        : "));
   Console.println(motorRightOffsetRev);
@@ -554,6 +566,8 @@ void Robot::printSettingSerial() {
 
   // ------ mower motor -----------------------------------------------------------
   Console.println(F("---------- mower motor ---------------------------------------"));
+  Console.print  (F("secondMowMotor                             : "));
+  Console.println(secondMowMotor);
   Console.print  (F("motorMowForceOff                           : "));
   Console.println(motorMowForceOff);
   Console.print  (F("motorMowAccel                              : "));
@@ -566,8 +580,10 @@ void Robot::printSettingSerial() {
   Console.println(motorMowModulate, 1);
   Console.print  (F("motorMowRPMSet                             : "));
   Console.println(motorMowRPMSet);
-  Console.print  (F("motorMowSenseScale                         : "));
-  Console.println(motorMowSenseScale);
+  Console.print  (F("motor1MowSenseScale                        : "));
+  Console.println(motor1MowSenseScale);
+  Console.print  (F("motor2MowSenseScale                        : "));
+  Console.println(motor2MowSenseScale);
   Console.print  (F("motorMowPID.Kp                             : "));
   Console.println(motorMowPID.Kp);
   Console.print  (F("motorMowPID.Ki                             : "));
@@ -591,6 +607,10 @@ void Robot::printSettingSerial() {
   Console.println(F("---------- rain ----------------------------------------------"));
   Console.print  (F("rainUse                                    : "));
   Console.println(rainUse, 1);
+  Console.print  (F("rainReadDelay                              : "));
+  Console.println(rainReadDelay);
+  Console.print  (F("wsRainData                                 : "));
+  Console.println(wsRainData);
 
   // ------ DHT22 Temperature -----------------------------------------------------
   Console.println(F("----------  DHT22 Temperature --------------------------------"));
@@ -656,33 +676,33 @@ void Robot::printSettingSerial() {
   Console.println(DistPeriObstacleRev);
   Console.print  (F("DistPeriOutForw                            : "));
   Console.println(DistPeriOutForw);
-  Console.print  (F("DistPeriObstacleForw                        : "));
+  Console.print  (F("DistPeriObstacleForw                       : "));
   Console.println(DistPeriObstacleForw);
 
 
   // ------ By Lanes mowing -----------------------------------------------------------
   Console.println(F("---------- By Lanes mowing ---------------------------------------"));
-  Console.print  (F("yawSet1                                   : "));
+  Console.print  (F("yawSet1                                    : "));
   Console.println(yawSet1);
-  Console.print  (F("yawSet2                                   : "));
+  Console.print  (F("yawSet2                                    : "));
   Console.println(yawSet2);
-  Console.print  (F("yawSet3                                   : "));
+  Console.print  (F("yawSet3                                    : "));
   Console.println(yawSet3);
-  Console.print  (F("yawOppositeLane1RollRight                 : "));
+  Console.print  (F("yawOppositeLane1RollRight                  : "));
   Console.println(yawOppositeLane1RollRight);
-  Console.print  (F("yawOppositeLane2RollRight                 : "));
+  Console.print  (F("yawOppositeLane2RollRight                  : "));
   Console.println(yawOppositeLane2RollRight);
-  Console.print  (F("yawOppositeLane3RollRight                 : "));
+  Console.print  (F("yawOppositeLane3RollRight                  : "));
   Console.println(yawOppositeLane3RollRight);
-  Console.print  (F("yawOppositeLane1RollLeft                  : "));
+  Console.print  (F("yawOppositeLane1RollLeft                   : "));
   Console.println(yawOppositeLane1RollLeft);
-  Console.print  (F("yawOppositeLane2RollLeft                  : "));
+  Console.print  (F("yawOppositeLane2RollLeft                   : "));
   Console.println(yawOppositeLane2RollLeft);
-  Console.print  (F("yawOppositeLane3RollLeft                  : "));
+  Console.print  (F("yawOppositeLane3RollLeft                   : "));
   Console.println(yawOppositeLane3RollLeft);
-  Console.print  (F("DistBetweenLane                           : "));
+  Console.print  (F("DistBetweenLane                            : "));
   Console.println(DistBetweenLane);
-  Console.print  (F("maxLenghtByLane                           : "));
+  Console.print  (F("maxLenghtByLane                            : "));
   Console.println(maxLenghtByLane);
 
 
@@ -743,7 +763,7 @@ void Robot::printSettingSerial() {
   //Console.println(chgSelection);
   Console.print  (F("chgSenseZero                               : "));
   Console.println(chgSenseZero);
-  Console.print  (F("batSenseFactor                                  : "));
+  Console.print  (F("batSenseFactor                             : "));
   Console.println( batSenseFactor);
   Console.print  (F("chgSense                                   : "));
   Console.println(chgSense);
@@ -756,7 +776,7 @@ void Robot::printSettingSerial() {
   Console.println(F("---------- charging station ----------------------------------"));
   Console.print  (F("stationRevDist                             : "));
   Console.println(stationRevDist);
-  Console.print  (F("stationRollAngle                            : "));
+  Console.print  (F("stationRollAngle                           : "));
   Console.println(stationRollAngle);
   Console.print  (F("stationForwDist                            : "));
   Console.println(stationForwDist);
@@ -1997,7 +2017,11 @@ void Robot::printInfo(Stream & s) {
       Streamprint(s, "spd %4d %4d %4d ", (int)motorLeftSpeedRpmSet, (int)motorRightSpeedRpmSet, (int)motorMowRpmCurr);
       if (consoleMode == CONSOLE_SENSOR_VALUES) {
         // sensor values
-        Streamprint(s, "sen %4d %4d %4d ", (int)motorLeftPower, (int)motorRightPower, (int)motorMowSense);
+        if (secondMowMotor) {
+          Streamprint(s, "sen %4d %4d %4d %4d ", (int)motorLeftPower, (int)motorRightPower, (int)motor1MowSense, (int)motor2MowSense);
+        } else {
+          Streamprint(s, "sen %4d %4d %4d ", (int)motorLeftPower, (int)motorRightPower, (int)motor1MowSense);
+        }
         Streamprint(s, "bum %4d %4d ", bumperLeft, bumperRight);
         Streamprint(s, "dro %4d %4d ", dropLeft, dropRight);                                                                                      // Dropsensor - Absturzsensor
         Streamprint(s, "son %4d %4d %4d ", sonarDistLeft, sonarDistCenter, sonarDistRight);
@@ -2008,7 +2032,11 @@ void Robot::printInfo(Stream & s) {
         if (lawnSensorUse) Streamprint(s, "lawn %3d %3d ", (int)lawnSensorFront, (int)lawnSensorBack);
       } else {
         // sensor counters
-        Streamprint(s, "sen %4d %4d %4d ", motorLeftSenseCounter, motorRightSenseCounter, motorMowSenseCounter);
+         if (secondMowMotor) {
+          Streamprint(s, "sen %4d %4d %4d %4d", motorLeftSenseCounter, motorRightSenseCounter, motor1MowSenseCounter, motor2MowSenseCounter);
+        } else {
+          Streamprint(s, "sen %4d %4d %4d ", motorLeftSenseCounter, motorRightSenseCounter, motor1MowSenseCounter);
+        }
         Streamprint(s, "bum %4d %4d ", bumperLeftCounter, bumperRightCounter);
         Streamprint(s, "dro %4d %4d ", dropLeftCounter, dropRightCounter);                                                                      // Dropsensor - Absturzsensor
         //Streamprint(s, "son %3d ", sonarDistCounter);
@@ -2360,22 +2388,26 @@ void Robot::readSensors() {
     double accel = 0.05;
     motorRightSenseADC = readSensor(SEN_MOTOR_RIGHT) ; //return the ADC value,for MC33926 0.525V/1A so ADC=651/1Amp
     motorLeftSenseADC = readSensor(SEN_MOTOR_LEFT) ;
-    motorMowSenseADC = readSensor(SEN_MOTOR_MOW) ;
+    motor1MowSenseADC = readSensor(SEN_MOTOR1_MOW) ;  // mow motor 1
+    if (secondMowMotor) motor2MowSenseADC = readSensor(SEN_MOTOR2_MOW) ;  // mow motor 2
     //  double batvolt = batFactor*readSensor(SEN_BAT_VOLTAGE)*3.3/4096 ;
     // motorRightSenseADC =651 for 1000ma so motorSenseRightScale=1.536
     motorRightSenseCurrent = motorRightSenseCurrent * (1.0 - accel) + ((double)motorRightSenseADC) * motorSenseRightScale * accel;
     motorLeftSenseCurrent = motorLeftSenseCurrent * (1.0 - accel) + ((double)motorLeftSenseADC) * motorSenseLeftScale * accel;
-    motorMowSenseCurrent = motorMowSenseCurrent * (1.0 - accel) + ((double)motorMowSenseADC) * motorMowSenseScale * accel;
+    motor1MowSenseCurrent = motor1MowSenseCurrent * (1.0 - accel) + ((double)motor1MowSenseADC) * motor1MowSenseScale * accel;
+    if (secondMowMotor) motor2MowSenseCurrent = motor2MowSenseCurrent * (1.0 - accel) + ((double)motor2MowSenseADC) * motor2MowSenseScale * accel; // mow motor 2
 
     if (batVoltage > 8) {
       motorRightPower = motorRightSenseCurrent * batVoltage / 1000;  // conversion to power in Watt
       motorLeftPower  = motorLeftSenseCurrent  * batVoltage / 1000;
-      motorMowSense   = motorMowSenseCurrent   * batVoltage / 1000;
+      motor1MowSense   = motor1MowSenseCurrent   * batVoltage / 1000;  // mow motor 1
+      if (secondMowMotor) motor2MowSense  = motor2MowSenseCurrent  * batVoltage / 1000;  // mow motor 2
     }
     else {
       motorRightPower = motorRightSenseCurrent * batFull / 1000;  // conversion to power in Watt in absence of battery voltage measurement
       motorLeftPower  = motorLeftSenseCurrent  * batFull / 1000;
-      motorMowSense   = motorMowSenseCurrent   * batFull / 1000;
+      motor1MowSense   = motor1MowSenseCurrent   * batFull / 1000;  // mow motor 1
+      if (secondMowMotor) motor2MowSense  = motor2MowSenseCurrent * batFull / 1000;  // mow motor 2
     }
 
     if ((millis() - lastMotorMowRpmTime) >= 500) {
@@ -2518,8 +2550,8 @@ void Robot::readSensors() {
 
   if ((rainUse) && (millis() >= nextTimeRain)) {
     // read rain sensor
-    nextTimeRain = millis() + 5000;
-    rain = (readSensor(SEN_RAIN) != 0);
+    nextTimeRain = millis() + rainReadDelay * 1000; // rainReadDelay, seconds from mower.cpp
+    rain = ((readSensor(SEN_RAIN) != 0) || (rainWS != 0));  // rainWS is always false if not use
     if (rain) rainCounter++;
   }
 }
@@ -3776,7 +3808,7 @@ void Robot::checkCurrent() {
   if (millis() < nextTimeCheckCurrent) return;
   nextTimeCheckCurrent = millis() + 100;
   if (statusCurr == NORMAL_MOWING) {
-    if (motorMowSense >= 0.8 * motorMowPowerMax) {  //do not start the spirale if in tracking and motor detect high grass
+    if ((motor1MowSense >= 0.8 * motorMowPowerMax) || (motor2MowSense >= 0.8 * motorMowPowerMax)) {  //do not start the spirale if in tracking and motor detect high grass
       spiraleNbTurn = 0;
       halfLaneNb = 0;
       highGrassDetect = true;
@@ -3793,16 +3825,23 @@ void Robot::checkCurrent() {
   }
 
 
-  if (motorMowSense >= motorMowPowerMax)
+  if (motor1MowSense >= motorMowPowerMax)
   {
-    motorMowSenseCounter++;
-    Console.print("Warning  motorMowSense >= motorMowPowerMax and Counter time is");
-    Console.println(motorMowSenseCounter);
+    motor1MowSenseCounter++;
+    Console.print("Warning  motor1MowSense >= motorMowPowerMax and Counter time is");
+    Console.println(motor1MowSenseCounter);
   }
-  else
-  {
+  if (secondMowMotor) {
+    if (motor2MowSense >= motorMowPowerMax) {
+      motor2MowSenseCounter++;
+      Console.print("Warning  motor2MowSense >= motorMowPowerMax and Counter time is");
+      Console.println(motor2MowSenseCounter);
+    }
+  }
+  else {
     errorCounterMax[ERR_MOW_SENSE] = 0;
-    motorMowSenseCounter = 0;
+    motor1MowSenseCounter = 0;
+    if (secondMowMotor) motor2MowSenseCounter = 0; // second mow motor
     if ((lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 60000)) { // wait 60 seconds before switching on again
       errorCounter[ERR_MOW_SENSE] = 0;
       if ((stateCurr == STATE_FORWARD_ODO)) { //avoid risq of restart not allowed
@@ -3817,7 +3856,7 @@ void Robot::checkCurrent() {
   }
 
   //need to check this
-  if (motorMowSenseCounter >= 10) { //ignore motorMowPower for 1 seconds
+  if ((motor1MowSenseCounter >= 10) || (motor2MowSenseCounter >= 10)) { //ignore motorMowPower for 1 seconds
     motorMowEnable = false;
     Console.println("Error: Motor mow current");
     addErrorCounter(ERR_MOW_SENSE);
@@ -5042,6 +5081,11 @@ void Robot::loop()  {
           */
 
         }
+      }
+      // SendBat to Pi when charging
+      if (millis() >= nextTimeChgRasPISendBat) {
+        nextTimeChgRasPISendBat = millis() + 6000; // delay ms
+        MyRpi.RaspberryPISendBat();
       }
       //motorControl();
       break;
