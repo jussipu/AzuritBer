@@ -24,7 +24,7 @@ class robot:
         self.motorMowSpeedMaxPwm=0
         self.motorMowPowerMax=0
         self.motorMowRPMSet=0
-        self.motorMowSenseScale=0
+        self.motor1MowSenseScale=0
         self.motorLeftPID_Kp=0
         self.motorLeftPID_Ki=0
         self.motorLeftPID_Kd=0
@@ -145,5 +145,10 @@ class robot:
         self.TimerstartRollDir=[0]*5
         self.TimerstartLaneMaxlengh=[0]*5
         self.TimerstartArea=[0]*5
+        self.motor2MowSenseScale=0
+        self.secondMowMotor=0 # second mow motor
+        self.rainReadDelay=0 # rain read delay
+        self.maxTemperature=0 # max temperature
+        self.wsRainData=0 # WS rain data selection
         
 
