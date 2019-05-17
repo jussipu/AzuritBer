@@ -67,7 +67,8 @@ enum {
   SEN_CHG_VOLTAGE,       // Volt * 100
   SEN_MOTOR_LEFT,        // 0..MAX_MOTOR_CURRENT
   SEN_MOTOR_RIGHT,       // 0..MAX_MOTOR_CURRENT
-  SEN_MOTOR_MOW,         // 0..MAX_MOW_CURRENT
+  SEN_MOTOR1_MOW,        // 0..MAX_MOW1_CURRENT
+  SEN_MOTOR2_MOW,        // 0..MAX_MOW2_CURRENT
   SEN_BUMPER_LEFT,       // LOW = pressed
   SEN_BUMPER_RIGHT,      // LOW = pressed
   SEN_DROP_LEFT,       // LOW = pressed                                                                                                  // Dropsensor - Absturzsensor
@@ -414,6 +415,7 @@ class Robot
 
     // -------- mower motor state -----------------------
     int motorMowRpmCounter ;  // mower motor speed state
+    boolean secondMowMotor ;  // second mow motor
     boolean motorMowRpmLastState ;
     boolean motorMowEnable ;  // motor can be temporary disabled if stucked etc. with this
     boolean motorMowForceOff ; // user switch for mower motor on/off has highest priority
@@ -431,14 +433,19 @@ class Robot
 
     boolean motorMowModulate  ;    // motor mower cutter modulation?
     int motorMowRPMSet        ;   // motor mower RPM (only for cutter modulation)
-    float motorMowSenseScale ;   // motor mower sense scale (mA=(ADC-zero)/scale)
+    float motor1MowSenseScale ;   // motor 1 mower sense scale (mA=(ADC-zero)/scale)
+    float motor2MowSenseScale ;   // motor 2 mower sense scale (mA=(ADC-zero)/scale)
     PID motorMowPID ;    // motor mower RPM PID controller
     int motorMowSpeedPWMSet;
     int motorMowPWMCurr ;         // current speed
-    int motorMowSenseADC ;
-    float motorMowSenseCurrent ;
-    float motorMowSense ;       // motor power (range 0..MAX_MOW_POWER)
-    int motorMowSenseCounter ;
+    int motor1MowSenseADC ;
+    int motor2MowSenseADC ;
+    float motor1MowSenseCurrent ;  // motor 1 mA
+    float motor2MowSenseCurrent ;  // motor 2 mA
+    float motor1MowSense ;       // motor 1 power (range 0..MAX_MOW_POWER)
+    float motor2MowSense ;       // motor 2 power (range 0..MAX_MOW_POWER)
+    int motor1MowSenseCounter ;
+    int motor2MowSenseCounter ;
     int motorMowSenseErrorCounter ;
     int motorMowRpmCurr ;            // motor rpm (range 0..MOW_RPM)
     unsigned long lastMotorMowRpmTime;
@@ -589,7 +596,10 @@ class Robot
     // --------- rain -----------------------------------
     boolean rain;
     boolean rainUse;
+    boolean rainWS;  // weather station
     int rainCounter;
+    int rainReadDelay;  // rain read delay
+    int wsRainData;   // WS rain data 
     unsigned long nextTimeRain ;
     // --------- sonar ----------------------------------
     // ultra sonic sensor distance-to-obstacle (cm)
@@ -668,6 +678,7 @@ class Robot
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
     unsigned long nextTimeBattery ;
     unsigned long nextTimeCheckBattery;
+    unsigned long nextTimeChgRasPISendBat;  // wait before sendbat to raspi
     unsigned long delayToReadVoltageStation; //wait before read the voltage 
     int statsBatteryChargingCounter;
     int statsBatteryChargingCounterTotal;
