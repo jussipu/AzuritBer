@@ -58,7 +58,8 @@
 
 #define pinMotorMowPWM 2           // M1_IN1 mower motor PWM pin (if using MOSFET, use this pin)
 #define pinMotorMowDir 29          // M1_IN2 mower motor Dir pin (if using MOSFET, keep unconnected)
-#define pinMotorMowSense A3        // M1_FB  mower motor current sense  
+#define pinMotor1MowSense A3       // M1_FB  mower motor 1 current sense
+#define pinMotor2MowSense A6       // M1_FB  mower motor 2 current sense  
 #define pinMotorMowFault 26        // M1_SF  mower motor fault   (if using MOSFET/L298N, keep unconnected)
 #define pinMotorMowEnable 28       // EN mower motor enable      (if using MOSFET/L298N, keep unconnected)
 #define pinMotorMowRpm A11
@@ -77,7 +78,7 @@
 #define pinSonarLeftEcho 36
 #define pinPerimeterRight A4       // perimeter
 #define pinPerimeterLeft A5
-#define pinPerimeterCenter A6
+#define pinPerimeterCenter A10  // second mow motor current sense A6
 
 
 #define pinGreenLED 6              // DuoLED green
