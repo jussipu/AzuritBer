@@ -361,8 +361,8 @@ void RemoteControl::sendMotorMenu(boolean update) {
   }
   //bb add
   if (robot->developerActive) {
-    sendSlider("a20", F("MotorSenseLeftScale"), robot->motorSenseLeftScale, "", 0.01, 0.10, 3.00);
-    sendSlider("a21", F("MotorSenseRightScale"), robot->motorSenseRightScale, "", 0.01, 0.10, 3.00);
+    sendSlider("a20", F("MotorSenseLeftScale"), robot->motorSenseLeftScale, "", 0.01, 0.10, 4.00);
+    sendSlider("a21", F("MotorSenseRightScale"), robot->motorSenseRightScale, "", 0.01, 0.10, 4.00);
   }
   //end add
   serialPort->print(F("|a14~for config file:"));
@@ -447,12 +447,22 @@ void RemoteControl::sendMowMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Mow`1000"));
   serialPort->print(F("|o12~Force mowing off: "));
   sendYesNo(robot->motorMowForceOff);
-  serialPort->print(F("|o00~Overload Counter "));
-  serialPort->print(robot->motorMowSenseCounter);
-  serialPort->print(F("|o01~Power in Watt "));
-  serialPort->print(robot->motorMowSense);
-  serialPort->print(F("|o11~current in mA "));
-  serialPort->print(robot->motorMowSenseCurrent);
+  serialPort->print(F("|o00~Overload Counter: M1="));
+  serialPort->print(robot->motor1MowSenseCounter);
+  if (robot->secondMowMotor) {
+    serialPort->print(F(", M2="));
+    serialPort->print(robot->motor2MowSenseCounter);
+  }
+  serialPort->print(F("|o01~M1: Power in Watt "));
+  serialPort->print(robot->motor1MowSense);
+  serialPort->print(F("|o11~M1: current in mA "));
+  serialPort->print(robot->motor1MowSenseCurrent);
+  if (robot->secondMowMotor) {
+    serialPort->print(F("|o01~M2: Power in Watt "));
+    serialPort->print(robot->motor2MowSense);
+    serialPort->print(F("|o11~M2: current in mA "));
+    serialPort->print(robot->motor2MowSenseCurrent);
+  }
   sendSlider("o02", F("Power max"), robot->motorMowPowerMax, "", 0.1, 100);
 
   serialPort->print(F("|o04~Speed "));
@@ -461,7 +471,8 @@ void RemoteControl::sendMowMenu(boolean update) {
   if (robot->developerActive) {
     serialPort->print(F("|o06~Modulate "));
     sendYesNo(robot->motorMowModulate);
-    sendSlider("o03", F("calibrate mow motor "), robot->motorMowSenseScale, "", 0.01, 3);
+    sendSlider("o03", F("calibrate mow motor 1"), robot->motor1MowSenseScale, "", 0.01, 3);  // mow motor 1
+    if (robot->secondMowMotor) sendSlider("o14", F("calibrate mow motor 2 - "), robot->motor2MowSenseScale, "", 0.01, 3);  // mow motor 2
   }
   serialPort->print(F("|o07~RPM "));
   serialPort->print(robot->motorMowRpmCurr);
@@ -484,7 +495,8 @@ void RemoteControl::sendMowMenu(boolean update) {
 void RemoteControl::processMowMenu(String pfodCmd) {
   if (pfodCmd.startsWith("o02")) processSlider(pfodCmd, robot->motorMowPowerMax, 0.1);
   else if (pfodCmd.startsWith("o12")) robot->motorMowForceOff = !robot->motorMowForceOff;
-  else if (pfodCmd.startsWith("o03")) processSlider(pfodCmd, robot->motorMowSenseScale, 0.01);
+  else if (pfodCmd.startsWith("o03")) processSlider(pfodCmd, robot->motor1MowSenseScale, 0.01);
+  else if ((pfodCmd.startsWith("o14")) && (robot->secondMowMotor)) processSlider(pfodCmd, robot->motor2MowSenseScale, 0.01);
   else if (pfodCmd.startsWith("o05")) processSlider(pfodCmd, robot->motorMowSpeedMaxPwm, 1);
   else if (pfodCmd == "o06") robot->motorMowModulate = !robot->motorMowModulate;
   else if (pfodCmd.startsWith("o08")) processSlider(pfodCmd, robot->motorMowRPMSet, 1);
@@ -689,7 +701,9 @@ void RemoteControl::sendRainMenu(boolean update) {
   serialPort->print(robot->rainCounter);
   serialPort->println(F("|m02~Value"));
   serialPort->print(robot->rain);
-
+  sendSlider("m07", F("WS rain: 1=15 min, 2=60 min, 3=Actual hr"), robot->wsRainData, "", 1, 3, 1);
+  sendSlider("m08", F("Rain read delay, seconds"), robot->rainReadDelay, "", 1, 3600, 1);
+  
   serialPort->println(F("|m03~DHT22 Use "));
   sendYesNo(robot->DHT22Use);
   serialPort->println(F("|m04~Temperature "));
@@ -705,6 +719,8 @@ void RemoteControl::processRainMenu(String pfodCmd) {
   if (pfodCmd == "m00") robot->rainUse = !robot->rainUse;
   else if (pfodCmd == "m03") robot->DHT22Use = !robot->DHT22Use;
   else if (pfodCmd.startsWith("m06")) processSlider(pfodCmd, robot->maxTemperature, 1);
+  else if (pfodCmd.startsWith("m07")) processSlider(pfodCmd, robot->wsRainData, 1);
+  else if (pfodCmd.startsWith("m08")) processSlider(pfodCmd, robot->rainReadDelay, 1);
   sendRainMenu(true);
 }
 
@@ -894,7 +910,7 @@ void RemoteControl::sendBatteryMenu(boolean update) {
   sendSlider("j06", F("Charge sense zero"), robot->chgSenseZero, "", 1, 600, 400);
 
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
-  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.1, robot->batChargingCurrentMax);
+  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.01, robot->batChargingCurrentMax);
   serialPort->println("}");
 }
 
@@ -911,7 +927,7 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("j08")) processSlider(pfodCmd, robot->batSenseFactor, 0.01);
   else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.01);
   else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
-  else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.1);
+  else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.01);
   else if (pfodCmd.startsWith("j12")) processSlider(pfodCmd, robot->batSwitchOffIfIdle, 1);
   sendBatteryMenu(true);
 }
@@ -1608,8 +1624,12 @@ void RemoteControl::run() {
     serialPort->print(",");
     serialPort->print(robot->motorRightPower);
     serialPort->print(",");
-    serialPort->print(robot->motorMowSense);
+    serialPort->print(robot->motor1MowSense);
     serialPort->print(",");
+    if (robot->secondMowMotor) {
+      serialPort->print(robot->motor2MowSense);
+      serialPort->print(",");
+    }
     serialPort->print(robot->sonarDistLeft);
     serialPort->print(",");
     serialPort->print(robot->sonarDistCenter);
@@ -1712,8 +1732,12 @@ void RemoteControl::run() {
       serialPort->print(",");
       serialPort->print(robot->motorRightSenseCounter);
       serialPort->print(",");
-      serialPort->print(robot->motorMowSenseCounter);
+      serialPort->print(robot->motor1MowSenseCounter);
       serialPort->print(",");
+      if (robot->secondMowMotor) {
+        serialPort->print(robot->motor2MowSenseCounter);
+        serialPort->print(",");
+      }
       serialPort->print(robot->bumperLeftCounter);
       serialPort->print(",");
       serialPort->print(robot->bumperRightCounter);
@@ -1741,8 +1765,12 @@ void RemoteControl::run() {
       serialPort->print(",");
       serialPort->print(robot->motorRightPower);
       serialPort->print(",");
-      serialPort->print(robot->motorMowSense);
+      serialPort->print(robot->motor1MowSense);
       serialPort->print(",");
+      if (robot->secondMowMotor) {
+        serialPort->print(robot->motor2MowSense);
+        serialPort->print(",");
+      }
       serialPort->print(robot->sonarDistLeft);
       serialPort->print(",");
       serialPort->print(robot->sonarDistCenter);
