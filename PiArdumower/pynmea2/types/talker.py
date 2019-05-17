@@ -76,7 +76,8 @@ class MOW(TalkerSentence):
     """
     fields = (
         ("Millis", "millis"),
-        ("motorMowSense", "motorMowSense"),
+        ("motor1MowSense", "motor1MowSense"),
+        ("motor2MowSense", "motor2MowSense"),
         ("motorMowPWMCurr", "motorMowPWMCurr"),
         ("BatVoltage", "batVoltage"),
         
