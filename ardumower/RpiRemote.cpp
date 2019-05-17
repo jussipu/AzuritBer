@@ -273,7 +273,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorMowRPMSet;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorMowSenseScale;
+    lineToSend = lineToSend + robot->motor1MowSenseScale;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorLeftPID.Kp;
     lineToSend = lineToSend + ",";
@@ -584,15 +584,15 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->RaspberryPIUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->motor2MowSenseScale;  // mow motor 2
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->secondMowMotor;  // use mow motor 2
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->rainReadDelay;  // rain reading delay
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->maxTemperature;  // Shut down above this
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->wsRainData;  // WS rain data selection
     lineToSend = lineToSend + ",";
     writePi(lineToSend);
 
@@ -604,7 +604,9 @@ void RpiRemote::RaspberryPISendMow () {
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + millis();
   lineToSend = lineToSend + ",";
-  lineToSend = lineToSend + robot->motorMowSense;
+  lineToSend = lineToSend + robot->motor1MowSense;
+  lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + robot->motor2MowSense;
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->motorMowPWMCurr;
   lineToSend = lineToSend + ",";
@@ -1119,6 +1121,7 @@ void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variabl
       if (strncmp(variable_name[i], "stateCurr", 20) == 0)  robot->stateCurr = atoi(received_value[i]);
       if (strncmp(variable_name[i], "statusCurr", 20) == 0)  robot->statusCurr = atoi(received_value[i]);
       if (strncmp(variable_name[i], "nextTimeTimer", 20) == 0)  robot->nextTimeTimer = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "rainWS", 20) == 0)  robot->rainWS = atoi(received_value[i]);  // rainWS
       
       
 
@@ -1291,7 +1294,7 @@ void RpiRemote::readWrite_setting()
         robot->motorMowSpeedMaxPwm = val[2];
         robot->motorMowPowerMax = val[3];
         robot->motorMowRPMSet = val[4];
-        robot->motorMowSenseScale = val[5];
+        robot->motor1MowSenseScale = val[5];
         robot->motorLeftPID.Kp = val[6];
         robot->motorLeftPID.Ki = val[7];
         robot->motorLeftPID.Kd = val[8];
@@ -1423,6 +1426,11 @@ void RpiRemote::readWrite_setting()
         robot->DistPeriOutStop = val[2];
         robot->DHT22Use = val[3];
         robot->RaspberryPIUse = val[4];
+        robot->motor2MowSenseScale = val[5];  // mow motor 2
+        robot->secondMowMotor = val[6];  // use mow motor 2
+        robot->rainReadDelay = val[7];  // rain reading delay
+        robot->maxTemperature = val[8];  // shut down above this
+        robot->wsRainData = val[9];     // WS rain data selection
       }
 
     }
