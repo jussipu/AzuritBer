@@ -91,12 +91,14 @@ Mower::Mower() {
   odoLeftRightCorrection     = true;       // left-right correction for straight lines used in manual mode
 
   // ------ mower motor -------------------------------
+  secondMowMotor = true;   // one mow motor = false; two mow motors = true;
   motorMowAccel       = 2000;  // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
   motorMowSpeedMaxPwm   = 200;    // motor mower max PWM
   motorMowPowerMax = 18.0;     // motor mower max power (Watt)
   motorMowModulate  = 0;      // motor mower cutter modulation?
   motorMowRPMSet        = 3300;   // motor mower RPM (only for cutter modulation)
-  motorMowSenseScale = 1.536; // motor mower sense scale (mA=(ADC-zero)/scale)
+  motor1MowSenseScale = 1.536; // motor 1 mower sense scale (mA=(ADC-zero)/scale)
+  motor2MowSenseScale = 1.536; // motor 2 mower sense scale (mA=(ADC-zero)/scale)
   motorMowPID.Kp = 0.005;    // motor mower RPM PID controller
   motorMowPID.Ki = 0.01;
   motorMowPID.Kd = 0.01;
@@ -106,8 +108,9 @@ Mower::Mower() {
   dropUse          = 0;     // has drops?                                                                                              Dropsensor - Absturzsensor vorhanden ?
   dropcontact      = 0;     //contact 0-openers 1-closers                                                                              Dropsensor - Kontakt 0-Öffner - 1-Schließer betätigt gegen GND
   // ------ rain ------------------------------------
-  rainUse          = 0;      // use rain sensor?
-
+  rainUse          = 0;     // use rain sensor?
+  rainReadDelay    = 60;    // rain sensor read delay s
+  wsRainData       = 2;     // WS rain data selection: 1=Last 15 min, 2=Last 60 min, 3=Actual hour
   // ------ DHT22Use ------------------------------------
   DHT22Use          = 0;      // use DHT22 sensor?
   maxTemperature    =55;      // max temp before switch off
@@ -337,7 +340,8 @@ void Mower::setup() {
   // mower motor
   pinMode(pinMotorMowDir, OUTPUT);
   pinMode(pinMotorMowPWM, OUTPUT);
-  pinMode(pinMotorMowSense, INPUT);
+  pinMode(pinMotor1MowSense, INPUT);
+  if (secondMowMotor) pinMode(pinMotor2MowSense, INPUT);  // second mow motor
   pinMode(pinMotorMowRpm, INPUT);
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, HIGH);
@@ -407,7 +411,8 @@ void Mower::setup() {
   PWMC_ConfigureClocks(3900 * PWM_MAX_DUTY_CYCLE, 0, VARIANT_MCK);   // 3.9 Khz
 
   ADCMan.setupChannel(pinChargeCurrent, 1, false);
-  ADCMan.setupChannel(pinMotorMowSense, 1, false);
+  ADCMan.setupChannel(pinMotor1MowSense, 1, false);
+  if (secondMowMotor) ADCMan.setupChannel(pinMotor2MowSense, 1, false);  // second mow motor
   ADCMan.setupChannel(pinMotorLeftSense, 1, false);
   ADCMan.setupChannel(pinMotorRightSense, 1, false);
 
@@ -489,7 +494,8 @@ int Mower::readSensor(char type) {
   switch (type) {
 
     // motors------------------------------------------------------------------------------------------------
-    case SEN_MOTOR_MOW: return ADCMan.getValue(pinMotorMowSense); break;
+    case SEN_MOTOR1_MOW: return ADCMan.getValue(pinMotor1MowSense); break;
+    case SEN_MOTOR2_MOW: return ADCMan.getValue(pinMotor2MowSense); break;  // second mow motor
     case SEN_MOTOR_RIGHT: checkMotorFault(); return ADCMan.getValue(pinMotorRightSense); break;
     case SEN_MOTOR_LEFT: checkMotorFault(); return ADCMan.getValue(pinMotorLeftSense); break;
 
