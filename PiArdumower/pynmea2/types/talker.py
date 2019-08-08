@@ -76,7 +76,8 @@ class MOW(TalkerSentence):
     """
     fields = (
         ("Millis", "millis"),
-        ("motorMowSense", "motorMowSense"),
+        ("motor1MowSense", "motor1MowSense"),
+        ("motor2MowSense", "motor2MowSense"),
         ("motorMowPWMCurr", "motorMowPWMCurr"),
         ("BatVoltage", "batVoltage"),
         
@@ -100,30 +101,40 @@ class STA(TalkerSentence):
         ("loopsPerSecond", "loopsPerSecond"),
         
     )    
+
+class ERR(TalkerSentence):
+    """ non stop message from DUE to PI  for state, localisation etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("ErrCharger", "errCharger"),
+        ("ErrBattery", "errBattery"),
+	("ErrMotorLeft", "errMotorLeft"),
+	("ErrMotorRight", "errMotorRight"),
+        ("ErrMotorMow", "errMotorMow"),
+        ("ErrMowSense", "errMowSense"),
+        ("ErrOdoLeft", "errOdoLeft"),
+        ("ErrOdoRight", "errOdoRight"),
+        ("ErrPeriTout", "errPeriTout"),
+        ("ErrTracking", "errTracking"),
+        ("ErrImuComm", "errImuComm"),
+        ("ErrImuCalib", "errImuCalib"),
+        ("ErrImuTilt", "errImuTilt"),
+        ("ErrRtcComm", "errRtcComm"),
+        ("ErrRtcData", "errRtcData"),
+        ("ErrGpsComm", "errGpsComm"),
+        ("ErrGpsData", "errGpsData"),
+        ("ErrStuck", "errStuck"),
+        ("ErrEepromData", "errEepromData"),
+        
+    )
+    
 class STU(TalkerSentence):
     """ message from DUE to PI  for status send only when change etc....
     """
     fields = (
         ("Status", "status"),
         ("Val1", "val1"),
-	("Val2", "val2"),
-	("Val3", "val3"),
-	("Val4", "val4"),
-	("Val5", "val5"),
-	("Val6", "val6"),
-	("Val7", "val7"),
-	("Val8", "val8"),
-	("Val9", "val9"),
-	("Val10", "val10"),
-		
-    )
-
-class RFI(TalkerSentence):
-    """ message from DUE to PI  for rfid and status send only when tag is detected....
-    """
-    fields = (
-        ("Status", "status"),
-        ("rfidTagFind", "rfidTagFind"),
 	("Val2", "val2"),
 	("Val3", "val3"),
 	("Val4", "val4"),

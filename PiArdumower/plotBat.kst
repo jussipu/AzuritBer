@@ -104,7 +104,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="DejaVu Math TeX Gyre,12,-1,5,50,0,0,0,0,0" fontscale="15.3" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="Time" autolabel="true" font="DejaVu Math TeX Gyre,12,-1,5,50,0,0,0,0,0" fontscale="15.3" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="DejaVu Math TeX Gyre,12,-1,5,50,0,0,0,0,0" fontscale="15.3" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="-0.0999756" y="0" width="0.2" height="3"/>
+                <projectionrect x="-0.0999756" y="0" width="0.2" height="3.2"/>
             </plot>
         </view>
     </graphics>

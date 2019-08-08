@@ -1,6 +1,6 @@
 class robot:
     def __init__(self):
-        self.stateNames = ["OFF", "REMOTE", "FORW", "ROLL", "REV", "CIRC", "ERR ", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
+        self.stateNames = ["OFF", "REMOTE", "FORW", "ROLL", "REV", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
                       "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD", "POBSCIRC", "NEXTLANE", "POUTSTOP", "LANEROL1", "LANEROL2",
                       "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS", "ROLLTOTRACK",
                       "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
@@ -24,7 +24,7 @@ class robot:
         self.motorMowSpeedMaxPwm=0
         self.motorMowPowerMax=0
         self.motorMowRPMSet=0
-        self.motorMowSenseScale=0
+        self.motor1MowSenseScale=0
         self.motorLeftPID_Kp=0
         self.motorLeftPID_Ki=0
         self.motorLeftPID_Kd=0
@@ -80,6 +80,8 @@ class robot:
         self.stationRollAngle=0
         self.stationForwDist=0
         self.stationCheckDist=0
+        self.useBumperDock=0
+        self.dockingSpeed=0
         self.odometryUse=0
         self.odometryTicksPerRevolution=0
         self.odometryTicksPerCm=0
@@ -145,5 +147,10 @@ class robot:
         self.TimerstartRollDir=[0]*5
         self.TimerstartLaneMaxlengh=[0]*5
         self.TimerstartArea=[0]*5
-        
-
+        #jp
+        self.motor2MowSenseScale=0
+        self.secondMowMotor=0
+        self.rainReadDelay=0
+        self.maxTemperature=0
+        self.wsRainData=0
+        #self.motorLeftSpeedDivider=0.00
