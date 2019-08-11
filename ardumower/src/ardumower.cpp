@@ -54,12 +54,12 @@
 #include <Wire.h>
 #include "config.h"
 
-
-
-void setup()  {
+void setup()
+{
   robot.setup();
 }
 
-void loop()  {
+void loop()
+{
   robot.loop();
 }
