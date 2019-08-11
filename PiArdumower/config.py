@@ -12,9 +12,11 @@ if (os.name=='nt'):
     myOS="Windows"
     GpsConnectedOnPi=False
     GpsIsM6n=True
+    RfidConnectedOnPi=False
     NanoConnectedOnPi=False
     DueConnectedOnPi=False
-    AutoRecordBatCharging=False
+    UseWeatherStation=False
+    autoRecordBatCharge=False
     useDebugConsole=True
 
 if (os.name=='posix'):
@@ -22,13 +24,13 @@ if (os.name=='posix'):
     myComPort = '/dev/ttyACM0'
     myFrameWidth = 800
     myFrameHeight = 430
-    myBaudRate = 250000
+    myBaudRate = 115200
     myOS="Linux"
     GpsConnectedOnPi=False
-    GpsIsM6n=False
-    NanoConnectedOnPi=True
+    GpsIsM6n=True
+    RfidConnectedOnPi=False
+    NanoConnectedOnPi=False
     DueConnectedOnPi=True
-    AutoRecordBatCharging=True
-    useDebugConsole=False
-    
-
+    UseWeatherStation=True
+    autoRecordBatCharge=False
+    useDebugConsole=True

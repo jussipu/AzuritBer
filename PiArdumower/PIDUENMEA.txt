@@ -1,0 +1,253 @@
+Each NMEA sentence start with $ and stop with Checksum after the * 
+The 5 DIGITS are RM followed by the class name and , separator.
+
+The main message send by DUE each 500ms OdometryX , Y Yaw etc are not use for the moment (for localisation in the fututr)
+$RMSTA,3989813,6,-862.66,731.52,-0.96,28.76,-0.96,0.13,-0.02,22.5*75
+
+class STA(TalkerSentence):
+    """ non stop message from DUE to PI  for state, localisation etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("State", "state"),
+        ("OdometryX", "odox"),
+	    ("OdometryY", "odoy"),
+	    ("PrevYaw", "prevYaw"),
+        ("BatVoltage", "batVoltage"),
+        ("ActualYaw", "yaw"),
+        ("ActualPitch", "pitch"),
+        ("ActualRoll", "roll"),
+        ("DHT22Temp", "Dht22Temp"),
+        
+		
+    )
+	
+	
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+	
+The request message send by PI only if needed
+$RMREQ,MOT,5,1,10000,0,0,0*26
+
+In this example It's use for plotting the motor at 5 Hz and stop after sending 10000 values
+Message_type is use to identity the actuator : MOT for motor or BAT for batterie or PER for  perimeter etc.....
+
+class REQ(TalkerSentence):
+    """ pi request information on DUE 
+    """
+    fields = (
+        ("Message_type", "message_type"),
+       	("Frequency", "frequency"),
+	("Trigger", "trigger"),
+	("Max_repetiton", "max_repetition"),
+	("Val4", "val4"),
+	("Val5", "val5"),
+	("Val6", "val6"),
+	("Val7", "val7"),
+	
+		
+    )
+	
+Here the response of the DUE after a request is received
+$RMMOT,1761110,0.00,0.00,0,0,24.40,*78
+For drive motor 
+class MOT(TalkerSentence):
+    """ non stop message from DUE to PI  for wheel motor plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("motorLeftSenseCurrent", "motorLeftSenseCurrent"),
+        ("motorRightSenseCurrent", "motorRightSenseCurrent"),
+	("motorLeftPWMCurr", "motorLeftPWMCurr"),
+	("motorRightPWMCurr", "motorRightPWMCurr"),
+        ("BatVoltage", "batVoltage"),
+    )
+For perimeter	
+class PER(TalkerSentence):
+    """ non stop message from DUE to PI  for perimater plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("perimeterMag", "perimeterMag"),
+        ("perimeterMagRight", "perimeterMagRight"),
+		
+    )
+For batterie    
+class BAT(TalkerSentence):
+    """ non stop message from DUE to PI  for battery plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("batVoltage", "batVoltage"),
+        ("chgVoltage", "chgVoltage"),
+	("chgSense", "chgSense"),
+	
+    )
+For Mow Motor	
+class MOW(TalkerSentence):
+    """ non stop message from DUE to PI  for mow motor plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("motorMowSense", "motorMowSense"),
+        ("motorMowPWMCurr", "motorMowPWMCurr"),
+        ("BatVoltage", "batVoltage"),
+ 
+For Bylane management
+$RMBYL,2087202,0,3,2.33,-170.74,*5C
+class BYL(TalkerSentence):
+    """ non stop message from DUE to PI  for perimater plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("rollDir", "rollDir"),
+        ("laneInUse", "laneInUse"),
+        ("YawActual", "YawActual"),
+        ("YawCible", "YawCible"),
+    )
+For Info on statistique and firmware ver
+class INF(TalkerSentence): #info return by due
+    fields = (
+        ("Millis", "millis"),
+        ("Version", "version"),
+       	("DeveloperActive", "developerActive"),
+	("StatsOverride", "statsOverride"),
+	("StatsMowTimeMinutesTrip", "statsMowTimeMinutesTrip"),
+        ("StatsMowTimeHoursTotal", "statsMowTimeHoursTotal"),
+	("StatsBatteryChargingCounterTotal", "statsBatteryChargingCounterTotal"),
+        ("StatsBatteryChargingCapacityTrip", "statsBatteryChargingCapacityTrip"),
+	("StatsBatteryChargingCapacityTotal", "statsBatteryChargingCapacityTotal"),
+	("StatsBatteryChargingCapacityAverage", "statsBatteryChargingCapacityAverage"),
+	
+		
+		
+    ) 
+
+
+--------------------------------------------------------------------------------------------------------------
+
+Azurit use more than 100 Variables and the PI can set or save all.
+13 Pages with 10 values are define 
+
+$RMSET,All,w,1,0,1500,24,155,23.00,1.87,1.65,100,20,40*61
+class SET(TalkerSentence):
+    """ message between pi and due to request all the setting of setting_page, by page of 10 values
+    """
+    fields = (
+        ("Setting_page", "setting_page"),
+        ("ReadWrite", "readwrite"),
+	("Nb_page", "nb_page"),
+    ("Val1", "val1"),
+	("Val2", "val2"),
+	("Val3", "val3"),
+	("Val4", "val4"),
+	("Val5", "val5"),
+	("Val6", "val6"),
+	("Val7", "val7"),
+	("Val8", "val8"),
+	("Val9", "val9"),
+	("Val10", "val10"),
+		
+    )
+Here the DUE response
+	$RMRET,All,1,0,1500,24,180,23.00,1.87,1.65,100,20,40,*1F
+class RET(TalkerSentence):
+    """ immediate response from DUE to PI to send all the setting of request in setting mode by page of 10 values
+    """
+    fields = (
+        ("Setting_page", "setting_page"),
+        ("PageNr", "pageNr"),
+	("Val1", "val1"),
+	("Val2", "val2"),
+	("Val3", "val3"),
+	("Val4", "val4"),
+	("Val5", "val5"),
+	("Val6", "val6"),
+	("Val7", "val7"),
+	("Val8", "val8"),
+	("Val9", "val9"),
+	("Val10", "val10"),
+		
+    )
+
+	
+------------------------------------------------------------------------------------------------------------------	
+
+Here to start or stop directly actuator.
+Start the mow motor example
+ 
+$RMCMD,mowmotor,0,0,0,0*67  
+class CMD(TalkerSentence):
+    """ Use to SET or rest an actuator
+    """
+    fields = (
+        ("ActuatorName", "actuatorname"),
+       	("Val1", "val1"),
+	("Val2", "val2"),
+	("Val3", "val3"),
+	("Val4", "val4"),
+	
+		
+    )
+
+--------------------------------------------------------------------------------------------------------------------
+Here can force a variable value
+Write 155 to the motorSpeedMaxPwm
+$RMVAR,w,motorSpeedMaxPwm,155,0,0,0,0,0,0,0*1E 
+class VAR(TalkerSentence):
+    """ read or write follow by 4 time variable name follow by value to directly change something 0 to variable not use
+    """
+    fields = (
+        ("ReadWrite", "readwrite"),
+        ("Var1Name", "var1name"),
+        ("Var1Value", "var1value"),
+        ("Var2Name", "var2name"),
+        ("Var2Value", "var2value"),
+        ("Var3Name", "var3name"),
+        ("Var3Value", "var3value"),
+        ("Var4Name", "var4name"),
+        ("Var4Value", "var4value"),
+        ("EndValue", "endvalue"),
+        
+       
+    )
+
+	
+Here are the class for the GPS not use because GPS run as service into other thread
+
+class GGA(TalkerSentence, ValidGGAFix, LatLonFix):
+    fields = (
+        ('Timestamp', 'timestamp', timestamp),
+        ('Latitude', 'lat'),
+        ('Latitude Direction', 'lat_dir'),
+        ('Longitude', 'lon'),
+        ('Longitude Direction', 'lon_dir'),
+        ('GPS Quality Indicator', 'gps_qual', int),
+        ('Number of Satellites in use', 'num_sats'),
+        ('Horizontal Dilution of Precision', 'horizontal_dil'),
+        ('Antenna Alt above sea level (mean)', 'altitude', float),
+        ('Units of altitude (meters)', 'altitude_units'),
+        ('Geoidal Separation', 'geo_sep'),
+        ('Units of Geoidal Separation (meters)', 'geo_sep_units'),
+        ('Age of Differential GPS Data (secs)', 'age_gps_data'),
+        ('Differential Reference Station ID', 'ref_station_id'),
+    )
+
+
+class RMC(TalkerSentence, ValidStatusFix, LatLonFix, DatetimeFix):
+    """ Recommended Minimum Specific GPS/TRANSIT Data
+    """
+    fields = (
+        ("Timestamp", "timestamp", timestamp),
+        ('Status', 'status'), # contains the 'A' or 'V' flag
+        ("Latitude", "lat"),
+        ("Latitude Direction", "lat_dir"),
+        ("Longitude", "lon"),
+        ("Longitude Direction", "lon_dir"),
+        ("Speed Over Ground", "spd_over_grnd", float),
+        ("True Course", "true_course", float),
+        ("Datestamp", "datestamp", datestamp),
+        ("Magnetic Variation", "mag_variation"),
+        ("Magnetic Variation Direction", "mag_var_dir"),
+    )
+
