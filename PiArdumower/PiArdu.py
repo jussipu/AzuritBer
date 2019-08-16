@@ -431,6 +431,7 @@ class mower:
     #char* mowPatternNames[] = {"RAND", "LANE",  "WIRE"};
     def __init__(self):
         mower.millis=0
+        mower.lastTransmission=0
         mower.status=0
         mower.state="OFF"
         mower.odox=0
@@ -487,8 +488,8 @@ class mower:
         mower.timeToStartArea2Signal=0
         mower.focusOnPage=0
         mower.dueSerialReceived=''
-        #//bber17
         mower.autoRecordBatChargeOn=False
+        mower.commWatchdogReady=False
         # WS
         mower.rainWS=False
         mower.timeToReadWS=0
@@ -560,8 +561,8 @@ def checkSerial():  #the main loop is that
     if DueConnectedOnPi :  
         mymower.dueSerialReceived=Due_Serial.readline()
         if str(mymower.dueSerialReceived)!="b''":
-            mymower.dueSerialReceived=str(mymower.dueSerialReceived,'utf8')
             
+            mymower.dueSerialReceived=str(mymower.dueSerialReceived,'utf8')
             if mymower.dueSerialReceived[:1] != '$' : #it is console message because the first digit is not $
                 if(len(mymower.dueSerialReceived))>2:
                     consoleInsertText(mymower.dueSerialReceived)
@@ -569,15 +570,16 @@ def checkSerial():  #the main loop is that
             
             else :  # here a nmea message
                 #print(mymower.dueSerialReceived)
-                message = pynmea2.parse(mymower.dueSerialReceived)
-                decode_message(message)
+                #message = pynmea2.parse(mymower.dueSerialReceived)
+                #decode_message(message)
                
-                #try:
-                #    message = pynmea2.parse(mymower.dueSerialReceived)
-                #    decode_message(message)
-                #except :
+                try:
+                    message = pynmea2.parse(mymower.dueSerialReceived)
+                    decode_message(message)
+                except :
                 #    print("INCOMMING MESSAGE ERROR FROM DUE --> " + str(mymower.dueSerialReceived))
-                #    consoleInsertText("INCOMMING MESSAGE ERROR FROM DUE" + '\n')
+                    consoleInsertText("INCOMMING MESSAGE ERROR FROM DUE" + '\n')
+                    consoleInsertText(str(mymower.dueSerialReceived) + '\n')
                 
 
     if mymower.useJoystick :
@@ -662,7 +664,8 @@ def decode_message(message):  #decode the nmea message
                 if (int(message.rain) == 1):
                     mymower.rainDetect=True
                     consoleInsertText('RAIN DETECTED TIME TO GO TO STATION'+ '\n')
-                    button_home_click()
+                    if(myRobot.statusNames[mymower.status] == "NORMAL_MOWING"):
+                        button_home_click()
                     
                 else:
                     mymower.rainDetect=False
@@ -671,10 +674,9 @@ def decode_message(message):  #decode the nmea message
                 if message.actuatorname == 'PowerOffPi':
                     mymower.focusOnPage=4
                     ConsolePage.tkraise()
-                    #text1.config(text="Start to save all Data")
                     consoleInsertText('Start to save all Console Data'+ '\n')
                     ButtonSaveReceived_click()  #save the console txt
-                    consoleInsertText('All Console Data are saved')
+                    consoleInsertText('All Console Data are saved'+ '\n')
                     print("All Console Data are saved")
                     
                     #txtConsoleRecu.insert('1.0', 'Start to stop the GPS Record')
@@ -715,7 +717,7 @@ def decode_message(message):  #decode the nmea message
         
 
             if message.sentence_type =='BYL': #to refresh the ByLane setting page 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.rollDir=message.rollDir
                 mymower.laneInUse=message.laneInUse
                 mymower.YawActual=message.YawActual
@@ -729,7 +731,7 @@ def decode_message(message):  #decode the nmea message
 
             
             if message.sentence_type =='INF': #to refresh the info page
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.developerActive=message.developerActive
                 mymower.version=message.version
                 Infoline1.set("Firmware Version : " + mymower.version)
@@ -750,7 +752,7 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='MOT': #to refresh the plot page of motor wheel
                 global firstplotMotx
                 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.motorLeftSenseCurrent=message.motorLeftSenseCurrent
                 mymower.motorRightSenseCurrent=message.motorRightSenseCurrent
                 mymower.motorLeftPWMCurr=message.motorLeftPWMCurr
@@ -771,7 +773,7 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='MOW': #to refresh the plot page of motor mow
                 global firstplotMowx
                 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.motor1MowSense=message.motor1MowSense
                 mymower.motor2MowSense=message.motor2MowSense
                 mymower.motorMowPWMCurr=message.motorMowPWMCurr
@@ -793,7 +795,7 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='BAT': #to refresh the plot page of battery
                 global firstplotBatx
                 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.chgVoltage=message.chgVoltage
                 mymower.chgSense=message.chgSense
                 mymower.batVoltage=message.batVoltage
@@ -814,7 +816,7 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='PER': #to refresh the plot page of perimeter
                 global firstplotPerx
                 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
                 mymower.perimeterMag=message.perimeterMag
                 mymower.perimeterMagRight=message.perimeterMagRight
                 mymower.areaInMowing=int(message.areaInMowing)
@@ -876,7 +878,22 @@ def decode_message(message):  #decode the nmea message
 
             if message.sentence_type =='STA': #permanent message for state info
                 
-                mymower.millis=message.millis
+                mymower.millis=int(message.millis)
+                
+                if mymower.commWatchdogReady:
+
+                    if ((mymower.millis-mymower.lastTransmission) > 800):
+                        consoleInsertText(
+                            "DEBUG : Mower fail to send state each 500 ms " + '\n')
+                        consoleInsertText(
+                            "Save console to record all the process " + '\n')
+                        mymower.focusOnPage = 4
+                        ConsolePage.tkraise()
+                        ButtonSaveReceived_click()  # save the console txt
+                        consoleInsertText('Save OK')
+                        
+                        
+                mymower.lastTransmission=mymower.millis
                 mymower.state=int(message.state)
                 mymower.odox=message.odox
                 mymower.odoy=message.odoy
@@ -933,7 +950,7 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='RET': #to fill the setting page All or name of the needed page
                
                 if message.setting_page =='Time':
-                                     
+                    mymower.commWatchdogReady=True
                     myDate.hour = message.val1;
                     myDate.minute = message.val2;
                     myDate.dayOfWeek = message.val3;
@@ -1152,7 +1169,7 @@ def decode_message(message):  #decode the nmea message
                     if message.pageNr =='14':
                         myRobot.useBumperDock=message.val1
                         myRobot.dockingSpeed=message.val2
-                        #myRobot.motorLeftSpeedDivider=message.val3
+                        myRobot.motorLeftSpeedDivider=message.val3
                         refreshAllSettingPage() 
  
 
@@ -1760,7 +1777,7 @@ def refreshPerimeterSettingPage():
     sliderCircleArcDistance.set(myRobot.DistPeriObstacleAvoid)
     sliderPeriMagMaxValue.set(myRobot.perimeterMagMaxValue)
     sliderTransitionTimeout.set(myRobot.trackingPerimeterTransitionTimeOut)
-    #sliderMotorLeftSpeedDivider.set(myRobot.motorLeftSpeedDivider)
+    sliderMotorLeftSpeedDivider.set(myRobot.motorLeftSpeedDivider)
 
     sliderTrackErrTimeout.set(myRobot.trackingErrorTimeOut)
     sliderTrackPid_P.set(myRobot.perimeterPID_Kp)
@@ -2096,8 +2113,8 @@ def ButtonSendSettingToDue_click():
 
     Send_reqSetting_message('All','w','14',''+str(myRobot.useBumperDock)+\
                             '',''+str(myRobot.dockingSpeed)+\
-                            #'',''+str(myRobot.motorLeftSpeedDivider)+\
-                            '',''+str(0)+\
+                            '',''+str(myRobot.motorLeftSpeedDivider)+\
+                            #'',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
@@ -2200,7 +2217,7 @@ except:
 try:
     if DueConnectedOnPi :
         if myOS == "Linux":
-            Due_Serial = serial.Serial('/dev/ttyACM0',115200,timeout=0)
+            Due_Serial = serial.Serial('/dev/ttyACM_DUE',115200,timeout=0)
         else:
             Due_Serial = serial.Serial('COM9',115200,timeout=0)
             
@@ -2314,10 +2331,11 @@ ButtonReadSettingFromFile.place(x=30,y=65, height=25, width=200)
 ButtonReadSettingFromFile.configure(command = ButtonReadSettingFromFile_click)
 ButtonReadSettingFromFile.configure(text="Read Setting From File")
 
-ButtonFlashDue= tk.Button(tabMain)
-ButtonFlashDue.place(x=30,y=115, height=40, width=200)
-ButtonFlashDue.configure(command = ButtonFlashDue_click)
-ButtonFlashDue.configure(text="Update the DUE Firmware")
+#can't work with PCB1.3 because when due flash the PCB powerof the PI
+#ButtonFlashDue= tk.Button(tabMain)
+#ButtonFlashDue.place(x=30,y=115, height=40, width=200)
+#ButtonFlashDue.configure(command = ButtonFlashDue_click)
+#ButtonFlashDue.configure(text="Update the DUE Firmware")
 
 def ButtonWifiOn_click():
     #returnval=messagebox.askyesno('Info',"Turn On the Wifi")
@@ -2705,7 +2723,7 @@ def ButtonSetPerimeterApply_click():
     myRobot.DistPeriObstacleAvoid=sliderCircleArcDistance.get()
     myRobot.perimeterMagMaxValue=sliderPeriMagMaxValue.get()
     myRobot.trackingPerimeterTransitionTimeOut=sliderTransitionTimeout.get()
-    #myRobot.motorLeftSpeedDivider#=sliderMotorLeftSpeedDivider.get()
+    myRobot.motorLeftSpeedDivider=sliderMotorLeftSpeedDivider.get()
     myRobot.trackingErrorTimeOut=sliderTrackErrTimeout.get()
     myRobot.perimeterPID_Kp=sliderTrackPid_P.get()
     myRobot.perimeterPID_Ki=sliderTrackPid_I.get()
@@ -2781,8 +2799,8 @@ sliderTrackPid_D = tk.Scale(tabPerimeter,orient='horizontal',relief=tk.SOLID, fr
 sliderTrackPid_D.place(x=270,y=160,width=250, height=50)
 sliderTransitionTimeout = tk.Scale(tabPerimeter,orient='horizontal',relief=tk.SOLID, from_=0, to=5000, label='Transition Timeout (0 to 5000) in msec')
 sliderTransitionTimeout.place(x=270,y=210,width=250, height=50)
-#sliderMotorLeftSpeedDivider = tk.Scale(tabPerimeter,orient='horizontal',relief=tk.SOLID, from_=1, to=3, resolution=0.1, label='Left motor speed divider (arc radius)')
-#sliderMotorLeftSpeedDivider.place(x=270,y=260,width=250, height=50)
+sliderMotorLeftSpeedDivider = tk.Scale(tabPerimeter,orient='horizontal',relief=tk.SOLID, from_=1, to=3, resolution=0.1, label='Left motor speed divider (arc radius)')
+sliderMotorLeftSpeedDivider.place(x=270,y=260,width=250, height=50)
 
 ChkBtnPeriSwapLeftCoil=tk.Checkbutton(tabPerimeter, text="Swap Left Coil polarity",relief=tk.SOLID,variable=PeriVar1,anchor='nw')
 ChkBtnPeriSwapLeftCoil.place(x=535,y=40,width=250, height=20)
