@@ -623,7 +623,7 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + robot->dockingSpeed;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "0";
-    //lineToSend = lineToSend + robot->motorLeftSpeedDivider;
+    lineToSend = lineToSend + robot->motorLeftSpeedDivider;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
@@ -1612,7 +1612,7 @@ void RpiRemote::readWrite_setting()
       {
         robot->UseBumperDock = val[0];
         robot->dockingSpeed = val[1];
-        //robot->motorLeftSpeedDivider = val[2];
+        robot->motorLeftSpeedDivider = val[2];
       }
     }
   }
