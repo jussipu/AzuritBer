@@ -39,7 +39,7 @@
 #include "RpiRemote.h"
 
 #define MAGIC 52
-#define ADDR_USER_SETTINGS 2000 //New adress to avoid issue if Azurit1.09 is install
+#define ADDR_USER_SETTINGS 900 //New adress to avoid issue if Azurit1.09 is install
 #define ADDR_ERR_COUNTERS 500
 //carrefull that the  ADDR 600 is used by the IMU calibration
 #define ADDR_ROBOT_STATS 800
@@ -163,6 +163,8 @@ Robot::Robot()
   rain = false;
   rainWS = false; // weather station rain variable
   rainCounter = 0;
+
+  foobar = 255;
 
   sonarLeftUse = sonarRightUse = sonarCenterUse = false;
   sonarDistCenter = sonarDistRight = sonarDistLeft = 0;
@@ -424,9 +426,9 @@ void Robot::loadSaveUserSettings(boolean readflag)
   eereadwrite(readflag, addr, odometryTicksPerRevolution);
   eereadwrite(readflag, addr, odometryTicksPerCm);
   eereadwrite(readflag, addr, odometryWheelBaseCm);
-  eereadwrite(readflag, addr, odometryLeftSwapDir);  // bool adress free for something else
-  eereadwrite(readflag, addr, odometryRightSwapDir); // bool adress free for something else
-  eereadwrite(readflag, addr, rfidUse);
+  eereadwrite(readflag, addr, odometryLeftSwapDir);     // bool adress free for something else
+  eereadwrite(readflag, addr, odometryRightSwapDir);    // bool adress free for something else
+  eereadwrite(readflag, addr, twoWayOdometrySensorUse); // char YES NO adress free for something else
   eereadwrite(readflag, addr, buttonUse);
   eereadwrite(readflag, addr, userSwitch1);
   eereadwrite(readflag, addr, userSwitch2);
@@ -485,7 +487,9 @@ void Robot::loadSaveUserSettings(boolean readflag)
   eereadwrite(readflag, addr, rainReadDelay);       // reain sensor reading delay
   eereadwrite(readflag, addr, wsRainData);          // weather station var
   eereadwrite(readflag, addr, dockingSpeed);        // docking speed
-  //eereadwrite(readflag, addr, motorLeftSpeedDivider);
+  eereadwrite(readflag, addr, rfidUse);
+  eereadwrite(readflag, addr, motorLeftSpeedDivider); //
+  eereadwrite(readflag, addr, foobar);                //last won't work correctly
   if (readflag)
     motorInitialSpeedMaxPwm = motorSpeedMaxPwm; //the Pi can change the speed so store the initial value to restore after PFND
 
@@ -681,8 +685,8 @@ void Robot::printSettingSerial()
   Console.println(DistPeriOutForw);
   Console.print(F("DistPeriObstacleForw                       : "));
   Console.println(DistPeriObstacleForw);
-  //Console.print  (F("motorLeftSpeedDivider                      : "));
-  //Console.println(motorLeftSpeedDivider);
+  Console.print(F("motorLeftSpeedDivider                      : "));
+  Console.println(motorLeftSpeedDivider);
   watchdogReset();
 
   // ------ By Lanes mowing -----------------------------------------------------------
@@ -819,7 +823,7 @@ void Robot::printSettingSerial()
 
   // ----- RFID ----------------------------------------------------------------------
   Console.println(F("---------- RFID -----------------------------------------------"));
-  Console.print(F("rfidUse                                     : "));
+  Console.print(F("rfidUse                                    : "));
   Console.println(rfidUse, 1);
 
   // ----- other --------------------------------------------------------------------
@@ -3099,7 +3103,7 @@ void Robot::setNextState(byte stateNew, byte dir)
     UseAccelRight = 0;
     UseBrakeRight = 0;
     motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.75; // was 1.5
+    motorLeftSpeedRpmSet = motorSpeedMaxRpm / motorLeftSpeedDivider; // was 1.5
     stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
     stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
     OdoRampCompute();
