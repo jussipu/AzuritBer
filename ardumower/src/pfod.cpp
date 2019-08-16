@@ -800,7 +800,7 @@ void RemoteControl::sendPerimeterMenu(boolean update)
   //sendSlider("e19", F("Reverse (cm) after wire trigger"), robot->DistPeriOutRev, "", 1 , 50, 1);
   //sendSlider("e24", F("Stop (cm) after wire trigger"), robot->DistPeriOutStop, "", 1 ,30, 1);
   sendSlider("e20", F("Circle Arc distance (cm) Obstacle while tracking"), robot->DistPeriObstacleAvoid, "", 10, 400, 50);
-  //sendSlider("e25", F("Left motor speed divider to adjust arc radius"), robot->motorLeftSpeedDivider, "", 0.1, 3, 1);
+  sendSlider("e25", F("Left motor speed divider to adjust arc radius"), robot->motorLeftSpeedDivider, "", 0.1, 3, 1);
   sendSlider("e21", F("Perimeter MAG MAX VALUE"), robot->perimeterMagMaxValue, "", 1, 2500, 500);
 
   sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000);
@@ -837,7 +837,8 @@ void RemoteControl::processPerimeterMenu(String pfodCmd)
 
   else if (pfodCmd.startsWith("e20"))
     processSlider(pfodCmd, robot->DistPeriObstacleAvoid, 10);
-  //else if (pfodCmd.startsWith("e25")) processSlider(pfodCmd, robot->motorLeftSpeedDivider, 0.1);
+  else if (pfodCmd.startsWith("e25"))
+    processSlider(pfodCmd, robot->motorLeftSpeedDivider, 0.1);
   else if (pfodCmd.startsWith("e21"))
     processSlider(pfodCmd, robot->perimeterMagMaxValue, 1);
   else if (pfodCmd.startsWith("e07"))
