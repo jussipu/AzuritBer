@@ -1,6 +1,7 @@
 // timer-based mowing
 
-void Robot::setDefaultTime() {
+void Robot::setDefaultTime()
+{
   datetime.time.hour = 12;
   datetime.time.minute = 0;
   datetime.date.dayOfWeek = 0;
@@ -13,23 +14,28 @@ void Robot::setDefaultTime() {
   timer[0].stopTime.hour = 11;
 }
 
-
 // check timer
-void Robot::checkTimer() {
+void Robot::checkTimer()
+{
 
-  if (millis() < nextTimeTimer) return;
-  nextTimeTimer = millis() + 60000;  // one minute check
-  srand(time2minutes(datetime.time)); // initializes the pseudo-random number generator for c++ rand()
+  if (millis() < nextTimeTimer)
+    return;
+  nextTimeTimer = millis() + 60000;        // one minute check
+  srand(time2minutes(datetime.time));      // initializes the pseudo-random number generator for c++ rand()
   randomSeed(time2minutes(datetime.time)); // initializes the pseudo-random number generator for arduino random()
   boolean stopTimerTriggered = true;
-  if (timerUse) {
+  if (timerUse)
+  {
     Console.println("checktimer");
-    for (int i = 0; i < MAX_TIMERS; i++) {
-      if (timer[i].active) {
-        if  ( (timer[i].daysOfWeek & (1 << datetime.date.dayOfWeek)) != 0) {
+    for (int i = 0; i < MAX_TIMERS; i++)
+    {
+      if (timer[i].active)
+      {
+        if ((timer[i].daysOfWeek & (1 << datetime.date.dayOfWeek)) != 0)
+        {
           int startmin = time2minutes(timer[i].startTime);
-          int stopmin =  time2minutes(timer[i].stopTime);
-          int currmin =  time2minutes(datetime.time);
+          int stopmin = time2minutes(timer[i].stopTime);
+          int currmin = time2minutes(datetime.time);
 
           Console.print("Timer ");
           Console.print(i);
@@ -42,13 +48,15 @@ void Robot::checkTimer() {
           Console.print(" currmin ");
           Console.println(currmin);
 
-          if ((currmin >= startmin) && (currmin < stopmin)) {
+          if ((currmin >= startmin) && (currmin < stopmin))
+          {
             // start timer triggered
             stopTimerTriggered = false;
-            if ((stateCurr == STATE_STATION)) {
+            if ((stateCurr == STATE_STATION))
+            {
               Console.print("Timer ");
               Console.print(i);
-              Console.println(F(" timer start triggered"));
+              Console.println(F(" start triggered"));
               ActualRunningTimer = i;
               //motorMowEnable = true;
               findedYaw = 999;
@@ -63,33 +71,29 @@ void Robot::checkTimer() {
               startByTimer = true;
               mowPatternDuration = 0;
               totalDistDrive = 0;
-
+              Console.print(F(" Track for area "));
+              Console.println(areaToGo);
+              Console.print(F(" Distance before start "));
+              Console.println(whereToStart);
 
               setNextState(STATE_STATION_REV, 0);
-
             }
           }
-          // balancing battery
-          /*
-            if (((currmin < startmin) || (currmin > stopmin)) && (stateCurr == STATE_STATION_CHARGING)) {
-            Console.println(F("timer stop active"));
+        }
+        if ((stateCurr != STATE_STATION) && (stopTimerTriggered) && (ActualRunningTimer == i))
+        { //Stop only the running timer
 
-            }
-          */
+          Console.println(F("timer stop triggered"));
+          ActualRunningTimer = 99;
+          if (perimeterUse)
+          {
+            setNextState(STATE_PERI_FIND, 0);
+          }
+          else
+          {
+            setNextState(STATE_OFF, 0);
+          }
         }
       }
-      if ((stateCurr != STATE_STATION) && (stopTimerTriggered) && (ActualRunningTimer == i)) { //Stop only the running timer
-
-        Console.println(F("timer stop triggered"));
-        ActualRunningTimer = 99;
-        if (perimeterUse) {
-          setNextState(STATE_PERI_FIND, 0);
-        }
-        else {
-          setNextState(STATE_OFF, 0);
-        }
-      }
-
     }
   }
-}

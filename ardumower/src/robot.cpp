@@ -670,6 +670,7 @@ void Robot::printSettingSerial()
   Console.print(F("perimeterMagMaxValue                       : "));
   Console.println(perimeterMagMaxValue);
   Console.print(F("swapCoilPolarityRight                      : "));
+  watchdogReset();
   Console.println(perimeter.swapCoilPolarityRight);
   Console.print(F("swapCoilPolarityLeft                       : "));
   Console.println(perimeter.swapCoilPolarityLeft);
@@ -690,7 +691,7 @@ void Robot::printSettingSerial()
   watchdogReset();
 
   // ------ By Lanes mowing -----------------------------------------------------------
-  Console.println(F("---------- By Lanes mowing ---------------------------------------"));
+  Console.println(F("---------- By Lanes mowing ------------------------------------"));
   Console.print(F("yawSet1                                    : "));
   Console.println(yawSet1);
   Console.print(F("yawSet2                                    : "));
@@ -822,10 +823,13 @@ void Robot::printSettingSerial()
   Console.println(gpsSpeedIgnoreTime);
 
   // ----- RFID ----------------------------------------------------------------------
-  Console.println(F("---------- RFID -----------------------------------------------"));
+  Console.println(F("---------- RFID ----------------------------------------------"));
   Console.print(F("rfidUse                                    : "));
   Console.println(rfidUse, 1);
-
+  // ----- RASPBERRY PI ----------------------------------------------------------------------
+  Console.println(F("---------- RASPBERRY PI---------------------------------------"));
+  Console.print(F("RaspberryPIUse                             : "));
+  Console.println(RaspberryPIUse, 1);
   // ----- other --------------------------------------------------------------------
   Console.println(F("---------- other ---------------------------------------------"));
   Console.print(F("buttonUse                                  : "));
@@ -850,12 +854,12 @@ void Robot::printSettingSerial()
   Console.println(timerUse, 1);
 
   // ----- bluetooth ---------------------------------------------------------------
-  Console.println(F("---------- bluetooth-----------------------------------------"));
+  Console.println(F("---------- bluetooth------------------------------------------"));
   Console.print(F("bluetoothuse                               : "));
   Console.println(bluetoothUse, 1);
 
   // ----- esp8266 -----------------------------------------------------------------
-  Console.println(F("---------- esp8266 ------------------------------------------"));
+  Console.println(F("---------- esp8266 -------------------------------------------"));
   Console.print(F("esp8266Use                                 : "));
   Console.println(esp8266Use, 1);
   Console.print(F("esp8266ConfigString                        : "));
@@ -888,11 +892,9 @@ void Robot::saveUserSettings()
 
 void Robot::deleteUserSettings()
 {
-  loadSaveRobotStats(true);
-  int addr = 0;
-  Console.println(F("ALL USER SETTINGS ARE DELETED"));
+  int addr = ADDR_USER_SETTINGS;
+  Console.println(F("ALL USER SETTINGS ARE DELETED PLEASE RESTART THE DUE"));
   eewrite(addr, (short)0); // magic
-  loadSaveRobotStats(false);
 }
 
 void Robot::deleteRobotStats()
@@ -2140,8 +2142,8 @@ void Robot::setup()
   // watchdog enable at the end of the setup
   if (Enable_DueWatchdog)
   {
-    Console.println("Watchdog is enabled and set to 2 secondes");
-    watchdogEnable(2000); // Watchdog trigger after  2 sec if not reseted.
+    Console.println("Watchdog is enabled and set to 4 secondes");
+    watchdogEnable(4000); // Watchdog trigger after  4 sec if not reseted. (was 2000)
   }
   else
   {
@@ -5425,26 +5427,7 @@ void Robot::loop()
     if (millis() > (stateStartTime + MaxOdoStateDuration))
     {
       Console.println("Warning can t roll in time ");
-      if (rollDir == RIGHT)
-      {
-        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-        {
-          if (motorRightPWMCurr == 0)
-          { //wait until the left motor completly stop because rotation is inverted
-            setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
-          }
-        }
-      }
-      else
-      {
-        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-        {
-          if (motorLeftPWMCurr == 0)
-          {
-            setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
-          }
-        }
-      }
+      setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
     }
     break;
 

@@ -126,7 +126,7 @@
 #define Console SerialUSB
 #define CONSOLE_BAUDRATE 115200 // baudrate used for Raspberry PI console
 
-#define Enable_DueWatchdog true
+#define Enable_DueWatchdog false
 
 #define RaspberryPIPort SerialUSB
 #define ESP8266port Serial1
