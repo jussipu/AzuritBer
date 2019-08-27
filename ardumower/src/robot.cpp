@@ -39,7 +39,7 @@
 #include "RpiRemote.h"
 
 #define MAGIC 52
-#define ADDR_USER_SETTINGS 900 //New adress to avoid issue if Azurit1.09 is install
+#define ADDR_USER_SETTINGS 2000 //New adress to avoid issue if Azurit1.09 is install
 #define ADDR_ERR_COUNTERS 500
 //carrefull that the  ADDR 600 is used by the IMU calibration
 #define ADDR_ROBOT_STATS 800
@@ -4236,7 +4236,7 @@ void Robot::checkCurrent()
   nextTimeCheckCurrent = millis() + 100;
   if (statusCurr == NORMAL_MOWING)
   { //do not start the spirale if in tracking and motor detect high grass
-    if ((motor1MowSense >= 0.8 * motorMowPowerMax) || (motor2MowSense >= 0.8 * motorMowPowerMax))
+    if ((motorMowEnable) && (motor1MowSense >= 0.8 * motorMowPowerMax) || (motor2MowSense >= 0.8 * motorMowPowerMax))
     {
       spiraleNbTurn = 0;
       halfLaneNb = 0;
@@ -4261,15 +4261,13 @@ void Robot::checkCurrent()
     Console.print("Warning  motor1MowSense >= motorMowPowerMax and Counter time is ");
     Console.println(motor1MowSenseCounter);
   }
-  if (secondMowMotor)
+  if ((secondMowMotor) && (motorMowEnable) && (motor2MowSense >= motorMowPowerMax))
   {
-    if ((motorMowEnable) && (motor2MowSense >= motorMowPowerMax))
-    {
-      motor2MowSenseCounter++;
-      Console.print("Warning  motor2MowSense >= motorMowPowerMax and Counter time is ");
-      Console.println(motor2MowSenseCounter);
-    }
+    motor2MowSenseCounter++;
+    Console.print("Warning  motor2MowSense >= motorMowPowerMax and Counter time is ");
+    Console.println(motor2MowSenseCounter);
   }
+
   else
   {
 
@@ -4289,7 +4287,7 @@ void Robot::checkCurrent()
     }
   }
   //need to check this
-  if ((motor1MowSenseCounter >= 10) || (motor2MowSenseCounter >= 10))
+  if ((motorMowEnable) && (motor1MowSenseCounter >= 20) || (motor2MowSenseCounter >= 20))
   { //ignore motorMowPower for 1 seconds
     motorMowEnable = false;
     Console.println("Motor mow current overload. Motor STOP and try to start again after 1 minute");
@@ -4674,11 +4672,11 @@ void Robot::checkSonar()
   if (stateCurr == STATE_OFF)
     return; //avoid the mower move when testing
 
-  if (sonarDistCenter < 25 || sonarDistCenter > 90)
+  if (sonarDistCenter < 25 || sonarDistCenter > 50)
     sonarDistCenter = NO_ECHO; //need to be adjust if sonar is directly in front of mower 25Cm in my case
-  if (sonarDistRight < 25 || sonarDistRight > 90)
+  if (sonarDistRight < 25 || sonarDistRight > 50)
     sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
-  if (sonarDistLeft < 25 || sonarDistLeft > 90)
+  if (sonarDistLeft < 25 || sonarDistLeft > 50)
     sonarDistLeft = NO_ECHO;
 
   if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow)) || ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) || ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow)))

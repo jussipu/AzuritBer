@@ -75,7 +75,6 @@ void Robot::checkTimer()
               Console.println(areaToGo);
               Console.print(F(" Distance before start "));
               Console.println(whereToStart);
-
               setNextState(STATE_STATION_REV, 0);
             }
           }
@@ -97,3 +96,4 @@ void Robot::checkTimer()
       }
     }
   }
+}

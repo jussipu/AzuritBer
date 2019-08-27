@@ -61,12 +61,12 @@ Mower::Mower()
   motorOdoAccel = 1500;         // Time for accel from 0 to 100% in ms
   motorSpeedMaxRpm = 24;        // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
   motorSpeedMaxPwm = 190;       // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorPowerMax = 23;           // motor wheel max power (Watt)
+  motorPowerMax = 30;           // motor wheel max power (Watt)
   motorSenseRightScale = 3.100; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
   motorSenseLeftScale = 3.100;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
   motorPowerIgnoreTime = 2000;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
   motorZeroSettleTime = 2000;   // defaut 3000 how long (ms) to wait for motors to settle at zero speed
-  motorRollDegMax = 120;        // max. roll Deg
+  motorRollDegMax = 100;        // max. roll Deg
   motorRollDegMin = 20;         // min. roll Deg
 
   motorForwTimeMax = 80000;     // not use max. forward time (ms) / timeout
@@ -78,7 +78,7 @@ Mower::Mower()
   motorRightSwapDir = 0; // inverse right motor direction?
   motorLeftSwapDir = 0;  // inverse left motor direction?
 
-  motorRightOffsetFwd = 0; // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
+  motorRightOffsetFwd = 2; // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
   motorRightOffsetRev = 0; // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
 
   UseAccelLeft = 1;
@@ -91,10 +91,10 @@ Mower::Mower()
   odoLeftRightCorrection = true; // left-right correction for straight lines used in manual mode
 
   // ------ mower motor -------------------------------
-  secondMowMotor = false;      // one mow motor = false; two mow motors = true;
+  secondMowMotor = true;       // one mow motor = false; two mow motors = true;
   motorMowAccel = 2000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
   motorMowSpeedMaxPwm = 240;   // motor mower max PWM
-  motorMowPowerMax = 25.0;     // motor mower max power (Watt)
+  motorMowPowerMax = 35.0;     // motor mower max power (Watt)
   motorMowModulate = 0;        // motor mower cutter modulation?
   motorMowRPMSet = 3300;       // motor mower RPM (only for cutter modulation)
   motor1MowSenseScale = 1.850; // motor 1 mower sense scale (mA=(ADC-zero)/scale)
@@ -103,24 +103,24 @@ Mower::Mower()
   motorMowPID.Ki = 0.01;
   motorMowPID.Kd = 0.01;
   //  ------ bumper -----------------------------------
-  bumperUse = 0; // has bumpers?
+  bumperUse = 1; // has bumpers?
   //  ------ drop -----------------------------------
   dropUse = 0;     // has drops?                    Dropsensor - Absturzsensor vorhanden ?
   dropcontact = 0; //contact 0-openers 1-closers    Dropsensor - Kontakt 0-Öffner - 1-Schließer betätigt gegen GND
   // ------ rain ------------------------------------
-  rainUse = 0;        // use rain sensor?
+  rainUse = 1;        // use rain sensor?
   rainReadDelay = 60; // rain sensor read delay s
   wsRainData = 2;     // WS rain data selection: 1=Last 15 min, 2=Last 60 min, 3=Actual hour
 
   // ------ DHT22Use ------------------------------------
-  DHT22Use = 0;        // use DHT22 sensor?
+  DHT22Use = 1;        // use DHT22 sensor?
   maxTemperature = 55; // max temp before switch off
 
   // ------ RFID ------------------------------------
-  rfidUse = 0; // use rfid
-  newtagRotAngle1 = -90;
+  rfidUse = 1; // use rfid
+  newtagRotAngle1 = 90;
   newtagRotAngle2 = 0;
-  newtagDistance1 = 10;
+  newtagDistance1 = 0;
   newtagDistance2 = 0;
 
   // ------ sonar ------------------------------------
@@ -132,7 +132,7 @@ Mower::Mower()
   sonarToFrontDist = 05;  // ultrasonic sensor distance to front mower in cm
 
   // ------ perimeter ---------------------------------
-  perimeterUse = 0;            // use perimeter?
+  perimeterUse = 1;            // use perimeter?
   perimeterTriggerTimeout = 0; // perimeter trigger timeout when escaping from inside (ms)
   //perimeterOutRollTimeMax  = 2000;   // free
   perimeterOutRollTimeMin = 750; // free
@@ -164,7 +164,7 @@ Mower::Mower()
   // ------ lawn sensor --------------------------------
   lawnSensorUse = 0; // use capacitive Sensor
   // ------  IMU (compass/accel/gyro) ----------------------
-  imuUse = 0;               // use IMU?
+  imuUse = 1;               // use IMU?
   stopMotorDuringCalib = 0; // correct direction by compass?
   imuDirPID.Kp = 4.4;       // direction PID controller
   imuDirPID.Ki = 3.3;
@@ -191,14 +191,14 @@ Mower::Mower()
   DistBetweenLane = 38;
   maxLenghtByLane = 9;
   justChangeLaneDir = true;
-  mowPatternCurr = MOW_LANES;
+  mowPatternCurr = MOW_RANDOM; // was MOW_LANES
   // ------ model R/C ------------------------------------
-  remoteUse = 0; // use model remote control (R/C)?
+  remoteUse = 1; // use model remote control (R/C)?
   // ------ battery -------------------------------------
-  batMonitor = false;          // monitor battery and charge voltage?
+  batMonitor = true;           // monitor battery and charge voltage?
   batGoHomeIfBelow = 23.8;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 21.7;  // switch off battery if below voltage (Volt)
-  batSwitchOffIfIdle = 300;    // switch off battery if idle (minutes)
+  batSwitchOffIfIdle = 15;     // switch off battery if idle (minutes)
   batFactor = 11.07;           // depend of the resistor divisor on board R12 and R13
   batChgFactor = 10.97;        // depend of the resistor divisor on board R9 and R10
   batFull = 29.4;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
@@ -212,28 +212,28 @@ Mower::Mower()
   chgChange = 0;               // Messwertumkehr von - nach +         1 oder 0
   chgNull = 2;                 // Nullduchgang abziehen (1 oder 2)
   // ------  charging station ---------------------------
-  stationRevDist = 105;  // charge station reverse 50 cm
-  stationRollAngle = 50; // charge station roll after reverse
-  stationForwDist = 55;  // charge station accel distance cm
-  stationCheckDist = 0;  // charge station check distance cm
+  stationRevDist = 110;  // charge station reverse 50 cm
+  stationRollAngle = 60; // charge station roll after reverse
+  stationForwDist = 50;  // charge station accel distance cm
+  stationCheckDist = 2;  // charge station check distance cm
   UseBumperDock = false; // bumper is pressed when docking or not
   dockingSpeed = 60;     // speed docking is (percent of maxspeed)
   // ------ odometry ------------------------------------
-  odometryUse = 0;                  // use odometry?
+  odometryUse = 1;                  // use odometry?
   odometryTicksPerRevolution = 695; // encoder ticks per one full resolution
-  odometryTicksPerCm = 10.15;       // encoder ticks per cm
+  odometryTicksPerCm = 10.75;       // encoder ticks per cm
   odometryWheelBaseCm = 39.5;       // wheel-to-wheel distance (cm)
   odometryRightSwapDir = 0;         // inverse right encoder direction?
   odometryLeftSwapDir = 0;          // inverse left encoder direction?
 
   // ----- GPS -------------------------------------------
-  gpsUse = 0;                 // use GPS?
+  gpsUse = 1;                 // use GPS?
   stuckIfGpsSpeedBelow = 0.2; // if Gps speed is below given value the mower is stuck
   gpsSpeedIgnoreTime = 5000;  // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
 
   // ----- other -----------------------------------------
   buttonUse = 1;               // has digital ON/OFF button?
-  RaspberryPIUse = false;      // a raspberryPi is connected to USBNative port
+  RaspberryPIUse = true;       // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; // in minutes
 
   // ----- user-defined switch ---------------------------
@@ -241,7 +241,7 @@ Mower::Mower()
   userSwitch2 = 0; // user-defined switch 2 (default value)
   userSwitch3 = 0; // user-defined switch 3 (default value)
   // ----- timer -----------------------------------------
-  timerUse = 0; // use RTC and timer?
+  timerUse = 1; // use RTC and timer?
   // ----- bluetooth -------------------------------------
   bluetoothUse = 1; // use Bluetooth module?
   // ----- esp8266 ---------------------------------------
