@@ -13,6 +13,7 @@ void RpiRemote::init()
 }
 void RpiRemote::run()
 {
+  unsigned long timeStart = millis();
   readPi();
   if (millis() >= nextTimeRaspberryPISendStat)
   {
@@ -55,6 +56,12 @@ void RpiRemote::run()
     maxRepetByLaneToPi = maxRepetByLaneToPi - 1;
     nextTimeRaspberryPISendByLane = millis() + delayByLaneToPi;
     RaspberryPISendByLane();
+  }
+  unsigned long timeStop = millis();
+  if ((robot->debugConsole) && (timeStop - timeStart > 250))
+  {
+    Console.print("RpiRemote::run executing time: ");
+    Console.println(timeStop - timeStart);
   }
 }
 
@@ -350,7 +357,7 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->trackingErrorTimeOut;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeterOutRollTimeMin;
+    lineToSend = lineToSend + robot->motorTickPerSecond;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->perimeterOutRevTime;
     lineToSend = lineToSend + ",";
@@ -931,6 +938,7 @@ void RpiRemote::writePi(String stringLine)
     lineToSend = lineToSend + String(retour, HEX);
   }
   RaspberryPIPort.println(lineToSend);
+  watchdogReset();
   //Console.println(lineToSend);
 }
 
@@ -942,10 +950,9 @@ void RpiRemote::readPi()
 
   while (RaspberryPIPort.available())
   {
+    watchdogReset();
     char c = RaspberryPIPort.read();
-    if (encode(c))
-    {
-    }
+    encode(c);
   }
 }
 
@@ -1258,6 +1265,8 @@ void RpiRemote::readWrite_var()
         robot->newtagRotAngle2 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "motorSpeedMaxPwm", 20) == 0)
         robot->motorSpeedMaxPwm = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "MaxSpeedperiPwm", 20) == 0)
+        robot->MaxSpeedperiPwm = atoi(received_value[i]);
       if (strncmp(variable_name[i], "newtagDistance1", 20) == 0)
         robot->newtagDistance1 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "newtagDistance2", 20) == 0)
@@ -1486,7 +1495,7 @@ void RpiRemote::readWrite_setting()
         robot->perimeter.timedOutIfBelowSmag = val[3];
         robot->perimeterTriggerTimeout = val[4];
         robot->trackingErrorTimeOut = val[5];
-        robot->perimeterOutRollTimeMin = val[6];
+        robot->motorTickPerSecond = val[6];
         robot->perimeterOutRevTime = val[7];
         robot->perimeterTrackRollTime = val[8];
         robot->perimeterTrackRevTime = val[9];

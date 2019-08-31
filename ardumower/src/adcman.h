@@ -36,18 +36,17 @@
 
 */
 
-
 #ifndef ADCMAN_H
 #define ADCMAN_H
 
-
 #include <Arduino.h>
 
-#define ADC_BITS  12    // 12 bit ADC  
-#define ADC_REF  3.3   // 3.3 Volt reference
+#define ADC_BITS 12 // 12 bit ADC
+#define ADC_REF 3.3 // 3.3 Volt reference
 
 // sample rates
-enum {
+enum
+{
   SRATE_9615,
   SRATE_19231,
   SRATE_38462
@@ -56,7 +55,8 @@ enum {
 #define ADC_CHANNEL_COUNT_MAX 12
 
 // one channel data
-typedef struct ADCStruct {
+typedef struct ADCStruct
+{
   int sampleCount;
   byte pin;
   int8_t *samples;
@@ -68,38 +68,37 @@ typedef struct ADCStruct {
   bool autoCalibrate;
 };
 
-
 class ADCManager
 {
-  public:
-    ADCManager();
-    int sampleRate;
-    virtual void begin();
-    virtual void run();
-    virtual void setupChannel(byte pin, int samplecount, bool autocalibrate);
-    virtual int8_t* getSamples(byte pin);
-    virtual int getSampleCount(byte pin);
-    virtual uint16_t getValue(byte pin);
-    virtual float getVoltage(byte pin);
-    virtual bool isConvComplete(byte pin);
-    virtual void restartConv(byte pin);
-    virtual void printInfo();
-    virtual int getConvCounter();
-  private:
-    int convCounter;
-    byte chCurr;
-    byte chNext;
-    virtual void setSampleCount(byte ch, int samplecount);
-    virtual void init(byte ch);
-    virtual void postProcess(byte ch);
-    ADCStruct channels[ADC_CHANNEL_COUNT_MAX];
-    boolean loadCalib();
-    void loadSaveCalib(boolean readflag);
-    void saveCalib();
-    void printCalib();
+public:
+  ADCManager();
+  int sampleRate;
+  virtual void begin();
+  virtual void run();
+  virtual void setupChannel(byte pin, int samplecount, bool autocalibrate);
+  virtual int8_t *getSamples(byte pin);
+  virtual int getSampleCount(byte pin);
+  virtual uint16_t getValue(byte pin);
+  virtual float getVoltage(byte pin);
+  virtual bool isConvComplete(byte pin);
+  virtual void restartConv(byte pin);
+  virtual void printInfo();
+  virtual int getConvCounter();
+
+private:
+  int convCounter;
+  byte chCurr;
+  byte chNext;
+  virtual void setSampleCount(byte ch, int samplecount);
+  virtual void init(byte ch);
+  virtual void postProcess(byte ch);
+  ADCStruct channels[ADC_CHANNEL_COUNT_MAX];
+  boolean loadCalib();
+  void loadSaveCalib(boolean readflag);
+  void saveCalib();
+  void printCalib();
 };
 
 extern ADCManager ADCMan;
-
 
 #endif

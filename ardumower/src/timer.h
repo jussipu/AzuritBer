@@ -2,12 +2,12 @@
 
 void Robot::setDefaultTime()
 {
-  datetime.time.hour = 12;
+  datetime.time.hour = 0;
   datetime.time.minute = 0;
   datetime.date.dayOfWeek = 0;
   datetime.date.day = 1;
   datetime.date.month = 1;
-  datetime.date.year = 2013;
+  datetime.date.year = 2019;
   timer[0].active = false;
   timer[0].daysOfWeek = B01111110;
   timer[0].startTime.hour = 9;

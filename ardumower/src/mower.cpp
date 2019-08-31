@@ -52,7 +52,7 @@ Mower::Mower()
 {
   name = "LawnMower";
   // ------- debug to console -------------------------
-  debugConsole = false; // debug messages to console
+  debugConsole = true; // debug messages to console
   // ------- wheel motors -----------------------------
   motorAccel = 1500; // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
   //bb
@@ -80,6 +80,7 @@ Mower::Mower()
 
   motorRightOffsetFwd = 2; // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
   motorRightOffsetRev = 0; // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
+  motorTickPerSecond = 200; // use to compute the maxodostate duration and computed on the calibration motor
 
   UseAccelLeft = 1;
   UseBrakeLeft = 1;
@@ -92,7 +93,7 @@ Mower::Mower()
 
   // ------ mower motor -------------------------------
   secondMowMotor = true;       // one mow motor = false; two mow motors = true;
-  motorMowAccel = 2000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
+  motorMowAccel = 3000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
   motorMowSpeedMaxPwm = 240;   // motor mower max PWM
   motorMowPowerMax = 35.0;     // motor mower max power (Watt)
   motorMowModulate = 0;        // motor mower cutter modulation?
@@ -135,7 +136,7 @@ Mower::Mower()
   perimeterUse = 1;            // use perimeter?
   perimeterTriggerTimeout = 0; // perimeter trigger timeout when escaping from inside (ms)
   //perimeterOutRollTimeMax  = 2000;   // free
-  perimeterOutRollTimeMin = 750; // free
+  //perimeterOutRollTimeMin = 750; // free
   perimeterOutRevTime = 2200;    // free
   perimeterTrackRollTime = 1500; // roll time during perimeter tracking
   perimeterTrackRevTime = 2200;  // reverse time during perimeter tracking

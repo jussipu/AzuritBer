@@ -48,7 +48,7 @@
 */
 
 // code version
-#define VER "1.1-Azurit-ber"
+#define VER "1.2-Azurit-ber"
 
 // sensors
 enum
@@ -189,7 +189,8 @@ enum
   STATE_WAIT_FOR_SIG2,              //use when the area 2 wait until sender send the signal
   STATE_STOP_TO_NEWAREA,            //use to stop the mower in straight line after long distance moving with ODO and IMU
   STATE_PERI_OUT_STOP_ROLL_TOTRACK, // after the mower rool to track we need to stop the right motor because it's reverse and the track is forward
-  STATE_PERI_STOP_TO_FAST_START     // after the mower find a tag for find a new start entry point
+  STATE_PERI_STOP_TO_FAST_START,    // after the mower find a tag for find a new start entry point
+  STATE_CALIB_MOTOR_SPEED           // we need to know how may ticks the motor can do in 1 ms to compute the maxododuration
 };
 
 // status mode
@@ -403,6 +404,7 @@ public:
   //bb
   int motorRightOffsetFwd;
   int motorRightOffsetRev;
+  int motorTickPerSecond;
 
   unsigned long nextTimeMotorOdoControl;
   unsigned long nextTimePidCompute;
@@ -569,7 +571,7 @@ public:
   // Perimeter perimeter;
   boolean perimeterUse; // use perimeter?
   //int perimeterOutRollTimeMax ;  //free but conserve for eeprom recovery
-  int perimeterOutRollTimeMin; //free but conserve for eeprom recovery
+  //int perimeterOutRollTimeMin; //free but conserve for eeprom recovery
   int perimeterOutRevTime;
   int perimeterTrackRollTime;         // perimeter tracking roll time (ms)
   int perimeterTrackRevTime;          // perimeter tracking reverse time (ms)
