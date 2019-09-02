@@ -4,7 +4,7 @@ import sys
 import serial
 import pynmea2
 import time
-import numpy as np
+#import numpy as np
 import subprocess
 import pickle
 import cv2

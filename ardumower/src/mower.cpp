@@ -158,8 +158,8 @@ Mower::Mower()
   RollTimeFor45Deg = 1000;      // time while roll in peri obstacle avoid if no Odometry
   circleTimeForObstacle = 4000; // time while arc circle in peri obstacle avoid if no Odometry
   DistPeriObstacleAvoid = 100;  // distance while arc circle in peri obstacle avoid
-  //motorLeftSpeedDivider = 1.7;    // left motor speed divider to controll arc radius
-  perimeterMagMaxValue = 2000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+  motorLeftSpeedDivider = 1.6;  // left motor speed divider to controll arc radius
+  perimeterMagMaxValue = 2000;  // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   perimeter.read2Coil = false;
   areaToGo = 1;
   // ------ lawn sensor --------------------------------

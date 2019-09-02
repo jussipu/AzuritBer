@@ -2314,10 +2314,6 @@ void Robot::delayWithWatchdog(int ms)
   while (millis() < endtime)
   {
     delay(500);
-    Console.print("Actual Millis : ");
-    Console.print(millis());
-    Console.print(" Wait until ");
-    Console.println(endtime);
     watchdogReset();
   }
 }
