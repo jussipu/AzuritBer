@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # 14/05/19 new value on console size page
-import sys
+import sys 
 import serial
 import pynmea2
 import time
@@ -170,11 +170,12 @@ def find_rfid_tag():
             
         if(mymower.newtagToDo=="SPEED"): #find the station for example
             
-            mower.speedIsReduce=True
-            mower.timeToResetSpeed=time.time()+5  #reduce speed for 5 secondes
+            #mower.speedIsReduce=True
+            #mower.timeToResetSpeed=time.time()+5  #reduce speed for 5 secondes
             consoleInsertText('RFID detect reduce speed Tag :' + '\n')
-            consoleInsertText('Set new speed: %s' % (mymower.newtagSpeed)+ '\n')
-            send_var_message('w','motorSpeedMaxPwm',''+str(mymower.newtagSpeed)+'','0','0','0','0','0','0','0')
+            consoleInsertText('Set new speed and distance : %s' % (mymower.newtagSpeed)+ '\n')
+            send_var_message('w','newtagDistance1',''+str(mymower.newtagDistance1)+'','0','0','0','0','0','0','0')
+            send_var_message('w','ActualSpeedPeriPWM',''+str(mymower.newtagSpeed)+'','0','0','0','0','0','0','0')
             
         
         if((mymower.newtagToDo=="NEW_AREA")):
@@ -431,7 +432,6 @@ class mower:
     #char* mowPatternNames[] = {"RAND", "LANE",  "WIRE"};
     def __init__(self):
         mower.millis=0
-        mower.lastTransmission=0
         mower.status=0
         mower.state="OFF"
         mower.odox=0
@@ -489,7 +489,6 @@ class mower:
         mower.focusOnPage=0
         mower.dueSerialReceived=''
         mower.autoRecordBatChargeOn=False
-        mower.commWatchdogReady=False
         # WS
         mower.rainWS=False
         mower.timeToReadWS=0
@@ -614,7 +613,7 @@ def checkSerial():  #the main loop is that
         
     if ((mower.speedIsReduce) & (time.time() > mower.timeToResetSpeed)):
         mower.speedIsReduce=False
-        send_var_message('w','motorSpeedMaxPwm',''+str(myRobot.motorSpeedMaxPwm)+'','0','0','0','0','0','0','0')
+        send_var_message('w','MaxSpeedperiPwm',''+str(myRobot.MaxSpeedperiPwm)+'','0','0','0','0','0','0','0')
     
     if  UseWeatherStation:
         if  (time.time() > mower.timeToReadWS):
@@ -869,6 +868,7 @@ def decode_message(message):  #decode the nmea message
                 mymower.errorResetDone=False
                 
                 if ((myRobot.stateNames[mymower.state]=='ERR') & (mymower.errorEmailSent==False)):
+                    ButtonSaveReceived_click()  # save the console txt
                     checkMailSent = sendEmail()
                     if checkMailSent:
                         mymower.errorEmailSent=True
@@ -879,21 +879,6 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='STA': #permanent message for state info
                 
                 mymower.millis=int(message.millis)
-                
-                if mymower.commWatchdogReady:
-
-                    if ((mymower.millis-mymower.lastTransmission) > 800):
-                        consoleInsertText(
-                            "DEBUG : Mower fail to send state each 500 ms " + '\n')
-                        consoleInsertText(
-                            "Save console to record all the process " + '\n')
-                        mymower.focusOnPage = 4
-                        ConsolePage.tkraise()
-                        ButtonSaveReceived_click()  # save the console txt
-                        consoleInsertText('Save OK')
-                        
-                        
-                mymower.lastTransmission=mymower.millis
                 mymower.state=int(message.state)
                 mymower.odox=message.odox
                 mymower.odoy=message.odoy
@@ -950,7 +935,6 @@ def decode_message(message):  #decode the nmea message
             if message.sentence_type =='RET': #to fill the setting page All or name of the needed page
                
                 if message.setting_page =='Time':
-                    mymower.commWatchdogReady=True
                     myDate.hour = message.val1;
                     myDate.minute = message.val2;
                     myDate.dayOfWeek = message.val3;
@@ -1801,13 +1785,13 @@ def refreshPerimeterSettingPage():
     
     
 def ButtonSaveReceived_click():
-    fileName=cwd + "/log/" + time.strftime("%Y%m%d%H%M") + "_Received.txt" 
+    fileName="/home/pi/Documents/PiArdumower/log/" + time.strftime("%Y%m%d%H%M") + "_Received.txt" 
     with open(fileName,"w") as f:
         f.write(txtRecu.get('1.0','end'))
-    fileName=cwd + "/log/" + time.strftime("%Y%m%d%H%M") + "_Send.txt"
+    fileName="/home/pi/Documents/PiArdumower/log/" + time.strftime("%Y%m%d%H%M") + "_Send.txt"
     with open(fileName,"w") as f:
         f.write(txtSend.get('1.0','end'))
-    fileName=cwd + "/log/" + time.strftime("%Y%m%d%H%M") + "_Console.txt"
+    fileName="/home/pi/Documents/PiArdumower/log/" + time.strftime("%Y%m%d%H%M") + "_Console.txt"
     with open(fileName,"w") as f:
         f.write(txtConsoleRecu.get('1.0','end'))
 
@@ -1841,29 +1825,20 @@ def ButtonSchedule_click():
     mymower.focusOnPage=7
     TabTimer.tkraise()
     
-    
 def ButtonGyroCal_click():
-    send_pfo_message('ro','1','2','3','4','5','6',)
+    send_pfo_message('g18','1','2','3','4','5','6',)
+    mymower.focusOnPage=4
+    ConsolePage.tkraise()
 
 def ButtonCompasCal_click():
-    send_pfo_message('ro','1','2','3','4','5','6',)
+    send_pfo_message('g19','1','2','3','4','5','6',)
+    mymower.focusOnPage=4
+    ConsolePage.tkraise()
 
-
-
-
-
-
-
-
-
-
-
-    
-
-
-    
 def ButtonSendSettingToEeprom_click():
     send_pfo_message('sz','1','2','3','4','5','6',)
+    mymower.focusOnPage=4
+    ConsolePage.tkraise()
 
 def ButtonManual_click():
     manualSpeedSlider.set(myRobot.motorSpeedMaxPwm)
@@ -3151,7 +3126,11 @@ def ButtonListVar_click():
 
 def ButtonConsoleMode_click():
     send_pfo_message('h03','1','2','3','4','5','6',)
-
+    
+def ButtonClearConsole_click():
+    txtRecu=""
+    txtConsoleRecu.delete('1.0',tk.END) #delete all
+    
 ConsolePage = tk.Frame(fen1)
 ConsolePage.place(x=0, y=0, height=400, width=800)
 
@@ -3189,10 +3168,13 @@ ButtonListVar = tk.Button(ConsolePage)
 ButtonListVar.place(x=660,y=45, height=25, width=120)
 ButtonListVar.configure(command = ButtonListVar_click,text="List Var")
 
+ButtonClearConsole = tk.Button(ConsolePage)
+ButtonClearConsole.place(x=660,y=75, height=35, width=120)
+ButtonClearConsole.configure(command = ButtonClearConsole_click,text="Clear Console")
 
 ButtonSaveReceived = tk.Button(ConsolePage)
-ButtonSaveReceived .place(x=660,y=130, height=25, width=120)
-ButtonSaveReceived .configure(command = ButtonSaveReceived_click,text="Save To File")
+ButtonSaveReceived.place(x=660,y=120, height=35, width=120)
+ButtonSaveReceived.configure(command = ButtonSaveReceived_click,text="Save To File")
 
 ButtonBackHome = tk.Button(ConsolePage, image=imgBack, command = ButtonBackToMain_click)
 ButtonBackHome.place(x=660, y=160, height=120, width=120)
@@ -3463,7 +3445,7 @@ def OnClick(app):
         txtTagDist2.insert('1.0', rfid_list[tree.item(item,"text")][7])
       
     except:
-        print("click on correct line")
+        print("Please click on correct line")
 
 
     
@@ -3517,13 +3499,16 @@ def save_rfid():
 def del_rfid_tag():
     curr = tree.focus()
     if '' == curr: return
-    search=txtTagNr.get("1.0",'end-1c')
-    
+    #search=txtTagNr.get("1.0",'end-1c')
+    search_code=txtTagNr.get("1.0",'end-1c')
+    search_status=txtTagMowerState.get("1.0",'end-1c')
+ 
     for i in range(0,len(rfid_list)):
-        if rfid_list[i][0]==search:
+        if (str(rfid_list[i][0])== str(search_code)) & (str(rfid_list[i][1])== str(search_status)):
             for value in rfid_list[:]:
-                if value[0] == search:
+                if (value[0] == search_code) & (value[1] == search_status):
                     rfid_list.remove(value)
+                    print("remov")
                 
             break
     

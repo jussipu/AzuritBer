@@ -1,2 +1,0 @@
-Time;motor1MowSense;motor2MowSense;motorMowPWMCurr
-0;0;0;0

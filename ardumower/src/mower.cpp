@@ -78,8 +78,8 @@ Mower::Mower()
   motorRightSwapDir = 0; // inverse right motor direction?
   motorLeftSwapDir = 0;  // inverse left motor direction?
 
-  motorRightOffsetFwd = 2; // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
-  motorRightOffsetRev = 0; // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
+  motorRightOffsetFwd = 2;  // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
+  motorRightOffsetRev = 0;  // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
   motorTickPerSecond = 200; // use to compute the maxodostate duration and computed on the calibration motor
 
   UseAccelLeft = 1;
@@ -154,10 +154,10 @@ Mower::Mower()
   //bb
   MaxSpeedperiPwm = 180;                // speed max in PWM while perimeter tracking
   ActualSpeedPeriPWM = MaxSpeedperiPwm; //speed in PWM while perimeter tracking
-  timeToResetSpeedPeri = 0;             // if millis() > at this var the speed is set to max value
-  RollTimeFor45Deg = 1000;              // time while roll in peri obstacle avoid if no Odometry
-  circleTimeForObstacle = 4000;         // time while arc circle in peri obstacle avoid if no Odometry
-  DistPeriObstacleAvoid = 100;          // distance while arc circle in peri obstacle avoid
+  //timeToResetSpeedPeri = 0;             // if millis() > at this var the speed is set to max value
+  RollTimeFor45Deg = 1000;      // time while roll in peri obstacle avoid if no Odometry
+  circleTimeForObstacle = 4000; // time while arc circle in peri obstacle avoid if no Odometry
+  DistPeriObstacleAvoid = 100;  // distance while arc circle in peri obstacle avoid
   //motorLeftSpeedDivider = 1.7;    // left motor speed divider to controll arc radius
   perimeterMagMaxValue = 2000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   perimeter.read2Coil = false;

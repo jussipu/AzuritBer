@@ -1,8 +1,0 @@
-23:32:46 Start to save all Console Data
-23:32:46 PCB power OFF after 30 secondes, need to wait until PI Stop power the USB Native Port
-23:32:46 New State 0 OFF  Dir 0 State changed at 181542240 From  previous state STAT
-23:32:46 Robot Stats address Stop = 826
-23:32:46 Robot Stats address Start = 800
-23:32:45 Save Robot Stats
-23:32:29 WS data not updated yet
-

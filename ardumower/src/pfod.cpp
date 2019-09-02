@@ -1464,7 +1464,7 @@ void RemoteControl::processTimerDetailMenu(String pfodCmd)
   }
   else if (pfodCmd.startsWith("p7"))
   {
-    robot->timer[timerIdx].startMowPattern = (robot->timer[timerIdx].startMowPattern + 1) % 2;
+    robot->timer[timerIdx].startMowPattern = (robot->timer[timerIdx].startMowPattern + 1) % 3;
     checkStart = true;
   }
   else if (pfodCmd.startsWith("pd"))
@@ -1744,7 +1744,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
       //motorMowEnable = true;
       robot->findedYaw = 999;
       robot->imuDirPID.reset();
-      robot->mowPatternCurr = 1;
+      // robot->mowPatternCurr = 1;
       robot->laneUseNr = 1;
       robot->rollDir = 1;
       robot->whereToStart = 2;
@@ -1787,7 +1787,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
   else if (pfodCmd == "rp")
   {
     // cmd: pattern
-    robot->mowPatternCurr = (robot->mowPatternCurr + 1) % 2;
+    robot->mowPatternCurr = (robot->mowPatternCurr + 1) % 3;
     robot->setNextState(STATE_OFF, 0);
     sendCommandMenu(true);
   }
@@ -1909,9 +1909,9 @@ void RemoteControl::sendTestOdoMenu(boolean update)
   serialPort->print(F(" / "));
   serialPort->print(robot->odometryLeft);
   serialPort->println();
-  serialPort->print(F("|yt8~Calib Ticks/Second"));  //to compute the ticks per second motor speed
-  serialPort->print(F("|yt0~1 turn Wheel Fwd"));  //to verify and adjust the TicksPerRevolution
-  serialPort->print(F("|yt1~5 turns Wheel Fwd")); //to verify and adjust the TicksPerRevolution  and PWM right OFFSET the 2 wheel need to stop at the same time
+  serialPort->print(F("|yt8~Calib Ticks/Second")); //to compute the ticks per second motor speed
+  serialPort->print(F("|yt0~1 turn Wheel Fwd"));   //to verify and adjust the TicksPerRevolution
+  serialPort->print(F("|yt1~5 turns Wheel Fwd"));  //to verify and adjust the TicksPerRevolution  and PWM right OFFSET the 2 wheel need to stop at the same time
   serialPort->print(F("|yt2~1 turn Wheel Rev"));
   serialPort->print(F("|yt3~5 turns Wheel Rev")); //to verify the TicksPerRevolution  and PWM right OFFSET the 2 wheel stop at the same time
   serialPort->print(F("|yt4~3 meter Forward"));   //to verify and adjust the TicksPerCM

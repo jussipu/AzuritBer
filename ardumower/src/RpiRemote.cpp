@@ -1265,8 +1265,12 @@ void RpiRemote::readWrite_var()
         robot->newtagRotAngle2 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "motorSpeedMaxPwm", 20) == 0)
         robot->motorSpeedMaxPwm = atoi(received_value[i]);
-      if (strncmp(variable_name[i], "MaxSpeedperiPwm", 20) == 0)
-        robot->MaxSpeedperiPwm = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "ActualSpeedPeriPWM", 20) == 0)
+      {
+        robot->ActualSpeedPeriPWM = atoi(received_value[i]);
+        Console.print("Set New perimeter tracking speed  ");
+        Console.println(robot->ActualSpeedPeriPWM);
+      }
       if (strncmp(variable_name[i], "newtagDistance1", 20) == 0)
         robot->newtagDistance1 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "newtagDistance2", 20) == 0)
@@ -1279,15 +1283,24 @@ void RpiRemote::readWrite_var()
         robot->statusCurr = atoi(received_value[i]);
       if (strncmp(variable_name[i], "nextTimeTimer", 20) == 0)
         robot->nextTimeTimer = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "newtagDistance1", 20) == 0)
+      {
+        robot->newtagDistance1 = atoi(received_value[i]);
+        robot->whereToResetSpeed = robot->totalDistDrive + robot->newtagDistance1; // when a speed tag is read it's where the speed is back to maxpwm value
+        Console.print("Change speed for ");
+        Console.print(robot->newtagDistance1);
+        Console.print(" centimeter   actual/Cible  ");
+        Console.print(robot->totalDistDrive);
+        Console.print(" / ");
+        Console.println(robot->whereToResetSpeed);
+      }
       if (strncmp(variable_name[i], "rainWS", 20) == 0)
         robot->rainWS = atoi(received_value[i]); // rainWS
-
       if (strncmp(variable_name[i], "areaInMowing", 20) == 0)
       {
         robot->areaInMowing = atoi(received_value[i]);
         robot->perimeter.changeArea(robot->areaInMowing);
       }
-
       if (strncmp(variable_name[i], "motorLeftSwapDir", 20) == 0)
       {
         if (strncmp(received_value[i], "0", 1) == 0)

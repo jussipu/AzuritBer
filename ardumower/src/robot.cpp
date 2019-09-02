@@ -64,9 +64,9 @@ char *stateNames[] = {"OFF ", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR", "PF
                       "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK",
                       "STOPTOFASTSTART", "CALIBMOTORSPEED"};
 
-char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT"};
+char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT", "WIREMOWING"};
 
-char *mowPatternNames[] = {"RAND", "LANE", "WIRE"};
+char *mowPatternNames[] = {"RAND", "LANE", "WIRE", "ZIGZAG"};
 char *consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
 
 unsigned long StartReadAt;
@@ -113,7 +113,7 @@ Robot::Robot()
   motorMowRpmLastState = LOW;
   motorMowEnable = false;
   motorMowForceOff = false;
-
+  //ignoreRfidTag = false;
   motorMowSpeedPWMSet = 255; //use to set the speed of the mow motor
   motorMowPWMCurr = 0;
   // mow motor 1
@@ -132,7 +132,8 @@ Robot::Robot()
   lastSetMotorMowSpeedTime = 0;
   nextTimeCheckCurrent = 0;
   lastTimeMotorMowStuck = 0;
-
+  totalDistDrive = 0;
+  whereToResetSpeed = 50000; // initial value to 500 meters
   bumperLeftCounter = bumperRightCounter = 0;
   bumperLeft = bumperRight = false;
 
@@ -1734,7 +1735,7 @@ void Robot::motorControlPerimeter()
     {
       Console.println("Error: tracking error");
       addErrorCounter(ERR_TRACKING);
-      whereToStart = 99999;
+      // whereToStart = 99999;
       setNextState(STATE_PERI_FIND, 0);
     }
     return;
@@ -3226,7 +3227,17 @@ void Robot::setNextState(byte stateNew, byte dir)
       if (RaspberryPIUse)
         MyRpi.SendStatusToPi();
     }
-
+    else
+    {
+      if (mowPatternCurr == MOW_WIRE)
+      {
+        motorMowEnable = true; //time to start the blade
+        //ignoreRfidTag = true; // do not read Rfid for mowing all the wire
+        statusCurr = WIRE_MOWING;
+        if (RaspberryPIUse)
+          MyRpi.SendStatusToPi();
+      }
+    }
     UseAccelLeft = 0;
     UseBrakeLeft = 1;
     UseAccelRight = 0;
@@ -3990,13 +4001,17 @@ void Robot::setNextState(byte stateNew, byte dir)
     break;
   case STATE_STATION: //stop immediatly
     areaInMowing = 1;
+    //ignoreRfidTag = false;
+    motorMowEnable = false;
+    startByTimer = false;
+    totalDistDrive = 0;                   //reset the tracking distance travel
+    whereToResetSpeed = 50000;            // initial value to 500 meters
+    ActualSpeedPeriPWM = MaxSpeedperiPwm; //reset the tracking speed
     statusCurr = IN_STATION;
     if (RaspberryPIUse)
       MyRpi.SendStatusToPi();
-
     //time to reset the speed because the Peri find can use very high speed
     motorSpeedMaxPwm = motorInitialSpeedMaxPwm;
-
     stateEndOdometryRight = odometryRight;
     stateEndOdometryLeft = odometryLeft;
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
@@ -4004,9 +4019,7 @@ void Robot::setNextState(byte stateNew, byte dir)
     setActuator(ACT_CHGRELAY, 0);
     setDefaults();
     statsMowTimeTotalStart = false; // stop stats mowTime counter
-
     //loadSaveRobotStats(false);        //save robot stats
-
     break;
 
   case STATE_STATION_CHARGING:
@@ -4675,11 +4688,11 @@ void Robot::checkSonarPeriTrack()
   if (millis() < nextTimeCheckSonar)
     return;
   nextTimeCheckSonar = millis() + 200;
-  if (millis() > timeToResetSpeedPeri)
-  {
-    timeToResetSpeedPeri = 0; //brake the tracking during 6 secondes
-    ActualSpeedPeriPWM = MaxSpeedperiPwm;
-  }
+  // if (millis() > timeToResetSpeedPeri)
+  // {
+  //   timeToResetSpeedPeri = 0; //brake the tracking during 6 secondes
+  //   ActualSpeedPeriPWM = MaxSpeedperiPwm;
+  // }
   if (sonarRightUse)
     sonarDistRight = readSensor(SEN_SONAR_RIGHT);
   else
@@ -4700,8 +4713,10 @@ void Robot::checkSonarPeriTrack()
   {
     //if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow))  ||  ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
     //setBeeper(1000, 50, 50, 60, 60);
-    nextTimeCheckSonar = millis() + 4000;   //wait before next reading
-    timeToResetSpeedPeri = millis() + 5000; //brake the tracking during 5 secondes
+    Console.println("Sonar reduce speed on tracking for 2 meters");
+    whereToResetSpeed = totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
+    nextTimeCheckSonar = millis() + 4000;     //wait before next reading
+    // timeToResetSpeedPeri = millis() + 10000; //brake the tracking during 10 secondes
     ActualSpeedPeriPWM = MaxSpeedperiPwm * dockingSpeed / 100;
     trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
   }
@@ -5720,7 +5735,15 @@ void Robot::loop()
     checkCurrent();
     checkBumpersPerimeter();
     checkSonarPeriTrack();
-
+    if (ActualSpeedPeriPWM != MaxSpeedperiPwm)
+    {
+      if (totalDistDrive > whereToResetSpeed)
+      {
+        Console.print("Distance OK, time to reset the initial Speed : ");
+        Console.println(ActualSpeedPeriPWM);
+        ActualSpeedPeriPWM = MaxSpeedperiPwm;
+      }
+    }
     //********************************* if start by timer
     if (statusCurr == TRACK_TO_START)
     {
