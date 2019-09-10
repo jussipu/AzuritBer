@@ -419,17 +419,17 @@ void RemoteControl::sendMotorMenu(boolean update)
   serialPort->print(robot->motorRightSenseCurrent);
   //Console.print("motorpowermax=");
   //Console.println(robot->motorPowerMax);
-  sendSlider("a02", F("Power max"), robot->motorPowerMax, "", 0.1, 100);
+  sendSlider("a02", F("Power max"), robot->motorPowerMax, "", 0.1, 100, 0);
   //sendSlider("a03", F("calibrate left motor "), robot->motorLeftSenseCurrent, "", 1, 1000, 0);
   //sendSlider("a04", F("calibrate right motor"), robot->motorRightSenseCurrent, "", 1, 1000, 0);
   serialPort->print(F("|a05~Speed l, r"));
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(", ");
   serialPort->print(robot->motorRightPWMCurr);
-  sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 100);
-  sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255);
+  sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 100, 1);
+  sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 1);
   sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
-  sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000);
+  sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000, 1);
   sendSlider("a07", F("Roll Degrees max"), robot->motorRollDegMax, "", 1, 360, 1);
   sendSlider("a19", F("Roll Degrees min"), robot->motorRollDegMin, "", 1, 180, 1);
   sendSlider("a08", F("Rev Distance / Perimeter"), robot->DistPeriOutRev, "", 1, 100, 1);
@@ -616,22 +616,22 @@ void RemoteControl::sendMowMenu(boolean update)
     serialPort->print(robot->motor2MowSenseCurrent);
   }
   serialPort->print(F(" mA"));
-  sendSlider("o02", F("Power max"), robot->motorMowPowerMax, "", 0.1, 100);
+  sendSlider("o02", F("Power max"), robot->motorMowPowerMax, "", 0.1, 100, 1);
 
   serialPort->print(F("|o04~Speed "));
   serialPort->print(robot->motorMowPWMCurr);
-  sendSlider("o05", F("PWM Speed max"), robot->motorMowSpeedMaxPwm, "", 1, 255);
+  sendSlider("o05", F("PWM Speed max"), robot->motorMowSpeedMaxPwm, "", 1, 255, 0);
   if (robot->developerActive)
   {
     serialPort->print(F("|o06~Modulate "));
     sendYesNo(robot->motorMowModulate);
-    sendSlider("o03", F("calibrate mow motor 1"), robot->motor1MowSenseScale, "", 0.01, 3); // mow motor 1
+    sendSlider("o03", F("calibrate mow motor 1"), robot->motor1MowSenseScale, "", 0.01, 3, 0); // mow motor 1
     if (robot->secondMowMotor)
-      sendSlider("o14", F("calibrate mow motor 2 - "), robot->motor2MowSenseScale, "", 0.01, 3); // mow motor 2
+      sendSlider("o14", F("calibrate mow motor 2 - "), robot->motor2MowSenseScale, "", 0.01, 3, 0); // mow motor 2
   }
   serialPort->print(F("|o07~RPM "));
   serialPort->print(robot->motorMowRpmCurr);
-  sendSlider("o08", F("RPM set"), robot->motorMowRPMSet, "", 1, 4500);
+  sendSlider("o08", F("RPM set"), robot->motorMowRPMSet, "", 1, 4500, 1);
   sendSlider("o13", F("Mow Pattern Max Duration Minutes"), robot->mowPatternDurationMax, "", 1, 255, 10);
   sendPIDSlider("o09", "RPM", robot->motorMowPID, 0.01, 1.0);
 
@@ -798,19 +798,17 @@ void RemoteControl::sendPerimeterMenu(boolean update)
   //serialPort->print(robot->perimeterMagRight);
   //if (robot->perimeterMag < 0) serialPort->print(" (inside)");
   //else serialPort->print(" (outside)");
-  sendSlider("e08", F("Timed-out if below Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 500);
-  sendSlider("e14", F("Timeout (s) if not inside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
-  sendSlider("e04", F("Trigger timeout"), robot->perimeterTriggerTimeout, "", 1, 1000);
-  sendSlider("e18", F("Tracking Max Speed PWM"), robot->MaxSpeedperiPwm, "", 1, 255);
+  sendSlider("e08", F("Mini Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 200, 1);
+  sendSlider("e14", F("Timeout (s) if Outside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
+  sendSlider("e04", F("Big AREA Smag Center"), robot->perimeterTriggerMinSmag, "", 1, 2000, 100);
+  sendSlider("e18", F("Tracking Max Speed PWM"), robot->MaxSpeedperiPwm, "", 1, 255, 50);
   sendSlider("e20", F("Circle Arc distance (cm) Obstacle while tracking"), robot->DistPeriObstacleAvoid, "", 10, 400, 50);
   sendSlider("e25", F("Left motor speed divider to adjust arc radius"), robot->motorLeftSpeedDivider, "", 0.1, 3, 1);
   sendSlider("e21", F("Perimeter MAG MAX VALUE"), robot->perimeterMagMaxValue, "", 1, 2500, 500);
-
-  sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000);
-  sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000);
+  sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000, 1);
+  sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000, 1);
   sendPIDSlider("e07", F("Track"), robot->perimeterPID, 0.1, 52);
-  //serialPort->print(F("|e09~Use differential signal "));
-  //sendYesNo(robot->perimeter.useDifferentialPerimeterSignal);
+
   serialPort->print(F("|e10~Swap Left coil polarity "));
   sendYesNo(robot->perimeter.swapCoilPolarityLeft);
   serialPort->print(F("|e22~Swap Right coil polarity "));
@@ -827,17 +825,9 @@ void RemoteControl::processPerimeterMenu(String pfodCmd)
   if (pfodCmd == "e00")
     robot->perimeterUse = !robot->perimeterUse;
   else if (pfodCmd.startsWith("e04"))
-    processSlider(pfodCmd, robot->perimeterTriggerTimeout, 1);
-  //else if (pfodCmd.startsWith("e05")) processSlider(pfodCmd, robot->perimeterOutRollTimeMax, 1);
-  //else if (pfodCmd.startsWith("e06")) processSlider(pfodCmd, robot->perimeterOutRollTimeMin, 1);
-  //else if (pfodCmd.startsWith("e15")) processSlider(pfodCmd, robot->perimeterOutRevTime, 1);
-  //else if (pfodCmd.startsWith("e16")) processSlider(pfodCmd, robot->perimeterTrackRollTime, 1);
-  //else if (pfodCmd.startsWith("e17")) processSlider(pfodCmd, robot->perimeterTrackRevTime, 1);
+    processSlider(pfodCmd, robot->perimeterTriggerMinSmag, 1);
   else if (pfodCmd.startsWith("e18"))
     processSlider(pfodCmd, robot->MaxSpeedperiPwm, 1);
-  //else if (pfodCmd.startsWith("e19")) processSlider(pfodCmd, robot->DistPeriOutRev, 1);
-  //else if (pfodCmd.startsWith("e24")) processSlider(pfodCmd, robot->DistPeriOutStop, 1);
-
   else if (pfodCmd.startsWith("e20"))
     processSlider(pfodCmd, robot->DistPeriObstacleAvoid, 10);
   else if (pfodCmd.startsWith("e25"))
@@ -1202,7 +1192,7 @@ void RemoteControl::sendBatteryMenu(boolean update)
   sendSlider("j06", F("Charge sense zero"), robot->chgSenseZero, "", 1, 600, 400);
 
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
-  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.01, robot->batChargingCurrentMax);
+  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.1, robot->batChargingCurrentMax, 0);
   serialPort->println("}");
 }
 
@@ -1246,10 +1236,10 @@ void RemoteControl::sendStationMenu(boolean update)
 
   serialPort->println(F("|k05~ Bump pressed on dock "));
   sendYesNo(robot->UseBumperDock);
-  sendSlider("k00", F("Reverse Distance (CM)"), robot->stationRevDist, "", 1, 200);
-  sendSlider("k01", F("Roll Angle (Deg)"), robot->stationRollAngle, "", 1, 180);
-  sendSlider("k02", F("Accel Distance after Roll"), robot->stationForwDist, "", 1, 200);
-  sendSlider("k03", F("Station check Distance"), robot->stationCheckDist, "", 1, 20);
+  sendSlider("k00", F("Reverse Distance (CM)"), robot->stationRevDist, "", 1, 200, 0);
+  sendSlider("k01", F("Roll Angle (Deg)"), robot->stationRollAngle, "", 1, 180, 0);
+  sendSlider("k02", F("Accel Distance after Roll"), robot->stationForwDist, "", 1, 200, 0);
+  sendSlider("k03", F("Station check Distance"), robot->stationCheckDist, "", 1, 20, 0);
   sendSlider("k06", F("Docking Speed % of MaxSpeed"), robot->dockingSpeed, "", 1, 100, 20);
   serialPort->println(F("|k04~Force State to Station "));
 
@@ -1294,8 +1284,8 @@ void RemoteControl::sendOdometryMenu(boolean update)
   serialPort->print(", ");
   serialPort->println(robot->motorRightRpmCurr);
   sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 1500, 500);
-  sendSlider("l01", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.01, 30);
-  sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50);
+  sendSlider("l01", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.01, 30, 0.1);
+  sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50, 5);
 
   serialPort->println("}");
 }

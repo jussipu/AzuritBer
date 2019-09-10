@@ -42,11 +42,10 @@ public:
   bool swapCoilPolarityLeft;
   bool swapCoilPolarityRight;
   bool read2Coil;
-
+  unsigned long lastInsideTime[2];
   char subSample;
 
 private:
-  unsigned long lastInsideTime[2];
   byte idxPin[2]; // channel for idx
   int callCounter;
   int16_t mag[2]; // perimeter magnitude per channel

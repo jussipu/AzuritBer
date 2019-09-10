@@ -133,8 +133,8 @@ Mower::Mower()
   sonarToFrontDist = 05;  // ultrasonic sensor distance to front mower in cm
 
   // ------ perimeter ---------------------------------
-  perimeterUse = 1;            // use perimeter?
-  perimeterTriggerTimeout = 0; // perimeter trigger timeout when escaping from inside (ms)
+  perimeterUse = 1;              // use perimeter?
+  perimeterTriggerMinSmag = 200; // perimeter trigger timeout when escaping from inside (ms)
   //perimeterOutRollTimeMax  = 2000;   // free
   //perimeterOutRollTimeMin = 750; // free
   perimeterOutRevTime = 2200;    // free

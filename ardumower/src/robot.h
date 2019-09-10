@@ -583,7 +583,7 @@ public:
   byte areaInMowing;                  //it's the area in mowing nr
   boolean perimeterInside;            // is inside perimeter?
   unsigned long perimeterTriggerTime; // time to trigger perimeter transition (timeout)
-  int perimeterTriggerTimeout;        // perimeter trigger timeout (ms)
+  int perimeterTriggerMinSmag;        // perimeter trigger timeout (ms)
   unsigned long perimeterLastTransitionTime;
   int perimeterCounter; // counts perimeter transitions
   unsigned long nextTimePerimeter;
@@ -735,6 +735,7 @@ public:
   byte consoleMode;
   unsigned long nextTimeButtonCheck;
   unsigned long nextTimeInfo;
+  unsigned long nextTimePrintConsole;
   byte rollDir;
   unsigned long nextTimeButton;
   unsigned long nextTimeErrorCounterReset;
