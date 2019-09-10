@@ -2728,420 +2728,430 @@ void Robot::readSensors()
     }
   }
 
-  if ((stateCurr != STATE_STATION) && (perimeterUse) && (millis() >= nextTimePerimeter))
+  if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter))
   {
-    //bb
-    nextTimePerimeter = millis() + 15; // 50
-    if (perimeter.read2Coil)
     {
-      perimeterMagRight = readSensor(SEN_PERIM_RIGHT);
-    }
-    perimeterMag = readSensor(SEN_PERIM_LEFT);
-    if ((perimeter.isInside(0) != perimeterInside))
-    {
-      perimeterCounter++;
-      perimeterLastTransitionTime = millis();
-      perimeterInside = perimeter.isInside(0);
+      //bb
+      nextTimePerimeter = millis() + 15; // 50
+      if (perimeter.read2Coil)
+      {
+        perimeterMagRight = readSensor(SEN_PERIM_RIGHT);
+      }
+      perimeterMag = readSensor(SEN_PERIM_LEFT);
+      if ((perimeter.isInside(0) != perimeterInside))
+      {
+        perimeterCounter++;
+        perimeterLastTransitionTime = millis();
+        perimeterInside = perimeter.isInside(0);
+      }
+
+      if ((!perimeterInside) && (perimeterTriggerTime == 0))
+      {
+        // set perimeter trigger time
+        if (millis() > stateStartTime + 2000)
+        { // far away from perimeter?
+          perimeterTriggerTime = millis() + perimeterTriggerTimeout;
+        }
+        else
+        {
+          perimeterTriggerTime = millis();
+        }
+      }
+
+      if (perimeter.signalTimedOut(0) || ((perimeter.read2Coil) && perimeter.signalTimedOut(1)))
+      {
+        if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))
+        { // all the other state are distance limited
+          //need to find a way in tracking mode maybe timeout error if the tracking is perfect, the mower is so near the wire than the mag is near 0 (adjust the timedOutIfBelowSmag)
+          //if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
+          // all the other state are distance limited
+          Console.println("Error: Timeout , perimeter too far away");
+          addErrorCounter(ERR_PERIMETER_TIMEOUT);
+          setNextState(STATE_ERROR, 0);
+          return;
+        }
+      }
     }
 
-    if ((!perimeterInside) && (perimeterTriggerTime == 0))
+    if ((lawnSensorUse) && (millis() >= nextTimeLawnSensor))
     {
-      // set perimeter trigger time
-      if (millis() > stateStartTime + 2000)
-      { // far away from perimeter?
-        perimeterTriggerTime = millis() + perimeterTriggerTimeout;
+      nextTimeLawnSensor = millis() + 100;
+      double accel = 0.03;
+      lawnSensorFront = (1.0 - accel) * lawnSensorFront + accel * ((double)readSensor(SEN_LAWN_FRONT));
+      lawnSensorBack = (1.0 - accel) * lawnSensorBack + accel * ((double)readSensor(SEN_LAWN_BACK));
+    }
+    if ((lawnSensorUse) && (millis() >= nextTimeLawnSensorCheck))
+    {
+      nextTimeLawnSensorCheck = millis() + 2000;
+      double deltaFront = lawnSensorFront / lawnSensorFrontOld * 100.0;
+      double deltaBack = lawnSensorBack / lawnSensorBackOld * 100.0;
+      if ((deltaFront <= 95) || (deltaBack <= 95))
+      {
+        Console.print(F("LAWN "));
+        Console.print(deltaFront);
+        Console.print(",");
+        Console.println(deltaBack);
+        lawnSensorCounter++;
+        lawnSensor = true;
+      }
+      lawnSensorFrontOld = lawnSensorFront;
+      lawnSensorBackOld = lawnSensorBack;
+    }
+
+    if ((bumperUse) && (millis() >= nextTimeBumper))
+    {
+      nextTimeBumper = millis() + 100;
+      if (readSensor(SEN_BUMPER_LEFT) == 0)
+      {
+        //Console.println("Bumper left trigger");
+        bumperLeftCounter++;
+        bumperLeft = true;
+      }
+
+      if (readSensor(SEN_BUMPER_RIGHT) == 0)
+      {
+        //Console.println("Bumper right trigger");
+        bumperRightCounter++;
+        bumperRight = true;
+      }
+    }
+
+    if ((dropUse) && (millis() >= nextTimeDrop))
+    {                                // Dropsensor - Absturzsensor
+      nextTimeDrop = millis() + 100; // Dropsensor - Absturzsensor
+      if (readSensor(SEN_DROP_LEFT) == dropcontact)
+      {                    // Dropsensor - Absturzsensor
+        dropLeftCounter++; // Dropsensor - Absturzsensor
+        dropLeft = true;   // Dropsensor - Absturzsensor
+      }                    // Dropsensor - Absturzsensor
+
+      if (readSensor(SEN_DROP_RIGHT) == dropcontact)
+      {                     // Dropsensor - Absturzsensor
+        dropRightCounter++; // Dropsensor - Absturzsensor
+        dropRight = true;   // Dropsensor - Absturzsensor
+      }
+    }
+
+    if ((timerUse) && (millis() >= nextTimeRTC))
+    {
+      nextTimeRTC = millis() + 20000;
+      readSensor(SEN_RTC); // read RTC
+      //Console.print(F("RTC date received: "));
+      //Console.println(date2str(datetime.date));
+      //Console.print(F("RTC time received: "));
+      //Console.print(datetime.time.hour);
+      //Console.print(F(":"));
+      //Console.println(datetime.time.minute);
+    }
+
+    if (millis() >= nextTimeBattery)
+    {
+      // read battery
+      nextTimeBattery = millis() + 500;
+      if ((abs(chgCurrent) > 0.04) && (chgVoltage > 5))
+      {
+        // charging
+        batCapacity += (chgCurrent / 36.0);
+      }
+      //   batADC = readSensor(SEN_BAT_VOLTAGE);
+
+      double batvolt = batFactor * readSensor(SEN_BAT_VOLTAGE) * 3.3 / 4096; //readsensor return the ADC value 0 to 4096 so *3.3/4096 voltage on the arduino pin batfactor depend on the resitor on board
+      double chgvolt = batChgFactor * readSensor(SEN_CHG_VOLTAGE) * 3.3 / 4096;
+      double curramp = batSenseFactor * readSensor(SEN_CHG_CURRENT) * 3.3 / 4096;
+      // if (debugConsole)
+      // {
+      //   Console.print(millis());
+      //   Console.print("/batvolt ");
+      //   Console.print(batvolt);
+      //   Console.print("/chgvolt ");
+      //   Console.print(chgvolt);
+      //   Console.print("/curramp ");
+      //   Console.println(curramp);
+      // }
+      // low-pass filter
+
+      double accel = 0.05;
+
+      if (abs(batVoltage - batvolt) > 8)
+        batVoltage = batvolt;
+      else
+        batVoltage = (1.0 - accel) * batVoltage + accel * batvolt;
+      if (abs(chgVoltage - chgvolt) > 8)
+        chgVoltage = chgvolt;
+      else
+        chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
+      if (abs(chgCurrent - curramp) > 0.4)
+        chgCurrent = curramp;
+      else
+        chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert für Ladestromsensor berechnung
+
+      //debug messages to console
+      // if (debugConsole)
+      // {
+      //   Console.print(millis());
+      //   Console.print(" / batVoltage = ");
+      //   Console.print(batVoltage);
+      //   Console.print(" / chgVoltage = ");
+      //   Console.print(chgVoltage);
+      //   Console.print("/chgCurrent ");
+      //   Console.println(chgVoltage);
+      // }
+    }
+
+    if ((rainUse) && (millis() >= nextTimeRain))
+    {
+      // read rain sensor
+      nextTimeRain = millis() + rainReadDelay * 1000;        // rainReadDelay, seconds from mower.cpp
+      rain = ((readSensor(SEN_RAIN) != 0) || (rainWS != 0)); // rainWS is always false if not use
+      if (rain)
+        rainCounter++;
+    }
+  }
+
+  void Robot::setDefaults()
+  {
+    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+    motorMowEnable = false;
+  }
+
+  // set state machine new state
+  // called *ONCE* to set to a *NEW* state
+  void Robot::setNextState(byte stateNew, byte dir)
+  {
+    stateTime = millis() - stateStartTime; //last state duration
+    if (stateNew == stateCurr)
+      return;
+
+    // evaluate new state
+    stateNext = stateNew;
+    rollDir = dir;
+
+    switch (stateNew)
+    {
+
+    case STATE_FORWARD:
+      if ((stateCurr == STATE_STATION_REV) || (stateCurr == STATE_STATION_ROLL) || (stateCurr == STATE_STATION_CHECK))
+        return;
+      if ((stateCurr == STATE_STATION) || (stateCurr == STATE_STATION_CHARGING))
+      {
+        //stateNew = STATE_STATION_CHECK;
+        setActuator(ACT_CHGRELAY, 0);
+        motorMowEnable = false;
+      }
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm; //use RPM instead of PWM to straight line
+      motorRightSpeedRpmSet = motorSpeedMaxRpm;
+
+      // motorLeftPID.reset();
+      // motorRightPID.reset();
+      //motorLeftRpmCurr = motorRightRpmCurr = 0 ;
+      statsMowTimeTotalStart = true;
+
+      break;
+
+    case STATE_FORWARD_ODO:
+      if (statusCurr != NORMAL_MOWING)
+      {
+        statusCurr = NORMAL_MOWING;
+        if (RaspberryPIUse)
+          MyRpi.SendStatusToPi();
+      }
+
+      UseAccelRight = 0;
+      UseAccelLeft = 0;
+      UseBrakeLeft = 0;
+      UseBrakeRight = 0;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+
+      if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir))
+      {
+        stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * actualLenghtByLane * 100); //limit the lenght
+        stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * actualLenghtByLane * 100);
+      }
+      else
+      { // it s a new line so don't limit the forward distance and invert the rollDir
+        if ((stateLast != STATE_STOP_CALIBRATE) && (mowPatternCurr == MOW_LANES))
+        { // change the rolldir only in lane mowing and not after calibration of imu
+          if (rollDir == 0)
+            rollDir = 1;
+          else
+            rollDir = 0;
+        }
+        stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000); // set a very large distance 300 ml
+        stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
+      }
+
+      OdoRampCompute();
+
+      statsMowTimeTotalStart = true;
+
+      break;
+
+    case STATE_ESCAPE_LANE:
+      Console.println("Mowing in Half lane width");
+      //it's approximation try to go into a parcel already mowed little on left or right
+      halfLaneNb = halfLaneNb + 1; //to avoid repetition the state is lauch only if halfLaneNb=0
+      UseAccelLeft = 0;
+      UseBrakeLeft = 0;
+      UseAccelRight = 0;
+      UseBrakeRight = 0;
+      if (rollDir == RIGHT)
+      {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+        stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 2);
+        stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 1.5);
       }
       else
       {
-        perimeterTriggerTime = millis();
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+        stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 1.5);
+        stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 2);
       }
-    }
 
-    if (perimeter.signalTimedOut(0) || ((perimeter.read2Coil) && perimeter.signalTimedOut(1)))
-    {
-      if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))
-      { // all the other state are distance limited
-        //need to find a way in tracking mode maybe timeout error if the tracking is perfect, the mower is so near the wire than the mag is near 0 (adjust the timedOutIfBelowSmag)
-        //if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
-        // all the other state are distance limited
-        Console.println("Error: Timeout , perimeter too far away");
-        addErrorCounter(ERR_PERIMETER_TIMEOUT);
-        setNextState(STATE_ERROR, 0);
-        return;
-      }
-    }
-  }
+      OdoRampCompute();
 
-  if ((lawnSensorUse) && (millis() >= nextTimeLawnSensor))
-  {
-    nextTimeLawnSensor = millis() + 100;
-    double accel = 0.03;
-    lawnSensorFront = (1.0 - accel) * lawnSensorFront + accel * ((double)readSensor(SEN_LAWN_FRONT));
-    lawnSensorBack = (1.0 - accel) * lawnSensorBack + accel * ((double)readSensor(SEN_LAWN_BACK));
-  }
-  if ((lawnSensorUse) && (millis() >= nextTimeLawnSensorCheck))
-  {
-    nextTimeLawnSensorCheck = millis() + 2000;
-    double deltaFront = lawnSensorFront / lawnSensorFrontOld * 100.0;
-    double deltaBack = lawnSensorBack / lawnSensorBackOld * 100.0;
-    if ((deltaFront <= 95) || (deltaBack <= 95))
-    {
-      Console.print(F("LAWN "));
-      Console.print(deltaFront);
-      Console.print(",");
-      Console.println(deltaBack);
-      lawnSensorCounter++;
-      lawnSensor = true;
-    }
-    lawnSensorFrontOld = lawnSensorFront;
-    lawnSensorBackOld = lawnSensorBack;
-  }
+      break;
 
-  if ((bumperUse) && (millis() >= nextTimeBumper))
-  {
-    nextTimeBumper = millis() + 100;
-    if (readSensor(SEN_BUMPER_LEFT) == 0)
-    {
-      //Console.println("Bumper left trigger");
-      bumperLeftCounter++;
-      bumperLeft = true;
-    }
-
-    if (readSensor(SEN_BUMPER_RIGHT) == 0)
-    {
-      //Console.println("Bumper right trigger");
-      bumperRightCounter++;
-      bumperRight = true;
-    }
-  }
-
-  if ((dropUse) && (millis() >= nextTimeDrop))
-  {                                // Dropsensor - Absturzsensor
-    nextTimeDrop = millis() + 100; // Dropsensor - Absturzsensor
-    if (readSensor(SEN_DROP_LEFT) == dropcontact)
-    {                    // Dropsensor - Absturzsensor
-      dropLeftCounter++; // Dropsensor - Absturzsensor
-      dropLeft = true;   // Dropsensor - Absturzsensor
-    }                    // Dropsensor - Absturzsensor
-
-    if (readSensor(SEN_DROP_RIGHT) == dropcontact)
-    {                     // Dropsensor - Absturzsensor
-      dropRightCounter++; // Dropsensor - Absturzsensor
-      dropRight = true;   // Dropsensor - Absturzsensor
-    }
-  }
-
-  if ((timerUse) && (millis() >= nextTimeRTC))
-  {
-    nextTimeRTC = millis() + 20000;
-    readSensor(SEN_RTC); // read RTC
-    //Console.print(F("RTC date received: "));
-    //Console.println(date2str(datetime.date));
-    //Console.print(F("RTC time received: "));
-    //Console.print(datetime.time.hour);
-    //Console.print(F(":"));
-    //Console.println(datetime.time.minute);
-  }
-
-  if (millis() >= nextTimeBattery)
-  {
-    // read battery
-    nextTimeBattery = millis() + 500;
-    if ((abs(chgCurrent) > 0.04) && (chgVoltage > 5))
-    {
-      // charging
-      batCapacity += (chgCurrent / 36.0);
-    }
-    //   batADC = readSensor(SEN_BAT_VOLTAGE);
-
-    double batvolt = batFactor * readSensor(SEN_BAT_VOLTAGE) * 3.3 / 4096; //readsensor return the ADC value 0 to 4096 so *3.3/4096 voltage on the arduino pin batfactor depend on the resitor on board
-    double chgvolt = batChgFactor * readSensor(SEN_CHG_VOLTAGE) * 3.3 / 4096;
-    double curramp = batSenseFactor * readSensor(SEN_CHG_CURRENT) * 3.3 / 4096;
-    // if (debugConsole)
-    // {
-    //   Console.print(millis());
-    //   Console.print("/batvolt ");
-    //   Console.print(batvolt);
-    //   Console.print("/chgvolt ");
-    //   Console.print(chgvolt);
-    //   Console.print("/curramp ");
-    //   Console.println(curramp);
-    // }
-    // low-pass filter
-
-    double accel = 0.05;
-
-    if (abs(batVoltage - batvolt) > 8)
-      batVoltage = batvolt;
-    else
-      batVoltage = (1.0 - accel) * batVoltage + accel * batvolt;
-    if (abs(chgVoltage - chgvolt) > 8)
-      chgVoltage = chgvolt;
-    else
-      chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
-    if (abs(chgCurrent - curramp) > 0.4)
-      chgCurrent = curramp;
-    else
-      chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert für Ladestromsensor berechnung
-
-    //debug messages to console
-    // if (debugConsole)
-    // {
-    //   Console.print(millis());
-    //   Console.print(" / batVoltage = ");
-    //   Console.print(batVoltage);
-    //   Console.print(" / chgVoltage = ");
-    //   Console.print(chgVoltage);
-    //   Console.print("/chgCurrent ");
-    //   Console.println(chgVoltage);
-    // }
-  }
-
-  if ((rainUse) && (millis() >= nextTimeRain))
-  {
-    // read rain sensor
-    nextTimeRain = millis() + rainReadDelay * 1000;        // rainReadDelay, seconds from mower.cpp
-    rain = ((readSensor(SEN_RAIN) != 0) || (rainWS != 0)); // rainWS is always false if not use
-    if (rain)
-      rainCounter++;
-  }
-}
-
-void Robot::setDefaults()
-{
-  motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
-  motorMowEnable = false;
-}
-
-// set state machine new state
-// called *ONCE* to set to a *NEW* state
-void Robot::setNextState(byte stateNew, byte dir)
-{
-  stateTime = millis() - stateStartTime; //last state duration
-  if (stateNew == stateCurr)
-    return;
-
-  // evaluate new state
-  stateNext = stateNew;
-  rollDir = dir;
-
-  switch (stateNew)
-  {
-
-  case STATE_FORWARD:
-    if ((stateCurr == STATE_STATION_REV) || (stateCurr == STATE_STATION_ROLL) || (stateCurr == STATE_STATION_CHECK))
-      return;
-    if ((stateCurr == STATE_STATION) || (stateCurr == STATE_STATION_CHARGING))
-    {
-      //stateNew = STATE_STATION_CHECK;
-      setActuator(ACT_CHGRELAY, 0);
-      motorMowEnable = false;
-    }
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm; //use RPM instead of PWM to straight line
-    motorRightSpeedRpmSet = motorSpeedMaxRpm;
-
-    // motorLeftPID.reset();
-    // motorRightPID.reset();
-    //motorLeftRpmCurr = motorRightRpmCurr = 0 ;
-    statsMowTimeTotalStart = true;
-
-    break;
-
-  case STATE_FORWARD_ODO:
-    if (statusCurr != NORMAL_MOWING)
-    {
-      statusCurr = NORMAL_MOWING;
+    case STATE_STATION_REV: //when start in auto mode the mower first reverse to leave the station
+      statusCurr = TRACK_TO_START;
       if (RaspberryPIUse)
         MyRpi.SendStatusToPi();
-    }
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - (odometryTicksPerCm * stationRevDist);
+      stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * stationRevDist);
+      OdoRampCompute();
+      break;
 
-    UseAccelRight = 0;
-    UseAccelLeft = 0;
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
-    motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+    case STATE_STATION_ROLL: // when start in auto after mower reverse it roll for this angle
+      if (mowPatternCurr == MOW_LANES)
+        AngleRotate = 90;
+      else
+        AngleRotate = random(30, 160);
 
-    if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir))
-    {
-      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * actualLenghtByLane * 100); //limit the lenght
-      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * actualLenghtByLane * 100);
-    }
-    else
-    { // it s a new line so don't limit the forward distance and invert the rollDir
-      if ((stateLast != STATE_STOP_CALIBRATE) && (mowPatternCurr == MOW_LANES))
-      { // change the rolldir only in lane mowing and not after calibration of imu
-        if (rollDir == 0)
-          rollDir = 1;
-        else
-          rollDir = 0;
+      if (startByTimer)
+        AngleRotate = stationRollAngle;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_STATION_FORW: //when start in auto after mower  roll this state accel the 2 wheel before forward
+
+      justChangeLaneDir = true;
+      UseAccelLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeLeft = 0;
+      UseBrakeRight = 0;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * stationForwDist); //60CM to accel
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * stationForwDist);
+      OdoRampCompute();
+      //motorMowEnable = true;
+
+      break;
+
+    case STATE_STATION_CHECK:
+      if (statusCurr == WIRE_MOWING)
+      { //it is the last status
+        Console.print("Total distance drive ");
+        Console.print(totalDistDrive / 100);
+        Console.println(" meters ");
+        Console.print("Total duration ");
+        Console.print(int(millis() - stateStartTime) / 1000);
+        Console.println(" secondes ");
       }
-      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000); // set a very large distance 300 ml
-      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
-    }
+      delayToReadVoltageStation = millis() + 1500; // changed from 2500
+      //bber14 no accel here ?????
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
+      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * stationCheckDist);
+      OdoRampCompute();
 
-    OdoRampCompute();
+      break;
 
-    statsMowTimeTotalStart = true;
+    case STATE_PERI_ROLL:
+      stateEndTime = millis() + perimeterTrackRollTime + motorZeroSettleTime;
+      if (dir == RIGHT)
+      {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
+      }
+      else
+      {
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+        motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
+      }
+      break;
 
-    break;
+    case STATE_PERI_OBSTACLE_REV:
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriObstacleRev);
+      stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
+      OdoRampCompute();
+      break;
 
-  case STATE_ESCAPE_LANE:
-    Console.println("Mowing in Half lane width");
-    //it's approximation try to go into a parcel already mowed little on left or right
-    halfLaneNb = halfLaneNb + 1; //to avoid repetition the state is lauch only if halfLaneNb=0
-    UseAccelLeft = 0;
-    UseBrakeLeft = 0;
-    UseAccelRight = 0;
-    UseBrakeRight = 0;
-    if (rollDir == RIGHT)
-    {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+    case STATE_PERI_OBSTACLE_ROLL:
+      AngleRotate = 45;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      OdoRampCompute();
+      break;
+
+    case STATE_PERI_OBSTACLE_FORW:
+      UseAccelLeft = 1;
+      UseBrakeLeft = 0;
+      UseAccelRight = 1;
+      UseBrakeRight = 0;
       motorRightSpeedRpmSet = motorSpeedMaxRpm;
-      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 2);
-      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 1.5);
-    }
-    else
-    {
       motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
-      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 1.5);
-      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 2);
-    }
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw); //50cm
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleForw);
+      OdoRampCompute();
 
-    OdoRampCompute();
+      break;
 
-    break;
+    case STATE_PERI_OBSTACLE_AVOID:
+      UseAccelLeft = 0;
+      UseBrakeLeft = 0;
+      UseAccelRight = 0;
+      UseBrakeRight = 0;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / motorLeftSpeedDivider; // was 1.5
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
+      OdoRampCompute();
 
-  case STATE_STATION_REV: //when start in auto mode the mower first reverse to leave the station
-    statusCurr = TRACK_TO_START;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (odometryTicksPerCm * stationRevDist);
-    stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * stationRevDist);
-    OdoRampCompute();
-    break;
-
-  case STATE_STATION_ROLL: // when start in auto after mower reverse it roll for this angle
-    if (mowPatternCurr == MOW_LANES)
-      AngleRotate = 90;
-    else
-      AngleRotate = random(30, 160);
-
-    if (startByTimer)
-      AngleRotate = stationRollAngle;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_STATION_FORW: //when start in auto after mower  roll this state accel the 2 wheel before forward
-
-    justChangeLaneDir = true;
-    UseAccelLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * stationForwDist); //60CM to accel
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * stationForwDist);
-    OdoRampCompute();
-    //motorMowEnable = true;
-
-    break;
-
-  case STATE_STATION_CHECK:
-    delayToReadVoltageStation = millis() + 1500; // changed from 2500
-    //bber14 no accel here ?????
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
-    stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * stationCheckDist);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_PERI_ROLL:
-    stateEndTime = millis() + perimeterTrackRollTime + motorZeroSettleTime;
-    if (dir == RIGHT)
-    {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-      motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
-    }
-    else
-    {
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
-      motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
-    }
-    break;
-
-  case STATE_PERI_OBSTACLE_REV:
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriObstacleRev);
-    stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
-    OdoRampCompute();
-    break;
-
-  case STATE_PERI_OBSTACLE_ROLL:
-    AngleRotate = 45;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    OdoRampCompute();
-    break;
-
-  case STATE_PERI_OBSTACLE_FORW:
-    UseAccelLeft = 1;
-    UseBrakeLeft = 0;
-    UseAccelRight = 1;
-    UseBrakeRight = 0;
-    motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw); //50cm
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleForw);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_PERI_OBSTACLE_AVOID:
-    UseAccelLeft = 0;
-    UseBrakeLeft = 0;
-    UseAccelRight = 0;
-    UseBrakeRight = 0;
-    motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / motorLeftSpeedDivider; // was 1.5
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
-    OdoRampCompute();
-
-    break;
-  /*
+      break;
+    /*
         case STATE_STATION_AVOID:
           UseAccelLeft = 0;
           UseBrakeLeft = 0;
@@ -3155,401 +3165,401 @@ void Robot::setNextState(byte stateNew, byte dir)
 
          break;
     */
-  case STATE_PERI_REV: //when obstacle in perifind
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - 1440;
-    stateEndOdometryLeft = odometryLeft - 1440;
-    OdoRampCompute();
-    break;
+    case STATE_PERI_REV: //when obstacle in perifind
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - 1440;
+      stateEndOdometryLeft = odometryLeft - 1440;
+      OdoRampCompute();
+      break;
 
-  case STATE_PERI_OUT_STOP: //in auto mode and forward slow down before stop and reverse
-    //-------------------------------Verify if it's time to change mowing pattern
-    if (mowPatternDuration > mowPatternDurationMax)
-    {
-      Console.println(" mowPatternCurr  change ");
-      mowPatternCurr = (mowPatternCurr + 1) % 2; //change the pattern each x minutes
-      mowPatternDuration = 0;
-    }
-    justChangeLaneDir = !justChangeLaneDir; //use to know if the lane is not limit distance
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
-    justChangeLaneDir = !justChangeLaneDir;
-    distToObstacle = distToObstacle - sonarToFrontDist; //   the distance between sonar and front of mower
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * distToObstacle);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * distToObstacle);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_STOP_TO_FIND_YAW:
-
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_STOP_ON_BUMPER:
-
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm / 2);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm / 2);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_PERI_STOP_TOTRACK:
-    if (statusCurr != TRACK_TO_START)
-    {
-      statusCurr = BACK_TO_STATION;
-      if (RaspberryPIUse)
-        MyRpi.SendStatusToPi();
-    }
-    else
-    {
-      if (mowPatternCurr == MOW_WIRE)
+    case STATE_PERI_OUT_STOP: //in auto mode and forward slow down before stop and reverse
+      //-------------------------------Verify if it's time to change mowing pattern
+      if (mowPatternDuration > mowPatternDurationMax)
       {
-        motorMowEnable = true; //time to start the blade
-        //ignoreRfidTag = true; // do not read Rfid for mowing all the wire
-        statusCurr = WIRE_MOWING;
+        Console.println(" mowPatternCurr  change ");
+        mowPatternCurr = (mowPatternCurr + 1) % 2; //change the pattern each x minutes
+        mowPatternDuration = 0;
+      }
+      justChangeLaneDir = !justChangeLaneDir; //use to know if the lane is not limit distance
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
+      justChangeLaneDir = !justChangeLaneDir;
+      distToObstacle = distToObstacle - sonarToFrontDist; //   the distance between sonar and front of mower
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * distToObstacle);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * distToObstacle);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_STOP_TO_FIND_YAW:
+
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_STOP_ON_BUMPER:
+
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm / 2);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm / 2);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_PERI_STOP_TOTRACK:
+      if (statusCurr != TRACK_TO_START)
+      {
+        statusCurr = BACK_TO_STATION;
         if (RaspberryPIUse)
           MyRpi.SendStatusToPi();
       }
-    }
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-    break;
+      else
+      {
+        if (mowPatternCurr == MOW_WIRE)
+        {
+          motorMowEnable = true; //time to start the blade
+          //ignoreRfidTag = true; // do not read Rfid for mowing all the wire
+          statusCurr = WIRE_MOWING;
+          if (RaspberryPIUse)
+            MyRpi.SendStatusToPi();
+        }
+      }
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+      break;
 
-  case STATE_PERI_STOP_TOROLL:
-    imu.run(); //31/08/19 In peritrack the imu is stop so try to add this to start it now and avoid imu tilt error (occur once per week or less) ??????
-    if (statusCurr == TRACK_TO_START)
-    {
-      startByTimer = false;      // cancel because we have reach the start point and avoid repeat search entry
-      justChangeLaneDir = false; //the first lane need to be distance control
-      motorMowEnable = true;     //time to start the blade
-    }
+    case STATE_PERI_STOP_TOROLL:
+      imu.run(); //31/08/19 In peritrack the imu is stop so try to add this to start it now and avoid imu tilt error (occur once per week or less) ??????
+      if (statusCurr == TRACK_TO_START)
+      {
+        startByTimer = false;      // cancel because we have reach the start point and avoid repeat search entry
+        justChangeLaneDir = false; //the first lane need to be distance control
+        motorMowEnable = true;     //time to start the blade
+      }
 
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-    break;
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+      break;
 
-  case STATE_PERI_STOP_TO_FAST_START:
+    case STATE_PERI_STOP_TO_FAST_START:
 
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-    break;
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+      break;
 
-  case STATE_PERI_STOP_TO_NEWAREA:
-    if ((statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START))
-    {
-      statusCurr = REMOTE;
+    case STATE_PERI_STOP_TO_NEWAREA:
+      if ((statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START))
+      {
+        statusCurr = REMOTE;
+        if (RaspberryPIUse)
+          MyRpi.SendStatusToPi();
+        //startByTimer = false; // ?? not here cancel because we have reach the start point and avoid repeat search entry
+        justChangeLaneDir = false; //the first lane need to be distance control
+        perimeterUse = false;      //disable the perimeter use to leave the area
+        Console.println("Stop to read the perimeter wire");
+        rollDir = LEFT;
+      }
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+      break;
+
+    case STATE_ROLL1_TO_NEWAREA: // when find a tag the mower roll with new heading and drive in straight line
+      AngleRotate = abs(newtagRotAngle1);
+      newtagRotAngle1Radian = newtagRotAngle1 * PI / 180.0;
+      Console.print("Actual Heading ");
+      Console.println(imu.ypr.yaw * 180 / PI);
+      remoteDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
+      Console.print("New Remote Heading ");
+      Console.println(remoteDriveHeading * 180 / PI);
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      //Always rotate LEFT to leave mowing area
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      OdoRampCompute();
+      break;
+
+    case STATE_ROLL2_TO_NEWAREA: // when find a tag the mower roll with new heading and drive in straight line
+      AngleRotate = newtagRotAngle2;
+      newtagRotAngle1Radian = newtagRotAngle2 * PI / 180.0;
+      Console.print("Actual Heading ");
+      Console.println(imu.ypr.yaw * 180 / PI);
+      remoteDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
+      Console.print("New Remote Heading ");
+      Console.println(remoteDriveHeading * 180 / PI);
+      if (AngleRotate >= 0)
+      {
+        rollDir = RIGHT;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+      }
+      else
+      {
+        rollDir = LEFT;
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      }
+
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later  HERE IT CAN BE NEGATIVE WHEN ROLL LEFT
+      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+
+      OdoRampCompute();
+      break;
+
+    case STATE_DRIVE1_TO_NEWAREA:
+      UseAccelLeft = 1;
+      UseBrakeLeft = 0;
+      UseAccelRight = 1;
+      UseBrakeRight = 0;
+      currDistToDrive = 0; // when use the IMU the distance is not check on each wheel but on averrage
+      // newtagDistance1 is the distance to drive
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * newtagDistance1);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * newtagDistance1);
+      OdoRampCompute();
+
+      break;
+    case STATE_DRIVE2_TO_NEWAREA:
+      UseAccelLeft = 1;
+      UseBrakeLeft = 0;
+      UseAccelRight = 1;
+      UseBrakeRight = 0;
+      currDistToDrive = 0;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * newtagDistance2);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * newtagDistance2);
+      OdoRampCompute();
+      break;
+
+    case STATE_STOP_TO_NEWAREA:
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
+      OdoRampCompute();
+      break;
+
+    case STATE_WAIT_FOR_SIG2:
+      statusCurr = WAITSIG2;
       if (RaspberryPIUse)
         MyRpi.SendStatusToPi();
-      //startByTimer = false; // ?? not here cancel because we have reach the start point and avoid repeat search entry
-      justChangeLaneDir = false; //the first lane need to be distance control
-      perimeterUse = false;      //disable the perimeter use to leave the area
-      Console.println("Stop to read the perimeter wire");
-      rollDir = LEFT;
-    }
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-    break;
+      //when the raspberry receive this new status it start the sender with the correct area sigcode
+      totalDistDrive = 0; //reset the distance to track on the new area
+      perimeterUse = true;
+      Console.println("Start to read the Perimeter wire");
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight; //+ (odometryTicksPerCm * 10);
+      stateEndOdometryLeft = odometryLeft;   //+ (odometryTicksPerCm * 10);
+      OdoRampCompute();
 
-  case STATE_ROLL1_TO_NEWAREA: // when find a tag the mower roll with new heading and drive in straight line
-    AngleRotate = abs(newtagRotAngle1);
-    newtagRotAngle1Radian = newtagRotAngle1 * PI / 180.0;
-    Console.print("Actual Heading ");
-    Console.println(imu.ypr.yaw * 180 / PI);
-    remoteDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
-    Console.print("New Remote Heading ");
-    Console.println(remoteDriveHeading * 180 / PI);
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    //Always rotate LEFT to leave mowing area
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
-    motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    OdoRampCompute();
-    break;
+      break;
 
-  case STATE_ROLL2_TO_NEWAREA: // when find a tag the mower roll with new heading and drive in straight line
-    AngleRotate = newtagRotAngle2;
-    newtagRotAngle1Radian = newtagRotAngle2 * PI / 180.0;
-    Console.print("Actual Heading ");
-    Console.println(imu.ypr.yaw * 180 / PI);
-    remoteDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
-    Console.print("New Remote Heading ");
-    Console.println(remoteDriveHeading * 180 / PI);
-    if (AngleRotate >= 0)
-    {
-      rollDir = RIGHT;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-    }
-    else
-    {
-      rollDir = LEFT;
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    }
-
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later  HERE IT CAN BE NEGATIVE WHEN ROLL LEFT
-    stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-    OdoRampCompute();
-    break;
-
-  case STATE_DRIVE1_TO_NEWAREA:
-    UseAccelLeft = 1;
-    UseBrakeLeft = 0;
-    UseAccelRight = 1;
-    UseBrakeRight = 0;
-    currDistToDrive = 0; // when use the IMU the distance is not check on each wheel but on averrage
-    // newtagDistance1 is the distance to drive
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * newtagDistance1);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * newtagDistance1);
-    OdoRampCompute();
-
-    break;
-  case STATE_DRIVE2_TO_NEWAREA:
-    UseAccelLeft = 1;
-    UseBrakeLeft = 0;
-    UseAccelRight = 1;
-    UseBrakeRight = 0;
-    currDistToDrive = 0;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * newtagDistance2);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * newtagDistance2);
-    OdoRampCompute();
-    break;
-
-  case STATE_STOP_TO_NEWAREA:
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
-    OdoRampCompute();
-    break;
-
-  case STATE_WAIT_FOR_SIG2:
-    statusCurr = WAITSIG2;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    //when the raspberry receive this new status it start the sender with the correct area sigcode
-    totalDistDrive = 0; //reset the distance to track on the new area
-    perimeterUse = true;
-    Console.println("Start to read the Perimeter wire");
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight; //+ (odometryTicksPerCm * 10);
-    stateEndOdometryLeft = odometryLeft;   //+ (odometryTicksPerCm * 10);
-    OdoRampCompute();
-
-    break;
-
-  case STATE_ROLL_TONEXTTAG: // when find a tag the mower roll to leave the wire and go again in peirfind with new heading
-    AngleRotate = newtagRotAngle1;
-    newtagRotAngle1Radian = newtagRotAngle1 * PI / 180.0;
-    Console.print("Actual Heading ");
-    Console.println(imu.ypr.yaw * 180 / PI);
-    periFindDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
-    Console.print("New PeriFind Heading ");
-    Console.println(periFindDriveHeading * 180 / PI);
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    //Always rotate RIGHT to leave the wire
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-    OdoRampCompute();
-    break;
-
-  case STATE_AUTO_CALIBRATE:
-    nextTimeAddYawMedian = millis() + 500;                                        //wait 500 ms to stabilize before record first yaw
-    nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000; //set the next time for calib
-    //needDmpAutoCalibration = false;  //to avoid repetition
-    endTimeCalibration = millis() + maxDurationDmpAutocalib * 1000; //max duration calibration
-    compassYawMedian.clear();
-    accelGyroYawMedian.clear();
-    break;
-
-  case STATE_STOP_CALIBRATE:
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    if (actualRollDirToCalibrate != LEFT)
-    {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-      stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm / 2);
-      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm / 2);
-    }
-    else
-    {
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm;
-      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm / 2);
-      stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm / 2);
-    }
-
-    break;
-
-  case STATE_STOP_BEFORE_SPIRALE:
-    statusCurr = SPIRALE_MOWING;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 20); //brake in 20CM
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 20);   //brake in 20CM
-    OdoRampCompute();
-    break;
-
-  case STATE_ROTATE_RIGHT_360:
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-    stateEndOdometryRight = odometryRight - (int)36000 * (odometryTicksPerCm * PI * odometryWheelBaseCm / 36000);
-    stateEndOdometryLeft = odometryLeft + (int)36000 * (odometryTicksPerCm * PI * odometryWheelBaseCm / 36000);
-    OdoRampCompute();
-    break;
-
-  case STATE_NEXT_SPIRE:
-    if (spiraleNbTurn == 0)
-    {
+    case STATE_ROLL_TONEXTTAG: // when find a tag the mower roll to leave the wire and go again in peirfind with new heading
+      AngleRotate = newtagRotAngle1;
+      newtagRotAngle1Radian = newtagRotAngle1 * PI / 180.0;
+      Console.print("Actual Heading ");
+      Console.println(imu.ypr.yaw * 180 / PI);
+      periFindDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
+      Console.print("New PeriFind Heading ");
+      Console.println(periFindDriveHeading * 180 / PI);
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      //Always rotate RIGHT to leave the wire
       UseAccelLeft = 1;
+      UseBrakeLeft = 1;
       UseAccelRight = 1;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; ///adjust to change the access to next arc
-      motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    }
-    else
-    {
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+
+      OdoRampCompute();
+      break;
+
+    case STATE_AUTO_CALIBRATE:
+      nextTimeAddYawMedian = millis() + 500;                                        //wait 500 ms to stabilize before record first yaw
+      nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000; //set the next time for calib
+      //needDmpAutoCalibration = false;  //to avoid repetition
+      endTimeCalibration = millis() + maxDurationDmpAutocalib * 1000; //max duration calibration
+      compassYawMedian.clear();
+      accelGyroYawMedian.clear();
+      break;
+
+    case STATE_STOP_CALIBRATE:
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      if (actualRollDirToCalibrate != LEFT)
+      {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+        stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm / 2);
+        stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm / 2);
+      }
+      else
+      {
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+        stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm / 2);
+        stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm / 2);
+      }
+
+      break;
+
+    case STATE_STOP_BEFORE_SPIRALE:
+      statusCurr = SPIRALE_MOWING;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 20); //brake in 20CM
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 20);   //brake in 20CM
+      OdoRampCompute();
+      break;
+
+    case STATE_ROTATE_RIGHT_360:
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+      stateEndOdometryRight = odometryRight - (int)36000 * (odometryTicksPerCm * PI * odometryWheelBaseCm / 36000);
+      stateEndOdometryLeft = odometryLeft + (int)36000 * (odometryTicksPerCm * PI * odometryWheelBaseCm / 36000);
+      OdoRampCompute();
+      break;
+
+    case STATE_NEXT_SPIRE:
+      if (spiraleNbTurn == 0)
+      {
+        UseAccelLeft = 1;
+        UseAccelRight = 1;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; ///adjust to change the access to next arc
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      }
+      else
+      {
+        UseAccelLeft = 0;
+        UseAccelRight = 0;
+      }
+      UseBrakeLeft = 0;
+      UseBrakeRight = 0;
+      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm / 2);
+      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm / 2);
+      OdoRampCompute();
+
+      break;
+
+    case STATE_MOW_SPIRALE:
+      float DistToDriveRight;
+      float DistToDriveLeft;
+      float Tmp;
+      float Tmp1;
+      setBeeper(0, 0, 0, 0, 0);
       UseAccelLeft = 0;
       UseAccelRight = 0;
-    }
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
-    stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm / 2);
-    stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm / 2);
-    OdoRampCompute();
+      UseBrakeLeft = 0;
+      UseBrakeRight = 0;
 
-    break;
+      if (spiraleNbTurn == 0)
+      {
+        R = (float)(odometryWheelBaseCm * 1.2); //*1.2 to avoid that wheel is completly stop
+        DistToDriveRight = PI * (R / 2.00);
+        DistToDriveLeft = PI * (R * 1.50);
+      }
+      else
+      {
+        //Console.println(R);
+        R = R + (float)(odometryWheelBaseCm / 2);
+        //Console.println(R);
+        DistToDriveRight = PI * (R - ((float)odometryWheelBaseCm / 2.00));
+        DistToDriveLeft = PI * (R + ((float)odometryWheelBaseCm / 2.00));
+      }
 
-  case STATE_MOW_SPIRALE:
-    float DistToDriveRight;
-    float DistToDriveLeft;
-    float Tmp;
-    float Tmp1;
-    setBeeper(0, 0, 0, 0, 0);
-    UseAccelLeft = 0;
-    UseAccelRight = 0;
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+      Tmp = 2 * (R - float(odometryWheelBaseCm));
+      Tmp1 = 2.00 * (R + float(odometryWheelBaseCm));
+      motorRightSpeedRpmSet = (int)(motorLeftSpeedRpmSet * Tmp / Tmp1);
 
-    if (spiraleNbTurn == 0)
-    {
-      R = (float)(odometryWheelBaseCm * 1.2); //*1.2 to avoid that wheel is completly stop
-      DistToDriveRight = PI * (R / 2.00);
-      DistToDriveLeft = PI * (R * 1.50);
-    }
-    else
-    {
-      //Console.println(R);
-      R = R + (float)(odometryWheelBaseCm / 2);
-      //Console.println(R);
-      DistToDriveRight = PI * (R - ((float)odometryWheelBaseCm / 2.00));
-      DistToDriveLeft = PI * (R + ((float)odometryWheelBaseCm / 2.00));
-    }
-
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-    Tmp = 2 * (R - float(odometryWheelBaseCm));
-    Tmp1 = 2.00 * (R + float(odometryWheelBaseCm));
-    motorRightSpeedRpmSet = (int)(motorLeftSpeedRpmSet * Tmp / Tmp1);
-
-    stateEndOdometryRight = odometryRight + (odometryTicksPerCm * DistToDriveRight);
-    stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * DistToDriveLeft);
-    /*
+      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * DistToDriveRight);
+      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * DistToDriveLeft);
+      /*
             Console.print("MOW SPIRALE R ");
             Console.print(R);
             Console.print(" Tmp ");
@@ -3569,1286 +3579,1286 @@ void Robot::setNextState(byte stateNew, byte dir)
 
       */
 
-    OdoRampCompute();
-    spiraleNbTurn = spiraleNbTurn + 1;
+      OdoRampCompute();
+      spiraleNbTurn = spiraleNbTurn + 1;
 
-    break;
+      break;
 
-  case STATE_PERI_OUT_REV: //in normal mowing reverse after the wire trigger
-    readDHT22();           // here the mower is stop so can spend 250ms  for reading
-    setBeeper(0, 0, 0, 0, 0);
-    if (mowPatternCurr == MOW_LANES)
-    {
-      PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
-      PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
-    }
-    else
-    {
-      PrevStateOdoDepassLeft = 0;
-      PrevStateOdoDepassRight = 0;
-    }
-    if (rollDir == RIGHT)
-    {
+    case STATE_PERI_OUT_REV: //in normal mowing reverse after the wire trigger
+      readDHT22();           // here the mower is stop so can spend 250ms  for reading
+      setBeeper(0, 0, 0, 0, 0);
+      if (mowPatternCurr == MOW_LANES)
+      {
+        PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
+        PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
+      }
+      else
+      {
+        PrevStateOdoDepassLeft = 0;
+        PrevStateOdoDepassRight = 0;
+      }
+      if (rollDir == RIGHT)
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        if (mowPatternCurr == MOW_LANES)
+          UseBrakeRight = 1;
+        else
+          UseBrakeRight = 0;
+      }
+      else
+      {
+        UseAccelLeft = 1;
+        if (mowPatternCurr == MOW_LANES)
+          UseBrakeLeft = 1;
+        else
+          UseBrakeLeft = 0;
+        UseAccelRight = 1;
+        UseBrakeRight = 1;
+      }
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassRight;
+      stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassLeft;
+      OdoRampCompute();
+      break;
+
+    case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
+      if (mowPatternCurr == MOW_RANDOM)
+        AngleRotate = random(motorRollDegMin, motorRollDegMax);
+
+      if (dir == RIGHT)
+      {
+        if (mowPatternCurr == MOW_ZIGZAG)
+          AngleRotate = imu.scale180(imuDriveHeading + 135); //need limit value to valib the rebon
+        UseAccelLeft = 1;
+        //bb6
+        //UseBrakeLeft = 1;
+        UseBrakeLeft = 0;
+        UseAccelRight = 0;
+        UseBrakeRight = 1;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+        Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+        stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      else
+      {
+        if (mowPatternCurr == MOW_ZIGZAG)
+          AngleRotate = imu.scale180(imuDriveHeading - 135); //need limit value to valib the rebon
+        UseAccelLeft = 0;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        //bb6 =1
+        UseBrakeRight = 0;
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+        Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+        stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      OdoRampCompute();
+      break;
+
+    case STATE_PERI_OUT_ROLL_TOINSIDE: //roll left or right in normal mode
+
+      if (stateCurr == STATE_WAIT_AND_REPEAT)
+      {
+        RollToInsideQty = RollToInsideQty + 1;
+        Console.print("Not Inside roll nb: ");
+        Console.println(RollToInsideQty);
+      }
+      else
+      {
+        RollToInsideQty = 0;
+        Console.print("Find Inside roll nb: ");
+        Console.println(RollToInsideQty);
+      }
+
+      if (mowPatternCurr == MOW_LANES)
+      {
+        laneUseNr = laneUseNr + 1;
+        findedYaw = 999;
+        justChangeLaneDir = true;
+        nextTimeToDmpAutoCalibration = millis(); // so the at the end of the next line a calibration occur
+        if (laneUseNr > 3)
+          laneUseNr = 1;
+      }
+
+      AngleRotate = 50;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      if (dir == RIGHT)
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        UseBrakeRight = 1;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      else
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        UseBrakeRight = 1;
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      OdoRampCompute();
+      break;
+    case STATE_PERI_OUT_ROLL_TOTRACK: //roll left or right in normal mode
+
+      AngleRotate = 180;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+
       UseAccelLeft = 1;
       UseBrakeLeft = 1;
       UseAccelRight = 1;
-      if (mowPatternCurr == MOW_LANES)
-        UseBrakeRight = 1;
-      else
-        UseBrakeRight = 0;
-    }
-    else
-    {
-      UseAccelLeft = 1;
-      if (mowPatternCurr == MOW_LANES)
-        UseBrakeLeft = 1;
-      else
-        UseBrakeLeft = 0;
-      UseAccelRight = 1;
       UseBrakeRight = 1;
-    }
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassRight;
-    stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassLeft;
-    OdoRampCompute();
-    break;
-
-  case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
-    if (mowPatternCurr == MOW_RANDOM)
-      AngleRotate = random(motorRollDegMin, motorRollDegMax);
-
-    if (dir == RIGHT)
-    {
-      if (mowPatternCurr == MOW_ZIGZAG)
-        AngleRotate = imu.scale180(imuDriveHeading + 135); //need limit value to valib the rebon
-      UseAccelLeft = 1;
-      //bb6
-      //UseBrakeLeft = 1;
-      UseBrakeLeft = 0;
-      UseAccelRight = 0;
-      UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    else
-    {
-      if (mowPatternCurr == MOW_ZIGZAG)
-        AngleRotate = imu.scale180(imuDriveHeading - 135); //need limit value to valib the rebon
+
+      OdoRampCompute();
+      break;
+
+    case STATE_PERI_OUT_STOP_ROLL_TOTRACK: //stop roll right in normal mode when find wire
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
-      UseAccelRight = 1;
-      //bb6 =1
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 5); //stop on 5 cm
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 5);
+
+      OdoRampCompute();
+      break;
+    case STATE_PERI_OUT_FORW: //Accel after roll so the 2 wheel have the same speed when reach the forward state
+
+      if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
+      {
+        PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
+        PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
+      }
+      else
+      {
+        PrevStateOdoDepassLeft = 0;
+        PrevStateOdoDepassRight = 0;
+      }
+      if (dir == RIGHT)
+      {
+        if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
+          UseAccelLeft = 1;
+        else
+          UseAccelLeft = 0;
+        UseAccelRight = 1;
+      }
+      else
+      {
+
+        if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
+          UseAccelRight = 1;
+        else
+          UseAccelRight = 0;
+        UseAccelLeft = 1;
+      }
+      UseBrakeLeft = 0;
       UseBrakeRight = 0;
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm;
-      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    OdoRampCompute();
-    break;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassRight;
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassLeft;
+      OdoRampCompute();
 
-  case STATE_PERI_OUT_ROLL_TOINSIDE: //roll left or right in normal mode
+      break;
 
-    if (stateCurr == STATE_WAIT_AND_REPEAT)
-    {
-      RollToInsideQty = RollToInsideQty + 1;
-      Console.print("Not Inside roll nb: ");
-      Console.println(RollToInsideQty);
-    }
-    else
-    {
-      RollToInsideQty = 0;
-      Console.print("Find Inside roll nb: ");
-      Console.println(RollToInsideQty);
-    }
+    case STATE_PERI_OUT_LANE_ROLL1: //roll left or right in normal mode for 135 deg
 
-    if (mowPatternCurr == MOW_LANES)
-    {
-      laneUseNr = laneUseNr + 1;
-      findedYaw = 999;
-      justChangeLaneDir = true;
-      nextTimeToDmpAutoCalibration = millis(); // so the at the end of the next line a calibration occur
-      if (laneUseNr > 3)
-        laneUseNr = 1;
-    }
-
-    AngleRotate = 50;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    if (dir == RIGHT)
-    {
-      UseAccelLeft = 1;
-      UseBrakeLeft = 1;
-      UseAccelRight = 1;
-      UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    else
-    {
-      UseAccelLeft = 1;
-      UseBrakeLeft = 1;
-      UseAccelRight = 1;
-      UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    OdoRampCompute();
-    break;
-  case STATE_PERI_OUT_ROLL_TOTRACK: //roll left or right in normal mode
-
-    AngleRotate = 180;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-    OdoRampCompute();
-    break;
-
-  case STATE_PERI_OUT_STOP_ROLL_TOTRACK: //stop roll right in normal mode when find wire
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 5); //stop on 5 cm
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 5);
-
-    OdoRampCompute();
-    break;
-  case STATE_PERI_OUT_FORW: //Accel after roll so the 2 wheel have the same speed when reach the forward state
-
-    if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
-    {
       PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
       PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
-    }
-    else
-    {
-      PrevStateOdoDepassLeft = 0;
-      PrevStateOdoDepassRight = 0;
-    }
-    if (dir == RIGHT)
-    {
-      if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
-        UseAccelLeft = 1;
-      else
-        UseAccelLeft = 0;
-      UseAccelRight = 1;
-    }
-    else
-    {
-
-      if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))
-        UseAccelRight = 1;
-      else
-        UseAccelRight = 0;
-      UseAccelLeft = 1;
-    }
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassRight;
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassLeft;
-    OdoRampCompute();
-
-    break;
-
-  case STATE_PERI_OUT_LANE_ROLL1: //roll left or right in normal mode for 135 deg
-
-    PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
-    PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
-    AngleRotate = 135;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    if (dir == RIGHT)
-    {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
-      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
-    }
-    else
-    {
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
-      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
-    }
-    OdoRampCompute();
-    break;
-
-  case STATE_NEXT_LANE_FORW: //small move to reach the next  parallel lane
-    PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
-    PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
-    UseAccelLeft = 1;
-    UseAccelRight = 1;
-    UseAccelLeft = 1;
-    UseAccelRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-
-    //************************************same as spirale in by lane mowing*******************************
-    if (highGrassDetect)
-    {
-      Tempovar = DistBetweenLane / 2;
-      halfLaneNb++; //count the nb of mowing lane in half lenght same as spirale into lane mowing
-      Console.print("Hight grass detected actual halfLaneNb ");
-      Console.println(halfLaneNb);
-    }
-    else
-      Tempovar = DistBetweenLane;
-    //****************************************************************************************************
-
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassRight; //forward for  distance between lane
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassLeft;
-
-    OdoRampCompute();
-    break;
-
-  case STATE_PERI_OUT_LANE_ROLL2: //roll left or right in normal mode
-
-    PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
-    PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
-    AngleRotate = 45;
-    Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-
-    if (dir == RIGHT)
-    {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
-      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
-    }
-    else
-    {
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
-      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
-    }
-    OdoRampCompute();
-    break;
-
-  case STATE_REVERSE: // hit obstacle in forward state
-    if (dir == RIGHT)
-    {
+      AngleRotate = 135;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
       UseAccelLeft = 1;
       UseBrakeLeft = 1;
       UseAccelRight = 1;
-      UseBrakeRight = 0;
-    }
-    if (dir == LEFT)
-    {
+      UseBrakeRight = 1;
+      if (dir == RIGHT)
+      {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
+        stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
+      }
+      else
+      {
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
+        stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
+      }
+      OdoRampCompute();
+      break;
+
+    case STATE_NEXT_LANE_FORW: //small move to reach the next  parallel lane
+      PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
+      PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
       UseAccelLeft = 1;
-      UseBrakeLeft = 0;
+      UseAccelRight = 1;
+      UseAccelLeft = 1;
+      UseAccelRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
+
+      //************************************same as spirale in by lane mowing*******************************
+      if (highGrassDetect)
+      {
+        Tempovar = DistBetweenLane / 2;
+        halfLaneNb++; //count the nb of mowing lane in half lenght same as spirale into lane mowing
+        Console.print("Hight grass detected actual halfLaneNb ");
+        Console.println(halfLaneNb);
+      }
+      else
+        Tempovar = DistBetweenLane;
+      //****************************************************************************************************
+
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassRight; //forward for  distance between lane
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassLeft;
+
+      OdoRampCompute();
+      break;
+
+    case STATE_PERI_OUT_LANE_ROLL2: //roll left or right in normal mode
+
+      PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
+      PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
+      AngleRotate = 45;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
       UseAccelRight = 1;
       UseBrakeRight = 1;
-    }
 
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-    stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriObstacleRev);
-    stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
-    OdoRampCompute();
-    /*
+      if (dir == RIGHT)
+      {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
+        stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
+      }
+      else
+      {
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5; //reduce the roll speed to help  the IMU
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
+        stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
+      }
+      OdoRampCompute();
+      break;
+
+    case STATE_REVERSE: // hit obstacle in forward state
+      if (dir == RIGHT)
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        UseBrakeRight = 0;
+      }
+      if (dir == LEFT)
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 0;
+        UseAccelRight = 1;
+        UseBrakeRight = 1;
+      }
+
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriObstacleRev);
+      stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
+      OdoRampCompute();
+      /*
         motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.25;
         stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
       */
-    break;
+      break;
 
-  case STATE_ROLL: // when hit obstacle in forward mode
-    AngleRotate = random(50, 180);
-    Tempovar = 36000 / AngleRotate; // need a value*100 for integer division later
-    if (dir == RIGHT)
-    {
-      UseAccelLeft = 1;
-      UseBrakeLeft = 0;
-      UseAccelRight = 0;
-      UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
-      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    else
-    {
-      UseAccelLeft = 0;
-      UseBrakeLeft = 1;
-      UseAccelRight = 1;
-      UseBrakeRight = 0;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm;
-      motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
-      stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-    }
-    OdoRampCompute();
-    break;
+    case STATE_ROLL: // when hit obstacle in forward mode
+      AngleRotate = random(50, 180);
+      Tempovar = 36000 / AngleRotate; // need a value*100 for integer division later
+      if (dir == RIGHT)
+      {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 0;
+        UseAccelRight = 0;
+        UseBrakeRight = 1;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
+        stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      else
+      {
+        UseAccelLeft = 0;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        UseBrakeRight = 0;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm;
+        motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
+        stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+      }
+      OdoRampCompute();
+      break;
 
-  case STATE_TEST_COMPASS: // to test the imu
-    statusCurr = TESTING;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
-    OdoRampCompute();
-    break;
-
-  case STATE_CALIB_MOTOR_SPEED:
-    statusCurr = TESTING;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    OdoRampCompute();
-    break;
-
-  case STATE_TEST_MOTOR:
-    statusCurr = TESTING;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    OdoRampCompute();
-    break;
-
-  case STATE_ROLL_TO_FIND_YAW: // roll slowly 720 deg until find the positive yaw, state will be changed by the IMU
-    if (stopMotorDuringCalib)
-      motorMowEnable = false; //stop the mow motor
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    Console.print(" imu.comYaw ");
-    Console.print(abs(100 * imu.comYaw));
-    Console.print(" imu.ypr.yaw ");
-    Console.print(abs(100 * imu.ypr.yaw));
-    Console.print(" distancePI(imu.comYaw, imu.ypr.yaw) ");
-    Console.println(distancePI(imu.comYaw, imu.ypr.yaw));
-
-    if (distancePI(imu.comYaw, yawCiblePos * PI / 180) > 0)
-    { //rotate in the nearest direction
-      actualRollDirToCalibrate = RIGHT;
-      Console.println(" >>> >>> >>> >>> >>> >>> 0");
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-      stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
-      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
-    }
-    else
-    {
-      actualRollDirToCalibrate = LEFT;
-      Console.println(" <<< <<< <<< <<< <<< << 0");
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 2;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
-      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
-      stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
-    }
-
-    OdoRampCompute();
-    break;
-
-  case STATE_ROLL_WAIT:
-    ///use to make test with o in console but never call in normal mode
-
-    //roll slowly 360 deg to find the yaw state is stopped by the IMU
-    UseAccelLeft = 1;
-    UseBrakeLeft = 1;
-    UseAccelRight = 1;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
-    stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
-
-    OdoRampCompute();
-    break;
-  case STATE_MANUAL:
-    statusCurr = MANUAL;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    break;
-  case STATE_REMOTE:
-    statusCurr = REMOTE;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    motorMowEnable = false;
-    //motorMowModulate = false;
-    break;
-  case STATE_STATION: //stop immediatly
-    areaInMowing = 1;
-    //ignoreRfidTag = false;
-    motorMowEnable = false;
-    startByTimer = false;
-    totalDistDrive = 0;                   //reset the tracking distance travel
-    whereToResetSpeed = 50000;            // initial value to 500 meters
-    ActualSpeedPeriPWM = MaxSpeedperiPwm; //reset the tracking speed
-    statusCurr = IN_STATION;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    //time to reset the speed because the Peri find can use very high speed
-    motorSpeedMaxPwm = motorInitialSpeedMaxPwm;
-    stateEndOdometryRight = odometryRight;
-    stateEndOdometryLeft = odometryLeft;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
-    setMotorPWM(0, 0, false);
-    setActuator(ACT_CHGRELAY, 0);
-    setDefaults();
-    statsMowTimeTotalStart = false; // stop stats mowTime counter
-    //loadSaveRobotStats(false);        //save robot stats
-    break;
-
-  case STATE_STATION_CHARGING:
-    setActuator(ACT_CHGRELAY, 1);
-    setDefaults();
-    break;
-
-  case STATE_OFF:
-    statusCurr = WAIT;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-
-    startByTimer = false; // reset the start timer
-    setActuator(ACT_CHGRELAY, 0);
-    setDefaults();
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
-    stateEndOdometryRight = odometryRight + (odometryTicksPerCm * 20);
-    stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * 20);
-    // stateMaxiTime = millis() + 5000;
-    OdoRampCompute();
-    statsMowTimeTotalStart = false; // stop stats mowTime counter
-    loadSaveRobotStats(false);      //save robot stats
-    break;
-
-  case STATE_ERROR:
-    statusCurr = IN_ERROR;
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    setActuator(ACT_CHGRELAY, 0);
-    motorMowEnable = false;
-    UseAccelLeft = 0;
-    UseBrakeLeft = 1;
-    UseAccelRight = 0;
-    UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
-    stateEndOdometryRight = odometryRight + (odometryTicksPerCm * 20);
-    stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * 20);
-    // stateMaxiTime = millis() + 5000;
-    OdoRampCompute();
-    statsMowTimeTotalStart = false; // stop stats mowTime counter
-    loadSaveRobotStats(false);      //save robot stats
-    break;
-
-  case STATE_PERI_FIND:
-    //Don't Use accel when start from forward_odo because the 2 wheels are already running
-    //if status is change in pfod need to refresh it in PI
-    if (RaspberryPIUse)
-      MyRpi.SendStatusToPi();
-    Console.print("Area In Mowing ");
-    Console.print(areaInMowing);
-    Console.print(" Area To Go ");
-    Console.println(areaToGo);
-
-    if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_OBSTACLE_AVOID))
-    {
-      UseAccelRight = 0;
-      UseAccelLeft = 0;
-    }
-    else
-    {
-      UseAccelRight = 1;
-      UseAccelLeft = 1;
-    }
-
-    UseBrakeLeft = 0;
-    UseBrakeRight = 0;
-
-    motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.2;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.2;
-    stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000); //300 ml
-    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
-    OdoRampCompute();
-
-    motorMowEnable = false;
-    break;
-
-  case STATE_PERI_TRACK:
-    //motorMowEnable = false;     // FIXME: should be an option?
-    perimeterPID.reset();
-
-    break;
-
-  case STATE_WAIT_AND_REPEAT:
-    //Console.println("WAIT AND REPEAT  ");
-
-    break;
-
-  } // end switch
-
-  sonarObstacleTimeout = 0;
-  // state has changed
-
-  stateStartTime = millis();
-
-  stateNext = stateNew;
-  stateLast = stateCurr;
-  stateCurr = stateNext;
-  perimeterTriggerTime = 0;
-  Console.print(F(statusNames[statusCurr]));
-  Console.print(" / ");
-  Console.print(F(stateNames[stateCurr]));
-  Console.print(" Dir ");
-  Console.print(rollDir);
-  Console.print(" State changed at ");
-  Console.print(stateStartTime);
-  Console.print(" From state ");
-  Console.println(F(stateNames[stateLast]));
-}
-// check battery voltage and decide what to do
-void Robot::checkBattery()
-{
-  if ((millis() < nextTimeCheckBattery) || (millis() < 30000))
-    return;                               //  wait 30 sec after the initial power on before first check to avoid read bad battery voltage
-  nextTimeCheckBattery = millis() + 1000; //if change need to adjust the line idleTimeSec= idleTimeSec+1;
-
-  if (batMonitor)
-  {
-    unsigned long timeStart = millis();
-    // if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_OFF) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING))  {
-    if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_OFF))
-    {
-      Console.print(F("Batterie Voltage : "));
-      Console.print(batVoltage);
-      Console.print(F(" -- > Switch OFF Voltage : "));
-      Console.print(batSwitchOffIfBelow);
-      Console.println(F("  Bat Voltage is very low the state is changed to OFF, so the undervoltage timer start"));
-      addErrorCounter(ERR_BATTERY);
-      setBeeper(100, 25, 25, 200, 0);
-      setNextState(STATE_OFF, 0);
-    }
-    else if ((batVoltage < batGoHomeIfBelow) && (stateCurr == STATE_FORWARD_ODO) && (perimeterUse))
-    { //actualy in mowing mode with station and perimeter
-      Console.print(F("Batterie Voltage : "));
-      Console.print(batVoltage);
-      Console.print(F(" -- > Minimum Mowing Voltage : "));
-      Console.println(batGoHomeIfBelow);
-      Console.println(F(" Bat Voltage is low : The mower search the charging Station"));
-      setBeeper(100, 25, 25, 200, 0);
-      statusCurr = BACK_TO_STATION;
-      areaToGo = 1;
+    case STATE_TEST_COMPASS: // to test the imu
+      statusCurr = TESTING;
       if (RaspberryPIUse)
         MyRpi.SendStatusToPi();
-      setNextState(STATE_PERI_FIND, 0);
-    }
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
+      OdoRampCompute();
+      break;
 
-    // if robot is OFF , Error or in station without the timer we can start to count before shutdown
-    if ((stateCurr == STATE_OFF) || (stateCurr == STATE_ERROR) || ((stateCurr == STATE_STATION) && !timerUse))
+    case STATE_CALIB_MOTOR_SPEED:
+      statusCurr = TESTING;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      OdoRampCompute();
+      break;
+
+    case STATE_TEST_MOTOR:
+      statusCurr = TESTING;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      OdoRampCompute();
+      break;
+
+    case STATE_ROLL_TO_FIND_YAW: // roll slowly 720 deg until find the positive yaw, state will be changed by the IMU
+      if (stopMotorDuringCalib)
+        motorMowEnable = false; //stop the mow motor
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      Console.print(" imu.comYaw ");
+      Console.print(abs(100 * imu.comYaw));
+      Console.print(" imu.ypr.yaw ");
+      Console.print(abs(100 * imu.ypr.yaw));
+      Console.print(" distancePI(imu.comYaw, imu.ypr.yaw) ");
+      Console.println(distancePI(imu.comYaw, imu.ypr.yaw));
+
+      if (distancePI(imu.comYaw, yawCiblePos * PI / 180) > 0)
+      { //rotate in the nearest direction
+        actualRollDirToCalibrate = RIGHT;
+        Console.println(" >>> >>> >>> >>> >>> >>> 0");
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+        stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+        stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+      }
+      else
+      {
+        actualRollDirToCalibrate = LEFT;
+        Console.println(" <<< <<< <<< <<< <<< << 0");
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 2;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+        stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+        stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+      }
+
+      OdoRampCompute();
+      break;
+
+    case STATE_ROLL_WAIT:
+      ///use to make test with o in console but never call in normal mode
+
+      //roll slowly 360 deg to find the yaw state is stopped by the IMU
+      UseAccelLeft = 1;
+      UseBrakeLeft = 1;
+      UseAccelRight = 1;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
+
+      OdoRampCompute();
+      break;
+    case STATE_MANUAL:
+      statusCurr = MANUAL;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      break;
+    case STATE_REMOTE:
+      statusCurr = REMOTE;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      motorMowEnable = false;
+      //motorMowModulate = false;
+      break;
+    case STATE_STATION: //stop immediatly
+      areaInMowing = 1;
+      //ignoreRfidTag = false;
+      motorMowEnable = false;
+      startByTimer = false;
+      totalDistDrive = 0;                   //reset the tracking distance travel
+      whereToResetSpeed = 50000;            // initial value to 500 meters
+      ActualSpeedPeriPWM = MaxSpeedperiPwm; //reset the tracking speed
+      statusCurr = IN_STATION;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      //time to reset the speed because the Peri find can use very high speed
+      motorSpeedMaxPwm = motorInitialSpeedMaxPwm;
+      stateEndOdometryRight = odometryRight;
+      stateEndOdometryLeft = odometryLeft;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+      setMotorPWM(0, 0, false);
+      setActuator(ACT_CHGRELAY, 0);
+      setDefaults();
+      statsMowTimeTotalStart = false; // stop stats mowTime counter
+      //loadSaveRobotStats(false);        //save robot stats
+      break;
+
+    case STATE_STATION_CHARGING:
+      setActuator(ACT_CHGRELAY, 1);
+      setDefaults();
+      break;
+
+    case STATE_OFF:
+      statusCurr = WAIT;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+
+      startByTimer = false; // reset the start timer
+      setActuator(ACT_CHGRELAY, 0);
+      setDefaults();
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * 20);
+      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * 20);
+      // stateMaxiTime = millis() + 5000;
+      OdoRampCompute();
+      statsMowTimeTotalStart = false; // stop stats mowTime counter
+      loadSaveRobotStats(false);      //save robot stats
+      break;
+
+    case STATE_ERROR:
+      statusCurr = IN_ERROR;
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      setActuator(ACT_CHGRELAY, 0);
+      motorMowEnable = false;
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+      stateEndOdometryRight = odometryRight + (odometryTicksPerCm * 20);
+      stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * 20);
+      // stateMaxiTime = millis() + 5000;
+      OdoRampCompute();
+      statsMowTimeTotalStart = false; // stop stats mowTime counter
+      loadSaveRobotStats(false);      //save robot stats
+      break;
+
+    case STATE_PERI_FIND:
+      //Don't Use accel when start from forward_odo because the 2 wheels are already running
+      //if status is change in pfod need to refresh it in PI
+      if (RaspberryPIUse)
+        MyRpi.SendStatusToPi();
+      Console.print("Area In Mowing ");
+      Console.print(areaInMowing);
+      Console.print(" Area To Go ");
+      Console.println(areaToGo);
+
+      if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_OBSTACLE_AVOID))
+      {
+        UseAccelRight = 0;
+        UseAccelLeft = 0;
+      }
+      else
+      {
+        UseAccelRight = 1;
+        UseAccelLeft = 1;
+      }
+
+      UseBrakeLeft = 0;
+      UseBrakeRight = 0;
+
+      motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.2;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.2;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000); //300 ml
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
+      OdoRampCompute();
+
+      motorMowEnable = false;
+      break;
+
+    case STATE_PERI_TRACK:
+      //motorMowEnable = false;     // FIXME: should be an option?
+      perimeterPID.reset();
+
+      break;
+
+    case STATE_WAIT_AND_REPEAT:
+      //Console.println("WAIT AND REPEAT  ");
+
+      break;
+
+    } // end switch
+
+    sonarObstacleTimeout = 0;
+    // state has changed
+
+    stateStartTime = millis();
+
+    stateNext = stateNew;
+    stateLast = stateCurr;
+    stateCurr = stateNext;
+    perimeterTriggerTime = 0;
+    Console.print(F(statusNames[statusCurr]));
+    Console.print(" / ");
+    Console.print(F(stateNames[stateCurr]));
+    Console.print(" Dir ");
+    Console.print(rollDir);
+    Console.print(" State changed at ");
+    Console.print(stateStartTime);
+    Console.print(" From state ");
+    Console.println(F(stateNames[stateLast]));
+  }
+  // check battery voltage and decide what to do
+  void Robot::checkBattery()
+  {
+    if ((millis() < nextTimeCheckBattery) || (millis() < 30000))
+      return;                               //  wait 30 sec after the initial power on before first check to avoid read bad battery voltage
+    nextTimeCheckBattery = millis() + 1000; //if change need to adjust the line idleTimeSec= idleTimeSec+1;
+
+    if (batMonitor)
     {
-      /*
+      unsigned long timeStart = millis();
+      // if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_OFF) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING))  {
+      if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_OFF))
+      {
+        Console.print(F("Batterie Voltage : "));
+        Console.print(batVoltage);
+        Console.print(F(" -- > Switch OFF Voltage : "));
+        Console.print(batSwitchOffIfBelow);
+        Console.println(F("  Bat Voltage is very low the state is changed to OFF, so the undervoltage timer start"));
+        addErrorCounter(ERR_BATTERY);
+        setBeeper(100, 25, 25, 200, 0);
+        setNextState(STATE_OFF, 0);
+      }
+      else if ((batVoltage < batGoHomeIfBelow) && (stateCurr == STATE_FORWARD_ODO) && (perimeterUse))
+      { //actualy in mowing mode with station and perimeter
+        Console.print(F("Batterie Voltage : "));
+        Console.print(batVoltage);
+        Console.print(F(" -- > Minimum Mowing Voltage : "));
+        Console.println(batGoHomeIfBelow);
+        Console.println(F(" Bat Voltage is low : The mower search the charging Station"));
+        setBeeper(100, 25, 25, 200, 0);
+        statusCurr = BACK_TO_STATION;
+        areaToGo = 1;
+        if (RaspberryPIUse)
+          MyRpi.SendStatusToPi();
+        setNextState(STATE_PERI_FIND, 0);
+      }
+
+      // if robot is OFF , Error or in station without the timer we can start to count before shutdown
+      if ((stateCurr == STATE_OFF) || (stateCurr == STATE_ERROR) || ((stateCurr == STATE_STATION) && !timerUse))
+      {
+        /*
         Console.print("Count before power OFF  ");
         Console.print(idleTimeSec);
         Console.print(" / ");
         Console.println(batSwitchOffIfIdle * 60);
       */
-      if (idleTimeSec != BATTERY_SW_OFF)
-      {                                // battery already switched off?
-        idleTimeSec = idleTimeSec + 1; // add 1 second idle time because check only each 1 secondes
-        if (idleTimeSec > batSwitchOffIfIdle * 60)
-        {
+        if (idleTimeSec != BATTERY_SW_OFF)
+        {                                // battery already switched off?
+          idleTimeSec = idleTimeSec + 1; // add 1 second idle time because check only each 1 secondes
+          if (idleTimeSec > batSwitchOffIfIdle * 60)
+          {
 
-          if (RaspberryPIUse)
-          {
-            Console.println(F("PCB power OFF after 30 secondes, need to wait until PI Stop power the USB Native Port"));
-            MyRpi.sendCommandToPi("PowerOffPi");
-            //delay(30000); //wait 30Sec  until pi is OFF or the USB native power again the due and the undervoltage never switch OFF
-            delayWithWatchdog(30000);
+            if (RaspberryPIUse)
+            {
+              Console.println(F("PCB power OFF after 30 secondes, need to wait until PI Stop power the USB Native Port"));
+              MyRpi.sendCommandToPi("PowerOffPi");
+              //delay(30000); //wait 30Sec  until pi is OFF or the USB native power again the due and the undervoltage never switch OFF
+              delayWithWatchdog(30000);
+            }
+            else
+            {
+              Console.println(F("PCB power OFF immediatly"));
+            }
+            setBeeper(200, 50, 50, 200, 100);
+            loadSaveErrorCounters(false); // saves error counters
+            loadSaveRobotStats(false);    // saves robot stats
+            idleTimeSec = BATTERY_SW_OFF; // flag to remember that battery is switched off
+            Console.println(F("BATTERY switching OFF"));
+            setActuator(ACT_BATTERY_SW, 0); // switch off battery
           }
-          else
-          {
-            Console.println(F("PCB power OFF immediatly"));
-          }
-          setBeeper(200, 50, 50, 200, 100);
-          loadSaveErrorCounters(false); // saves error counters
-          loadSaveRobotStats(false);    // saves robot stats
-          idleTimeSec = BATTERY_SW_OFF; // flag to remember that battery is switched off
-          Console.println(F("BATTERY switching OFF"));
-          setActuator(ACT_BATTERY_SW, 0); // switch off battery
+        }
+      }
+      else
+      {
+        resetIdleTime();
+      }
+      unsigned long timeStop = millis();
+      if ((debugConsole) && (timeStop - timeStart > 250))
+      {
+        Console.print("checkBattery executing time: ");
+        Console.println(timeStop - timeStart);
+      }
+    }
+  }
+
+  // check robot stats
+  void Robot::checkRobotStats()
+  {
+    unsigned long timeStart = millis();
+    if (millis() < nextTimeRobotStats)
+      return;
+    nextTimeRobotStats = millis() + 60000;
+
+    //----------------stats mow time------------------------------------------------------
+    statsMowTimeHoursTotal = double(statsMowTimeMinutesTotal) / 60;
+    if (statsMowTimeTotalStart)
+    {
+      statsMowTimeMinutesTripCounter++;
+      statsMowTimeMinutesTrip = statsMowTimeMinutesTripCounter;
+      statsMowTimeMinutesTotal++;
+    }
+    else if (statsMowTimeMinutesTripCounter != 0)
+    {
+      statsMowTimeMinutesTripCounter = 0;
+    }
+
+    //---------------stats Battery---------------------------------------------------------
+    if ((stateCurr == STATE_STATION_CHARGING) && (stateTime >= 60000))
+    {                                // count only if mower is charged longer then 60sec
+      statsBatteryChargingCounter++; // temporary counter
+      if (statsBatteryChargingCounter == 1)
+        statsBatteryChargingCounterTotal += 1;
+      statsBatteryChargingCapacityTrip = batCapacity;
+      statsBatteryChargingCapacityTotal += (batCapacity - lastTimeBatCapacity); // summ up only the difference between actual batCapacity and last batCapacity
+      lastTimeBatCapacity = batCapacity;
+    }
+    else
+    { // resets values to 0 when mower is not charging
+      statsBatteryChargingCounter = 0;
+      batCapacity = 0;
+    }
+
+    if (isnan(statsBatteryChargingCapacityTrip))
+      statsBatteryChargingCapacityTrip = 0;
+    if (isnan(statsBatteryChargingCounterTotal))
+      statsBatteryChargingCounterTotal = 0; // for first run ensures that the counter is 0
+    if (isnan(statsBatteryChargingCapacityTotal))
+      statsBatteryChargingCapacityTotal = 0; // for first run ensures that the counter is 0
+    if (statsBatteryChargingCapacityTotal <= 0 || statsBatteryChargingCounterTotal == 0)
+      statsBatteryChargingCapacityAverage = 0; // make sure that there is no dividing by zero
+    else
+      statsBatteryChargingCapacityAverage = statsBatteryChargingCapacityTotal / statsBatteryChargingCounterTotal;
+
+    //----------------new stats goes here------------------------------------------------------
+    //mowPatternJustChange;
+    mowPatternDuration++;
+    unsigned long timeStop = millis();
+    if ((debugConsole) && (timeStop - timeStart > 250))
+    {
+      Console.print("checkRobotStats executing time: ");
+      Console.println(timeStop - timeStart);
+    }
+  }
+
+  void Robot::reverseOrBidir(byte aRollDir)
+  {
+
+    if (mowPatternCurr == MOW_LANES)
+      setNextState(STATE_STOP_ON_BUMPER, rollDir);
+    else
+      setNextState(STATE_STOP_ON_BUMPER, aRollDir);
+  }
+
+  // check motor current
+  void Robot::checkCurrent()
+  {
+    unsigned long timeStart = millis();
+    if (millis() < nextTimeCheckCurrent)
+      return;
+    nextTimeCheckCurrent = millis() + 100;
+    if (statusCurr == NORMAL_MOWING)
+    { //do not start the spirale if in tracking and motor detect high grass
+      if ((motorMowEnable) && ((motor1MowSense >= 0.8 * motorMowPowerMax) || (motor2MowSense >= 0.8 * motorMowPowerMax)))
+      {
+        spiraleNbTurn = 0;
+        halfLaneNb = 0;
+        highGrassDetect = true;
+        Console.println("Warning  motorMowSense >= 0.8 * motorMowPowerMax ");
+        ////  http://forums.parallax.com/discussion/comment/1326585#Comment_1326585
+      }
+      else
+      {
+        if ((spiraleNbTurn >= 8) || (halfLaneNb >= 8))
+        {
+          spiraleNbTurn = 0;
+          halfLaneNb = 0;
+          highGrassDetect = false; //stop the spirale
         }
       }
     }
+
+    if ((motorMowEnable) && (motor1MowSense >= motorMowPowerMax))
+    {
+      motor1MowSenseCounter++;
+      Console.print("Warning  motor1MowSense >= motorMowPowerMax and Counter time is ");
+      Console.println(motor1MowSenseCounter);
+      Console.println(motor1MowSense);
+    }
+    if ((secondMowMotor) && (motorMowEnable) && (motor2MowSense >= motorMowPowerMax))
+    {
+      motor2MowSenseCounter++;
+      Console.print("Warning  motor2MowSense >= motorMowPowerMax and Counter time is ");
+      Console.println(motor2MowSenseCounter);
+      Console.println(motor2MowSense);
+    }
+
     else
     {
-      resetIdleTime();
-    }
-    unsigned long timeStop = millis();
-    if ((debugConsole) && (timeStop - timeStart > 250))
-    {
-      Console.print("checkBattery executing time: ");
-      Console.println(timeStop - timeStart);
-    }
-  }
-}
 
-// check robot stats
-void Robot::checkRobotStats()
-{
-  unsigned long timeStart = millis();
-  if (millis() < nextTimeRobotStats)
-    return;
-  nextTimeRobotStats = millis() + 60000;
-
-  //----------------stats mow time------------------------------------------------------
-  statsMowTimeHoursTotal = double(statsMowTimeMinutesTotal) / 60;
-  if (statsMowTimeTotalStart)
-  {
-    statsMowTimeMinutesTripCounter++;
-    statsMowTimeMinutesTrip = statsMowTimeMinutesTripCounter;
-    statsMowTimeMinutesTotal++;
-  }
-  else if (statsMowTimeMinutesTripCounter != 0)
-  {
-    statsMowTimeMinutesTripCounter = 0;
-  }
-
-  //---------------stats Battery---------------------------------------------------------
-  if ((stateCurr == STATE_STATION_CHARGING) && (stateTime >= 60000))
-  {                                // count only if mower is charged longer then 60sec
-    statsBatteryChargingCounter++; // temporary counter
-    if (statsBatteryChargingCounter == 1)
-      statsBatteryChargingCounterTotal += 1;
-    statsBatteryChargingCapacityTrip = batCapacity;
-    statsBatteryChargingCapacityTotal += (batCapacity - lastTimeBatCapacity); // summ up only the difference between actual batCapacity and last batCapacity
-    lastTimeBatCapacity = batCapacity;
-  }
-  else
-  { // resets values to 0 when mower is not charging
-    statsBatteryChargingCounter = 0;
-    batCapacity = 0;
-  }
-
-  if (isnan(statsBatteryChargingCapacityTrip))
-    statsBatteryChargingCapacityTrip = 0;
-  if (isnan(statsBatteryChargingCounterTotal))
-    statsBatteryChargingCounterTotal = 0; // for first run ensures that the counter is 0
-  if (isnan(statsBatteryChargingCapacityTotal))
-    statsBatteryChargingCapacityTotal = 0; // for first run ensures that the counter is 0
-  if (statsBatteryChargingCapacityTotal <= 0 || statsBatteryChargingCounterTotal == 0)
-    statsBatteryChargingCapacityAverage = 0; // make sure that there is no dividing by zero
-  else
-    statsBatteryChargingCapacityAverage = statsBatteryChargingCapacityTotal / statsBatteryChargingCounterTotal;
-
-  //----------------new stats goes here------------------------------------------------------
-  //mowPatternJustChange;
-  mowPatternDuration++;
-  unsigned long timeStop = millis();
-  if ((debugConsole) && (timeStop - timeStart > 250))
-  {
-    Console.print("checkRobotStats executing time: ");
-    Console.println(timeStop - timeStart);
-  }
-}
-
-void Robot::reverseOrBidir(byte aRollDir)
-{
-
-  if (mowPatternCurr == MOW_LANES)
-    setNextState(STATE_STOP_ON_BUMPER, rollDir);
-  else
-    setNextState(STATE_STOP_ON_BUMPER, aRollDir);
-}
-
-// check motor current
-void Robot::checkCurrent()
-{
-  unsigned long timeStart = millis();
-  if (millis() < nextTimeCheckCurrent)
-    return;
-  nextTimeCheckCurrent = millis() + 100;
-  if (statusCurr == NORMAL_MOWING)
-  { //do not start the spirale if in tracking and motor detect high grass
-    if ((motorMowEnable) && ((motor1MowSense >= 0.8 * motorMowPowerMax) || (motor2MowSense >= 0.8 * motorMowPowerMax)))
-    {
-      spiraleNbTurn = 0;
-      halfLaneNb = 0;
-      highGrassDetect = true;
-      Console.println("Warning  motorMowSense >= 0.8 * motorMowPowerMax ");
-      ////  http://forums.parallax.com/discussion/comment/1326585#Comment_1326585
-    }
-    else
-    {
-      if ((spiraleNbTurn >= 8) || (halfLaneNb >= 8))
-      {
-        spiraleNbTurn = 0;
-        halfLaneNb = 0;
-        highGrassDetect = false; //stop the spirale
+      errorCounterMax[ERR_MOW_SENSE] = 0;
+      motor1MowSenseCounter = 0;
+      if (secondMowMotor)
+        motor2MowSenseCounter = 0; // second mow motor
+      if ((lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 60000))
+      { // wait 60 seconds before switching on again
+        errorCounter[ERR_MOW_SENSE] = 0;
+        if ((stateCurr == STATE_FORWARD_ODO))
+        { //avoid risq of restart not allowed
+          motorMowEnable = true;
+          lastTimeMotorMowStuck = 0;
+          Console.println("Time to restart the mow motor(s) after the 60 secondes pause");
+        }
       }
     }
-  }
-
-  if ((motorMowEnable) && (motor1MowSense >= motorMowPowerMax))
-  {
-    motor1MowSenseCounter++;
-    Console.print("Warning  motor1MowSense >= motorMowPowerMax and Counter time is ");
-    Console.println(motor1MowSenseCounter);
-    Console.println(motor1MowSense);
-  }
-  if ((secondMowMotor) && (motorMowEnable) && (motor2MowSense >= motorMowPowerMax))
-  {
-    motor2MowSenseCounter++;
-    Console.print("Warning  motor2MowSense >= motorMowPowerMax and Counter time is ");
-    Console.println(motor2MowSenseCounter);
-    Console.println(motor2MowSense);
-  }
-
-  else
-  {
-
-    errorCounterMax[ERR_MOW_SENSE] = 0;
-    motor1MowSenseCounter = 0;
-    if (secondMowMotor)
-      motor2MowSenseCounter = 0; // second mow motor
-    if ((lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 60000))
-    { // wait 60 seconds before switching on again
-      errorCounter[ERR_MOW_SENSE] = 0;
-      if ((stateCurr == STATE_FORWARD_ODO))
-      { //avoid risq of restart not allowed
-        motorMowEnable = true;
-        lastTimeMotorMowStuck = 0;
-        Console.println("Time to restart the mow motor(s) after the 60 secondes pause");
-      }
-    }
-  }
-  //need to check this
-  if ((motorMowEnable) && ((motor1MowSenseCounter >= 20) || (motor2MowSenseCounter >= 20)))
-  { //ignore motorMowPower for 1 seconds
-    motorMowEnable = false;
-    Console.println("Motor mow current overload. Motor STOP and try to start again after 1 minute");
-    addErrorCounter(ERR_MOW_SENSE);
-    lastTimeMotorMowStuck = millis();
-  }
-
-  //bb add test current in manual mode and stop immediatly
-  if (statusCurr == MANUAL)
-  {
-    if (motorLeftPower >= motorPowerMax)
-    {
-      motorLeftSenseCounter++;
-      setMotorPWM(0, 0, false);
-      addErrorCounter(ERR_MOTOR_LEFT);
-      setNextState(STATE_ERROR, 0);
-      Console.println("Error in Manual: Motor Left current");
-    }
-    if (motorRightPower >= motorPowerMax)
-    {
-      motorRightSenseCounter++;
-      setMotorPWM(0, 0, false);
-      addErrorCounter(ERR_MOTOR_RIGHT);
-      setNextState(STATE_ERROR, 0);
-      Console.println("Error in Manual: Motor Right current");
-    }
-  }
-
-  // here in auto mode
-  if (millis() > stateStartTime + motorPowerIgnoreTime)
-  {
-
-    //Motor right****************************************************************
-    //First react test to 80 % powerMax
-    if (motorRightPower >= 0.8 * motorPowerMax)
-    {
-      motorRightSenseCounter++;
-      setBeeper(1000, 50, 50, 200, 100);
-      setMotorPWM(0, 0, false);
-      Console.print("Motor Right current is 80 % of the max, value --> ");
-      Console.println(motorRightPower);
-
-      if (stateCurr != STATE_ERROR)
-      {
-        if (mowPatternCurr == MOW_LANES)
-          reverseOrBidir(rollDir);
-        else
-          reverseOrBidir(LEFT);
-      }
-    }
-    else
-    {
-      setBeeper(0, 0, 0, 0, 0);
-      motorRightSenseCounter = 0; // the sense is OK reset all the counter
-    }
-    //Second test at powerMax by increase the counter to stop to error
-    if (motorRightPower >= motorPowerMax)
-    {
-      motorRightSenseCounter++;
-      //setMotorPWM( 0, 0, false );
-      //addErrorCounter(ERR_MOTOR_RIGHT);
-      //setNextState(STATE_ERROR, 0);
-      Console.print("Warning: Motor Right current over 100% , Max possible 10 time in 1 seconde. Actual count --> ");
-      Console.println(motorRightSenseCounter);
+    //need to check this
+    if ((motorMowEnable) && ((motor1MowSenseCounter >= 20) || (motor2MowSenseCounter >= 20)))
+    { //ignore motorMowPower for 1 seconds
+      motorMowEnable = false;
+      Console.println("Motor mow current overload. Motor STOP and try to start again after 1 minute");
+      addErrorCounter(ERR_MOW_SENSE);
+      lastTimeMotorMowStuck = millis();
     }
 
-    //Motor left****************************************************************
-    //First react test to 80 % powerMax
-    if (motorLeftPower >= 0.8 * motorPowerMax)
-    {
-      motorLeftSenseCounter++;
-      setBeeper(1000, 50, 50, 100, 50);
-      setMotorPWM(0, 0, false);
-      Console.print("Motor Left current is 80 % of the max, value --> ");
-      Console.println(motorLeftPower);
-      if (stateCurr != STATE_ERROR)
-      {
-        if (mowPatternCurr == MOW_LANES)
-          reverseOrBidir(rollDir);
-        else
-          reverseOrBidir(RIGHT);
-      }
-    }
-    else
-    {
-      setBeeper(0, 0, 0, 0, 0);
-      motorLeftSenseCounter = 0; // the sense is OK reset the counter
-    }
-    //Second test at powerMax by increase the counter to stop to error
-    if (motorLeftPower >= motorPowerMax)
-    {
-      motorLeftSenseCounter++;
-      //setMotorPWM( 0, 0, false );
-      //addErrorCounter(ERR_MOTOR_LEFT);
-      //setNextState(STATE_ERROR, 0);
-      Console.print("Warning: Motor Left current over 100% , Max possible 10 time in 1 seconde. Actual count --> ");
-      Console.println(motorLeftSenseCounter);
-    }
-    //final test on the counter to generate the error and stop the mower
-    if (motorLeftSenseCounter >= 10)
-    { //the motor is stuck for more than 1 seconde 10 * 100 ms go to error.
-      Console.print("Fatal Error: Motor Left current over 100% for more than 1 seconde last power --> ");
-      Console.println(motorLeftPower);
-      addErrorCounter(ERR_MOTOR_LEFT);
-      setMotorPWM(0, 0, false);
-      setNextState(STATE_ERROR, 0);
-    }
-    if (motorRightSenseCounter >= 10)
-    { //the motor is stuck for more than 1 seconde go to error.
-      Console.print("Fatal Error: Motor Right current over 100% for more than 1 seconde last power --> ");
-      Console.println(motorRightPower);
-      addErrorCounter(ERR_MOTOR_RIGHT);
-      setMotorPWM(0, 0, false);
-      setNextState(STATE_ERROR, 0);
-    }
-
-  } //motorpower ignore time
-  unsigned long timeStop = millis();
-  if ((debugConsole) && (timeStop - timeStart > 250))
-  {
-    Console.print("checkCurrent executing time: ");
-    Console.println(timeStop - timeStart);
-  }
-}
-
-// check bumpers
-void Robot::checkBumpers()
-{
-  if ((millis() < 3000) || (!bumperUse))
-    return;
-
-  if ((bumperLeft || bumperRight))
-  {
-    unsigned long timeStart = millis();
+    //bb add test current in manual mode and stop immediatly
     if (statusCurr == MANUAL)
     {
-      Console.println("Bumper trigger in Manual mode ?????????");
-      setNextState(STATE_OFF, 0); //the bumper stop all in manual mode
-    }
-    else
-    {
-      spiraleNbTurn = 0;
-      highGrassDetect = false;
-      motorLeftRpmCurr = motorRightRpmCurr = 0;
-      motorLeftPWMCurr = motorRightPWMCurr = 0;
-      setMotorPWM(0, 0, false);
-      if (bumperLeft)
+      if (motorLeftPower >= motorPowerMax)
       {
-        Console.println("Bumper left trigger");
-        reverseOrBidir(RIGHT);
-      }
-      else
-      {
-        Console.println("Bumper right trigger");
-        reverseOrBidir(LEFT);
-      }
-    }
-    unsigned long timeStop = millis();
-    if ((debugConsole) && (timeStop - timeStart > 250))
-    {
-      Console.print("checkBumpers executing time: ");
-      Console.println(timeStop - timeStart);
-    }
-  }
-}
-
-// check drop
-void Robot::checkDrop()
-{ //the drop is used as a contact in front of the robot to detect the charging station
-  if ((millis() < 3000) || (!dropUse))
-    return;
-  if ((dropLeft || dropRight))
-  {
-    if (statusCurr == MANUAL)
-    {
-      Console.println("Drop trigger in Manual mode ?????????");
-      setNextState(STATE_OFF, 0); //the drop stop all in manual mode
-    }
-    else
-    {
-      spiraleNbTurn = 0;
-      highGrassDetect = false;
-      motorLeftRpmCurr = motorRightRpmCurr = 0;
-      motorLeftPWMCurr = motorRightPWMCurr = 0;
-      setMotorPWM(0, 0, false);
-      if (dropLeft)
-      {
-        reverseOrBidir(RIGHT);
-      }
-      else
-      {
-        reverseOrBidir(LEFT);
-      }
-    }
-  }
-} // Dropsensor - Absturzsensor
-
-// check bumpers while tracking perimeter
-void Robot::checkBumpersPerimeter()
-{
-
-  if ((bumperLeft || bumperRight))
-  { // the bumper is used to detect the station
-    motorLeftRpmCurr = motorRightRpmCurr = 0;
-    setMotorPWM(0, 0, false); //stop immediatly and station check to see if voltage on pin
-    nextTimeBattery = millis();
-    readSensors(); //read the chgVoltage
-    Console.println("Bump on Something check if it's the station");
-    setNextState(STATE_STATION_CHECK, rollDir);
-    return;
-  }
-
-  if (!UseBumperDock)
-  { // run slower because read fast the station voltage but we don't use bumper to detect station we use only charging voltage
-
-    nextTimeBattery = millis();
-    readSensors(); //read the chgVoltage immediatly
-    if (chgVoltage > 5)
-    {
-      motorLeftRpmCurr = motorRightRpmCurr = 0;
-      setMotorPWM(0, 0, false); //stop immediatly and wait 2 sec to see if voltage on pin
-      Console.println("Detect a voltage on charging contact check if it's the station");
-      setNextState(STATE_STATION_CHECK, rollDir);
-    }
-  }
-}
-
-// check perimeter as a boundary
-void Robot::checkPerimeterBoundary()
-{
-
-  if ((millis() >= nextTimeRotationChange) && (stateCurr == STATE_FORWARD_ODO) && (mowPatternCurr != MOW_LANES))
-  {                                             // change only when in straight line and random mode
-    nextTimeRotationChange = millis() + 600000; // in random change each 10 minutes
-    if (rollDir == LEFT)
-      rollDir = RIGHT; //invert the next rotate
-    else
-      rollDir = LEFT;
-    Console.print(millis());
-    Console.println(" Rotation direction Left / Right change ");
-  }
-
-  if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_MOW_SPIRALE))
-  {
-    if (perimeterTriggerTime != 0)
-    {
-      if (millis() >= perimeterTriggerTime)
-      {
-        perimeterTriggerTime = 0;
-        Console.print(F("Perimeter trigger at : "));
-        Console.println(millis());
-        //reinit spirale mowing
-        spiraleNbTurn = 0;
-        halfLaneNb = 0;
-        highGrassDetect = false; //stop the spirale
-        setNextState(STATE_PERI_OUT_STOP, rollDir);
-        return;
-      }
-    }
-  }
-
-  if ((stateCurr == STATE_PERI_OBSTACLE_AVOID))
-  { //when start in auto mode and quit the station
-    if (perimeterTriggerTime != 0)
-    {
-      if (millis() >= perimeterTriggerTime)
-      {
-        perimeterTriggerTime = 0;
-        setNextState(STATE_PERI_STOP_TOTRACK, rollDir);
-        return;
-      }
-    }
-  }
-
-  if (stateCurr == STATE_SONAR_TRIG)
-  { //wire is detected during the sonar braking need to stop immediatly
-    if (perimeterTriggerTime != 0)
-    {
-      if (millis() >= perimeterTriggerTime)
-      {
-        perimeterTriggerTime = 0;
-        setNextState(STATE_STOP_ON_BUMPER, rollDir); //use to stop immediatly
-        return;
-      }
-    }
-  }
-
-  else if ((stateCurr == STATE_ROLL))
-  {
-    if (perimeterTriggerTime != 0)
-    {
-      if (millis() >= perimeterTriggerTime)
-      {
-        perimeterTriggerTime = 0;
-        Console.println("Pourquoi je suis la ?? ?? ?? ?? ?? ?? ?? ?? ");
+        motorLeftSenseCounter++;
         setMotorPWM(0, 0, false);
-        setNextState(STATE_PERI_OUT_REV, rollDir);
-        return;
+        addErrorCounter(ERR_MOTOR_LEFT);
+        setNextState(STATE_ERROR, 0);
+        Console.println("Error in Manual: Motor Left current");
       }
-    }
-  }
-}
-
-// check lawn
-void Robot::checkLawn()
-{
-  if (!lawnSensorUse)
-    return;
-  if ((lawnSensor) && (millis() > stateStartTime + 3000))
-  {
-    if (rollDir == RIGHT)
-      reverseOrBidir(LEFT); // toggle roll dir
-    else
-      reverseOrBidir(RIGHT);
-  }
-  else
-    lawnSensor = false;
-}
-
-void Robot::checkRain()
-{
-  if (!rainUse)
-    return;
-  if (rain)
-  {
-    Console.println(F("RAIN"));
-    areaToGo = 1;
-    if (perimeterUse)
-      setNextState(STATE_PERI_FIND, 0);
-    else
-      setNextState(STATE_OFF, 0);
-  }
-}
-void Robot::checkSonarPeriTrack()
-{
-  if (!sonarUse)
-    return;
-  if (millis() < nextTimeCheckSonar)
-    return;
-  nextTimeCheckSonar = millis() + 200;
-  // if (millis() > timeToResetSpeedPeri)
-  // {
-  //   timeToResetSpeedPeri = 0; //brake the tracking during 6 secondes
-  //   ActualSpeedPeriPWM = MaxSpeedperiPwm;
-  // }
-  if (sonarRightUse)
-    sonarDistRight = readSensor(SEN_SONAR_RIGHT);
-  else
-    sonarDistRight = NO_ECHO;
-  //if (sonarLeftUse) sonarDistLeft = readSensor(SEN_SONAR_LEFT);
-  //if (sonarCenterUse) sonarDistCenter = readSensor(SEN_SONAR_CENTER);
-
-  //if (sonarDistCenter < 30 || sonarDistCenter > 150) sonarDistCenter = NO_ECHO; //need to be adjust if sonar is directly in front of mower 25Cm in my case
-  if (sonarDistRight < 30 || sonarDistRight > 150)
-    sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
-  //if (sonarDistLeft < 30 || sonarDistLeft  > 150) sonarDistLeft = NO_ECHO;
-
-  //disabled the left sonar during tracking with this line
-  sonarDistLeft = NO_ECHO;
-  sonarDistCenter = NO_ECHO;
-
-  if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow))
-  {
-    //if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow))  ||  ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
-    //setBeeper(1000, 50, 50, 60, 60);
-    Console.println("Sonar reduce speed on tracking for 2 meters");
-    whereToResetSpeed = totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
-    nextTimeCheckSonar = millis() + 4000;     //wait before next reading
-    // timeToResetSpeedPeri = millis() + 10000; //brake the tracking during 10 secondes
-    ActualSpeedPeriPWM = MaxSpeedperiPwm * dockingSpeed / 100;
-    trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
-  }
-}
-
-// check sonar
-void Robot::checkSonar()
-{
-  if (!sonarUse)
-    return;
-  if (millis() < nextTimeCheckSonar)
-    return;
-  nextTimeCheckSonar = millis() + 100;
-
-  if (sonarRightUse)
-    sonarDistRight = readSensor(SEN_SONAR_RIGHT);
-  else
-    sonarDistRight = NO_ECHO;
-  if (sonarLeftUse)
-    sonarDistLeft = readSensor(SEN_SONAR_LEFT);
-  else
-    sonarDistLeft = NO_ECHO;
-  if (sonarCenterUse)
-    sonarDistCenter = readSensor(SEN_SONAR_CENTER);
-  else
-    sonarDistCenter = NO_ECHO;
-
-  if (stateCurr == STATE_OFF)
-    return; //avoid the mower move when testing
-
-  if (sonarDistCenter < 25 || sonarDistCenter > 50)
-    sonarDistCenter = NO_ECHO; //need to be adjust if sonar is directly in front of mower 25Cm in my case
-  if (sonarDistRight < 25 || sonarDistRight > 50)
-    sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
-  if (sonarDistLeft < 25 || sonarDistLeft > 50)
-    sonarDistLeft = NO_ECHO;
-
-  if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow)) || ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) || ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow)))
-  {
-    setBeeper(2000, 500, 500, 60, 60);
-    nextTimeCheckSonar = millis() + 1500; //wait before next reading
-
-    //**************************if sonar during spirale reinit spirale variable*****************
-    spiraleNbTurn = 0;
-    halfLaneNb = 0;
-    highGrassDetect = false; //stop the spirale
-    //*********************************************************************************
-    if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))
-    {
-      //avoid the mower move when testing
-      if ((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow))
-      { //center
-        distToObstacle = sonarDistCenter;
-        Console.print("Sonar Center Trigger at cm : ");
-        Console.println(distToObstacle);
-        setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if center
-        return;
-      }
-      if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow))
-      { //right
-        distToObstacle = sonarDistRight;
-        Console.print("Sonar Right Trigger at cm : ");
-        Console.println(distToObstacle);
-        if (mowPatternCurr == MOW_LANES)
-          setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if lane mowing
-        else
-          setNextState(STATE_SONAR_TRIG, LEFT);
-        return;
-      }
-      if ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))
-      { //LEFT
-        distToObstacle = sonarDistLeft;
-        Console.print("Sonar Left Trigger at cm : ");
-        Console.println(distToObstacle);
-        if (mowPatternCurr == MOW_LANES)
-          setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if lane mowing
-        else
-          setNextState(STATE_SONAR_TRIG, RIGHT);
-        return;
-      }
-    }
-  }
-}
-
-// check IMU (tilt)
-void Robot::checkTilt()
-{
-  unsigned long timeStart = millis();
-  if (!imuUse)
-    return;
-  if (millis() < nextTimeCheckTilt)
-    return;
-  nextTimeCheckTilt = millis() + 50; // 5Hz same as nextTimeImu
-  int pitchAngle = (imu.ypr.pitch / PI * 180.0);
-  int rollAngle = (imu.ypr.roll / PI * 180.0);
-
-  if ((stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING))
-  {
-    {
-      if ((abs(pitchAngle) > 40) || (abs(rollAngle) > 40))
+      if (motorRightPower >= motorPowerMax)
       {
-        Console.print(F("Error : IMU Roll / Tilt---------------------------------------------------------------------------- -- > "));
-        Console.print(rollAngle);
-        Console.print(F(" / "));
-        Console.println(pitchAngle);
+        motorRightSenseCounter++;
+        setMotorPWM(0, 0, false);
+        addErrorCounter(ERR_MOTOR_RIGHT);
+        setNextState(STATE_ERROR, 0);
+        Console.println("Error in Manual: Motor Right current");
+      }
+    }
 
-        addErrorCounter(ERR_IMU_TILT);
+    // here in auto mode
+    if (millis() > stateStartTime + motorPowerIgnoreTime)
+    {
+
+      //Motor right****************************************************************
+      //First react test to 80 % powerMax
+      if (motorRightPower >= 0.8 * motorPowerMax)
+      {
+        motorRightSenseCounter++;
+        setBeeper(1000, 50, 50, 200, 100);
+        setMotorPWM(0, 0, false);
+        Console.print("Motor Right current is 80 % of the max, value --> ");
+        Console.println(motorRightPower);
+
+        if (stateCurr != STATE_ERROR)
+        {
+          if (mowPatternCurr == MOW_LANES)
+            reverseOrBidir(rollDir);
+          else
+            reverseOrBidir(LEFT);
+        }
+      }
+      else
+      {
+        setBeeper(0, 0, 0, 0, 0);
+        motorRightSenseCounter = 0; // the sense is OK reset all the counter
+      }
+      //Second test at powerMax by increase the counter to stop to error
+      if (motorRightPower >= motorPowerMax)
+      {
+        motorRightSenseCounter++;
+        //setMotorPWM( 0, 0, false );
+        //addErrorCounter(ERR_MOTOR_RIGHT);
+        //setNextState(STATE_ERROR, 0);
+        Console.print("Warning: Motor Right current over 100% , Max possible 10 time in 1 seconde. Actual count --> ");
+        Console.println(motorRightSenseCounter);
+      }
+
+      //Motor left****************************************************************
+      //First react test to 80 % powerMax
+      if (motorLeftPower >= 0.8 * motorPowerMax)
+      {
+        motorLeftSenseCounter++;
+        setBeeper(1000, 50, 50, 100, 50);
+        setMotorPWM(0, 0, false);
+        Console.print("Motor Left current is 80 % of the max, value --> ");
+        Console.println(motorLeftPower);
+        if (stateCurr != STATE_ERROR)
+        {
+          if (mowPatternCurr == MOW_LANES)
+            reverseOrBidir(rollDir);
+          else
+            reverseOrBidir(RIGHT);
+        }
+      }
+      else
+      {
+        setBeeper(0, 0, 0, 0, 0);
+        motorLeftSenseCounter = 0; // the sense is OK reset the counter
+      }
+      //Second test at powerMax by increase the counter to stop to error
+      if (motorLeftPower >= motorPowerMax)
+      {
+        motorLeftSenseCounter++;
+        //setMotorPWM( 0, 0, false );
+        //addErrorCounter(ERR_MOTOR_LEFT);
+        //setNextState(STATE_ERROR, 0);
+        Console.print("Warning: Motor Left current over 100% , Max possible 10 time in 1 seconde. Actual count --> ");
+        Console.println(motorLeftSenseCounter);
+      }
+      //final test on the counter to generate the error and stop the mower
+      if (motorLeftSenseCounter >= 10)
+      { //the motor is stuck for more than 1 seconde 10 * 100 ms go to error.
+        Console.print("Fatal Error: Motor Left current over 100% for more than 1 seconde last power --> ");
+        Console.println(motorLeftPower);
+        addErrorCounter(ERR_MOTOR_LEFT);
+        setMotorPWM(0, 0, false);
         setNextState(STATE_ERROR, 0);
       }
-    }
+      if (motorRightSenseCounter >= 10)
+      { //the motor is stuck for more than 1 seconde go to error.
+        Console.print("Fatal Error: Motor Right current over 100% for more than 1 seconde last power --> ");
+        Console.println(motorRightPower);
+        addErrorCounter(ERR_MOTOR_RIGHT);
+        setMotorPWM(0, 0, false);
+        setNextState(STATE_ERROR, 0);
+      }
+
+    } //motorpower ignore time
     unsigned long timeStop = millis();
     if ((debugConsole) && (timeStop - timeStart > 250))
     {
-      Console.print("checkTilt executing time: ");
+      Console.print("checkCurrent executing time: ");
       Console.println(timeStop - timeStart);
     }
   }
-}
 
-// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
-void Robot::checkIfStuck()
-{
-  if (millis() < nextTimeCheckIfStuck)
-    return;
-  nextTimeCheckIfStuck = millis() + 500;
-  /*
+  // check bumpers
+  void Robot::checkBumpers()
+  {
+    if ((millis() < 3000) || (!bumperUse))
+      return;
+
+    if ((bumperLeft || bumperRight))
+    {
+      unsigned long timeStart = millis();
+      if (statusCurr == MANUAL)
+      {
+        Console.println("Bumper trigger in Manual mode ?????????");
+        setNextState(STATE_OFF, 0); //the bumper stop all in manual mode
+      }
+      else
+      {
+        spiraleNbTurn = 0;
+        highGrassDetect = false;
+        motorLeftRpmCurr = motorRightRpmCurr = 0;
+        motorLeftPWMCurr = motorRightPWMCurr = 0;
+        setMotorPWM(0, 0, false);
+        if (bumperLeft)
+        {
+          Console.println("Bumper left trigger");
+          reverseOrBidir(RIGHT);
+        }
+        else
+        {
+          Console.println("Bumper right trigger");
+          reverseOrBidir(LEFT);
+        }
+      }
+      unsigned long timeStop = millis();
+      if ((debugConsole) && (timeStop - timeStart > 250))
+      {
+        Console.print("checkBumpers executing time: ");
+        Console.println(timeStop - timeStart);
+      }
+    }
+  }
+
+  // check drop
+  void Robot::checkDrop()
+  { //the drop is used as a contact in front of the robot to detect the charging station
+    if ((millis() < 3000) || (!dropUse))
+      return;
+    if ((dropLeft || dropRight))
+    {
+      if (statusCurr == MANUAL)
+      {
+        Console.println("Drop trigger in Manual mode ?????????");
+        setNextState(STATE_OFF, 0); //the drop stop all in manual mode
+      }
+      else
+      {
+        spiraleNbTurn = 0;
+        highGrassDetect = false;
+        motorLeftRpmCurr = motorRightRpmCurr = 0;
+        motorLeftPWMCurr = motorRightPWMCurr = 0;
+        setMotorPWM(0, 0, false);
+        if (dropLeft)
+        {
+          reverseOrBidir(RIGHT);
+        }
+        else
+        {
+          reverseOrBidir(LEFT);
+        }
+      }
+    }
+  } // Dropsensor - Absturzsensor
+
+  // check bumpers while tracking perimeter
+  void Robot::checkBumpersPerimeter()
+  {
+
+    if ((bumperLeft || bumperRight))
+    { // the bumper is used to detect the station
+      motorLeftRpmCurr = motorRightRpmCurr = 0;
+      setMotorPWM(0, 0, false); //stop immediatly and station check to see if voltage on pin
+      nextTimeBattery = millis();
+      readSensors(); //read the chgVoltage
+      Console.println("Bump on Something check if it's the station");
+      setNextState(STATE_STATION_CHECK, rollDir);
+      return;
+    }
+
+    if (!UseBumperDock)
+    { // run slower because read fast the station voltage but we don't use bumper to detect station we use only charging voltage
+
+      nextTimeBattery = millis();
+      readSensors(); //read the chgVoltage immediatly
+      if (chgVoltage > 5)
+      {
+        motorLeftRpmCurr = motorRightRpmCurr = 0;
+        setMotorPWM(0, 0, false); //stop immediatly and wait 2 sec to see if voltage on pin
+        Console.println("Detect a voltage on charging contact check if it's the station");
+        setNextState(STATE_STATION_CHECK, rollDir);
+      }
+    }
+  }
+
+  // check perimeter as a boundary
+  void Robot::checkPerimeterBoundary()
+  {
+
+    if ((millis() >= nextTimeRotationChange) && (stateCurr == STATE_FORWARD_ODO) && (mowPatternCurr != MOW_LANES))
+    {                                             // change only when in straight line and random mode
+      nextTimeRotationChange = millis() + 600000; // in random change each 10 minutes
+      if (rollDir == LEFT)
+        rollDir = RIGHT; //invert the next rotate
+      else
+        rollDir = LEFT;
+      Console.print(millis());
+      Console.println(" Rotation direction Left / Right change ");
+    }
+
+    if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_MOW_SPIRALE))
+    {
+      if (perimeterTriggerTime != 0)
+      {
+        if (millis() >= perimeterTriggerTime)
+        {
+          perimeterTriggerTime = 0;
+          Console.print(F("Perimeter trigger at : "));
+          Console.println(millis());
+          //reinit spirale mowing
+          spiraleNbTurn = 0;
+          halfLaneNb = 0;
+          highGrassDetect = false; //stop the spirale
+          setNextState(STATE_PERI_OUT_STOP, rollDir);
+          return;
+        }
+      }
+    }
+
+    if ((stateCurr == STATE_PERI_OBSTACLE_AVOID))
+    { //when start in auto mode and quit the station
+      if (perimeterTriggerTime != 0)
+      {
+        if (millis() >= perimeterTriggerTime)
+        {
+          perimeterTriggerTime = 0;
+          setNextState(STATE_PERI_STOP_TOTRACK, rollDir);
+          return;
+        }
+      }
+    }
+
+    if (stateCurr == STATE_SONAR_TRIG)
+    { //wire is detected during the sonar braking need to stop immediatly
+      if (perimeterTriggerTime != 0)
+      {
+        if (millis() >= perimeterTriggerTime)
+        {
+          perimeterTriggerTime = 0;
+          setNextState(STATE_STOP_ON_BUMPER, rollDir); //use to stop immediatly
+          return;
+        }
+      }
+    }
+
+    else if ((stateCurr == STATE_ROLL))
+    {
+      if (perimeterTriggerTime != 0)
+      {
+        if (millis() >= perimeterTriggerTime)
+        {
+          perimeterTriggerTime = 0;
+          Console.println("Pourquoi je suis la ?? ?? ?? ?? ?? ?? ?? ?? ");
+          setMotorPWM(0, 0, false);
+          setNextState(STATE_PERI_OUT_REV, rollDir);
+          return;
+        }
+      }
+    }
+  }
+
+  // check lawn
+  void Robot::checkLawn()
+  {
+    if (!lawnSensorUse)
+      return;
+    if ((lawnSensor) && (millis() > stateStartTime + 3000))
+    {
+      if (rollDir == RIGHT)
+        reverseOrBidir(LEFT); // toggle roll dir
+      else
+        reverseOrBidir(RIGHT);
+    }
+    else
+      lawnSensor = false;
+  }
+
+  void Robot::checkRain()
+  {
+    if (!rainUse)
+      return;
+    if (rain)
+    {
+      Console.println(F("RAIN"));
+      areaToGo = 1;
+      if (perimeterUse)
+        setNextState(STATE_PERI_FIND, 0);
+      else
+        setNextState(STATE_OFF, 0);
+    }
+  }
+  void Robot::checkSonarPeriTrack()
+  {
+    if (!sonarUse)
+      return;
+    if (millis() < nextTimeCheckSonar)
+      return;
+    nextTimeCheckSonar = millis() + 200;
+    // if (millis() > timeToResetSpeedPeri)
+    // {
+    //   timeToResetSpeedPeri = 0; //brake the tracking during 6 secondes
+    //   ActualSpeedPeriPWM = MaxSpeedperiPwm;
+    // }
+    if (sonarRightUse)
+      sonarDistRight = readSensor(SEN_SONAR_RIGHT);
+    else
+      sonarDistRight = NO_ECHO;
+    //if (sonarLeftUse) sonarDistLeft = readSensor(SEN_SONAR_LEFT);
+    //if (sonarCenterUse) sonarDistCenter = readSensor(SEN_SONAR_CENTER);
+
+    //if (sonarDistCenter < 30 || sonarDistCenter > 150) sonarDistCenter = NO_ECHO; //need to be adjust if sonar is directly in front of mower 25Cm in my case
+    if (sonarDistRight < 30 || sonarDistRight > 150)
+      sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
+    //if (sonarDistLeft < 30 || sonarDistLeft  > 150) sonarDistLeft = NO_ECHO;
+
+    //disabled the left sonar during tracking with this line
+    sonarDistLeft = NO_ECHO;
+    sonarDistCenter = NO_ECHO;
+
+    if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow))
+    {
+      //if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow))  ||  ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
+      //setBeeper(1000, 50, 50, 60, 60);
+      Console.println("Sonar reduce speed on tracking for 2 meters");
+      whereToResetSpeed = totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
+      nextTimeCheckSonar = millis() + 4000;     //wait before next reading
+      // timeToResetSpeedPeri = millis() + 10000; //brake the tracking during 10 secondes
+      ActualSpeedPeriPWM = MaxSpeedperiPwm * dockingSpeed / 100;
+      trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
+    }
+  }
+
+  // check sonar
+  void Robot::checkSonar()
+  {
+    if (!sonarUse)
+      return;
+    if (millis() < nextTimeCheckSonar)
+      return;
+    nextTimeCheckSonar = millis() + 100;
+
+    if (sonarRightUse)
+      sonarDistRight = readSensor(SEN_SONAR_RIGHT);
+    else
+      sonarDistRight = NO_ECHO;
+    if (sonarLeftUse)
+      sonarDistLeft = readSensor(SEN_SONAR_LEFT);
+    else
+      sonarDistLeft = NO_ECHO;
+    if (sonarCenterUse)
+      sonarDistCenter = readSensor(SEN_SONAR_CENTER);
+    else
+      sonarDistCenter = NO_ECHO;
+
+    if (stateCurr == STATE_OFF)
+      return; //avoid the mower move when testing
+
+    if (sonarDistCenter < 25 || sonarDistCenter > 50)
+      sonarDistCenter = NO_ECHO; //need to be adjust if sonar is directly in front of mower 25Cm in my case
+    if (sonarDistRight < 25 || sonarDistRight > 50)
+      sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
+    if (sonarDistLeft < 25 || sonarDistLeft > 50)
+      sonarDistLeft = NO_ECHO;
+
+    if (((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow)) || ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) || ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow)))
+    {
+      setBeeper(2000, 500, 500, 60, 60);
+      nextTimeCheckSonar = millis() + 1500; //wait before next reading
+
+      //**************************if sonar during spirale reinit spirale variable*****************
+      spiraleNbTurn = 0;
+      halfLaneNb = 0;
+      highGrassDetect = false; //stop the spirale
+      //*********************************************************************************
+      if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))
+      {
+        //avoid the mower move when testing
+        if ((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow))
+        { //center
+          distToObstacle = sonarDistCenter;
+          Console.print("Sonar Center Trigger at cm : ");
+          Console.println(distToObstacle);
+          setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if center
+          return;
+        }
+        if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow))
+        { //right
+          distToObstacle = sonarDistRight;
+          Console.print("Sonar Right Trigger at cm : ");
+          Console.println(distToObstacle);
+          if (mowPatternCurr == MOW_LANES)
+            setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if lane mowing
+          else
+            setNextState(STATE_SONAR_TRIG, LEFT);
+          return;
+        }
+        if ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))
+        { //LEFT
+          distToObstacle = sonarDistLeft;
+          Console.print("Sonar Left Trigger at cm : ");
+          Console.println(distToObstacle);
+          if (mowPatternCurr == MOW_LANES)
+            setNextState(STATE_SONAR_TRIG, rollDir); //don't change the rotation if lane mowing
+          else
+            setNextState(STATE_SONAR_TRIG, RIGHT);
+          return;
+        }
+      }
+    }
+  }
+
+  // check IMU (tilt)
+  void Robot::checkTilt()
+  {
+    unsigned long timeStart = millis();
+    if (!imuUse)
+      return;
+    if (millis() < nextTimeCheckTilt)
+      return;
+    nextTimeCheckTilt = millis() + 50; // 5Hz same as nextTimeImu
+    int pitchAngle = (imu.ypr.pitch / PI * 180.0);
+    int rollAngle = (imu.ypr.roll / PI * 180.0);
+
+    if ((stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING))
+    {
+      {
+        if ((abs(pitchAngle) > 40) || (abs(rollAngle) > 40))
+        {
+          Console.print(F("Error : IMU Roll / Tilt---------------------------------------------------------------------------- -- > "));
+          Console.print(rollAngle);
+          Console.print(F(" / "));
+          Console.println(pitchAngle);
+
+          addErrorCounter(ERR_IMU_TILT);
+          setNextState(STATE_ERROR, 0);
+        }
+      }
+      unsigned long timeStop = millis();
+      if ((debugConsole) && (timeStop - timeStart > 250))
+      {
+        Console.print("checkTilt executing time: ");
+        Console.println(timeStop - timeStart);
+      }
+    }
+  }
+
+  // check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
+  void Robot::checkIfStuck()
+  {
+    if (millis() < nextTimeCheckIfStuck)
+      return;
+    nextTimeCheckIfStuck = millis() + 500;
+    /*
     if ((gpsUse) && (gps.hdop() < 500))  {
     //float gpsSpeedRead = gps.f_speed_kmph();
     float gpsSpeed = gps.f_speed_kmph();
@@ -4905,11 +4915,11 @@ void Robot::checkIfStuck()
     }
     }
   */
-}
+  }
 
-void Robot::processGPSData()
-{
-  /*
+  void Robot::processGPSData()
+  {
+    /*
     if (millis() < nextTimeGPS) return;
     nextTimeGPS = millis() + 1000;
     float nlat, nlon;
@@ -4924,633 +4934,645 @@ void Robot::processGPSData()
     gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
     gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
   */
-}
+  }
 
-// calculate map position by odometry sensors
-void Robot::calcOdometry()
-{
-  unsigned long timeStart = millis();
-  if ((millis() < nextTimeOdometry) || (stateCurr == STATE_OFF))
-    return;
-  nextTimeOdometry = millis() + 100; //bb 300 at the original but test less
-  static int lastOdoLeft = 0;
-  static int lastOdoRight = 0;
-  int odoLeft = odometryLeft;
-  int odoRight = odometryRight;
-  int ticksLeft = odoLeft - lastOdoLeft;
-  int ticksRight = odoRight - lastOdoRight;
-  lastOdoLeft = odoLeft;
-  lastOdoRight = odoRight;
-  double left_cm = ((double)ticksLeft) / ((double)odometryTicksPerCm);
-  double right_cm = ((double)ticksRight) / ((double)odometryTicksPerCm);
-  double avg_cm = (left_cm + right_cm) / 2.0;
-  double wheel_theta = (left_cm - right_cm) / ((double)odometryWheelBaseCm);
-  //odometryTheta += wheel_theta;
-  odometryTheta = scalePI(odometryTheta - wheel_theta);
-
-  motorLeftRpmCurr = double(((((double)ticksLeft) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
-  motorRightRpmCurr = double(((((double)ticksRight) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
-  lastMotorRpmTime = millis();
-  if (stateCurr == STATE_PERI_TRACK)
-    totalDistDrive = totalDistDrive + int(avg_cm);
-  currDistToDrive = currDistToDrive + int(avg_cm);
-  if (imuUse)
+  // calculate map position by odometry sensors
+  void Robot::calcOdometry()
   {
-    odometryX += avg_cm * sin(prevYawCalcOdo);
-    odometryY += avg_cm * cos(prevYawCalcOdo);
-    prevYawCalcOdo = imu.ypr.yaw;
-  }
-  else
-  {
-    // FIXME: theta should be old theta, not new theta?
-    odometryX += avg_cm * sin(odometryTheta);
-    odometryY += avg_cm * cos(odometryTheta);
-  }
-  unsigned long timeStop = millis();
-  if ((debugConsole) && (timeStop - timeStart > 250))
-  {
-    Console.print("calcOdometry executing time: ");
-    Console.println(timeStop - timeStart);
-  }
-}
-void Robot::readDHT22()
-{
-  //read only the temperature when no motor control.
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  if ((DHT22Use) && (millis() > nextTimeReadDHT22))
-  { //read only each 30 Secondes
     unsigned long timeStart = millis();
-    nextTimeReadDHT22 = nextTimeReadDHT22 + 30000;
-    humidityDht = dht.readHumidity();
-    temperatureDht = dht.readTemperature();
-    if (temperatureDht >= maxTemperature)
-    {
-      Console.println("Temperature too high *************** Need to stop all the PCB in the next 2 minutes");
-      Console.print("Maxi Setting = ");
-      Console.print(maxTemperature);
-      Console.print(" Actual Temperature = ");
-      Console.println(temperatureDht);
-
-      nextTimeReadDHT22 = nextTimeReadDHT22 + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
-      batSwitchOffIfIdle = 2;                         //use to switch off after 1 minute
-      setNextState(STATE_ERROR, 0);
+    if ((millis() < nextTimeOdometry) || (stateCurr == STATE_OFF))
       return;
+    nextTimeOdometry = millis() + 100; //bb 300 at the original but test less
+    static int lastOdoLeft = 0;
+    static int lastOdoRight = 0;
+    int odoLeft = odometryLeft;
+    int odoRight = odometryRight;
+    int ticksLeft = odoLeft - lastOdoLeft;
+    int ticksRight = odoRight - lastOdoRight;
+    lastOdoLeft = odoLeft;
+    lastOdoRight = odoRight;
+    double left_cm = ((double)ticksLeft) / ((double)odometryTicksPerCm);
+    double right_cm = ((double)ticksRight) / ((double)odometryTicksPerCm);
+    double avg_cm = (left_cm + right_cm) / 2.0;
+    double wheel_theta = (left_cm - right_cm) / ((double)odometryWheelBaseCm);
+    //odometryTheta += wheel_theta;
+    odometryTheta = scalePI(odometryTheta - wheel_theta);
+
+    motorLeftRpmCurr = double(((((double)ticksLeft) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
+    motorRightRpmCurr = double(((((double)ticksRight) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
+    lastMotorRpmTime = millis();
+    if (stateCurr == STATE_PERI_TRACK)
+      totalDistDrive = totalDistDrive + int(avg_cm);
+    currDistToDrive = currDistToDrive + int(avg_cm);
+    if (imuUse)
+    {
+      odometryX += avg_cm * sin(prevYawCalcOdo);
+      odometryY += avg_cm * cos(prevYawCalcOdo);
+      prevYawCalcOdo = imu.ypr.yaw;
     }
-    /*
+    else
+    {
+      // FIXME: theta should be old theta, not new theta?
+      odometryX += avg_cm * sin(odometryTheta);
+      odometryY += avg_cm * cos(odometryTheta);
+    }
+    unsigned long timeStop = millis();
+    if ((debugConsole) && (timeStop - timeStart > 250))
+    {
+      Console.print("calcOdometry executing time: ");
+      Console.println(timeStop - timeStart);
+    }
+  }
+  void Robot::readDHT22()
+  {
+    //read only the temperature when no motor control.
+    // Reading temperature or humidity takes about 250 milliseconds!
+    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    if ((DHT22Use) && (millis() > nextTimeReadDHT22))
+    { //read only each 30 Secondes
+      unsigned long timeStart = millis();
+      nextTimeReadDHT22 = nextTimeReadDHT22 + 30000;
+      humidityDht = dht.readHumidity();
+      temperatureDht = dht.readTemperature();
+      if (temperatureDht >= maxTemperature)
+      {
+        Console.println("Temperature too high *************** Need to stop all the PCB in the next 2 minutes");
+        Console.print("Maxi Setting = ");
+        Console.print(maxTemperature);
+        Console.print(" Actual Temperature = ");
+        Console.println(temperatureDht);
+
+        nextTimeReadDHT22 = nextTimeReadDHT22 + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
+        batSwitchOffIfIdle = 2;                         //use to switch off after 1 minute
+        setNextState(STATE_ERROR, 0);
+        return;
+      }
+      /*
       Console.print(" Read DHT22 temperature : ");
       Console.print(temperatureDht);
       Console.print("   Humidity : ");
       Console.println(humidityDht);
     */
-    if (isnan(humidityDht) || isnan(temperatureDht))
-    {
-      Console.println("Failed to read from DHT sensor!");
-      humidityDht = 0.00;
-      temperatureDht = 0.00;
-    }
-    unsigned long timeStop = millis();
-    if ((debugConsole) && (timeStop - timeStart > 300))
-    {
-      Console.print("readDHT22 executing time: ");
-      Console.println(timeStop - timeStart);
+      if (isnan(humidityDht) || isnan(temperatureDht))
+      {
+        Console.println("Failed to read from DHT sensor!");
+        humidityDht = 0.00;
+        temperatureDht = 0.00;
+      }
+      unsigned long timeStop = millis();
+      if ((debugConsole) && (timeStop - timeStart > 300))
+      {
+        Console.print("readDHT22 executing time: ");
+        Console.println(timeStop - timeStart);
+      }
     }
   }
-}
-void Robot::checkTimeout()
-{
-  if (stateTime > motorForwTimeMax)
+  void Robot::checkTimeout()
   {
-    Console.println("Timeout on state the mower run for a too long duration ???????????????????????");
-    setNextState(STATE_PERI_OUT_STOP, !rollDir); // toggle roll dir
+    if (stateTime > motorForwTimeMax)
+    {
+      Console.println("Timeout on state the mower run for a too long duration ???????????????????????");
+      setNextState(STATE_PERI_OUT_STOP, !rollDir); // toggle roll dir
+    }
   }
-}
 
-void Robot::purgeConsole()
-{
-
-  while ((!RaspberryPIUse) && (Console.available())) // no if raspberry use
-    Console.read();
-}
-
-char Robot::waitCharConsole()
-{
-  while ((!RaspberryPIUse) && (Console.available())) // no if raspberry use
-    return (char)Console.read();
-}
-
-String Robot::waitStringConsole()
-{
-  String s = "";
-  char ch;
-  while (true)
+  void Robot::purgeConsole()
   {
-    ch = waitCharConsole();
-    if (ch == '\n' || ch == '\r')
-      break;
+
+    while ((!RaspberryPIUse) && (Console.available())) // no if raspberry use
+      Console.read();
+  }
+
+  char Robot::waitCharConsole()
+  {
+    while ((!RaspberryPIUse) && (Console.available())) // no if raspberry use
+      return (char)Console.read();
+  }
+
+  String Robot::waitStringConsole()
+  {
+    String s = "";
+    char ch;
+    while (true)
+    {
+      ch = waitCharConsole();
+      if (ch == '\n' || ch == '\r')
+        break;
+      else
+        s += ch;
+    };
+    return s;
+  }
+
+  void Robot::loop()
+  {
+    stateTime = millis() - stateStartTime;
+    int steer;
+
+    ADCMan.run();
+    perimeter.run();
+    if (RaspberryPIUse)
+      MyRpi.run();
     else
-      s += ch;
-  };
-  return s;
-}
+      readSerial();
 
-void Robot::loop()
-{
-  stateTime = millis() - stateStartTime;
-  int steer;
-
-  ADCMan.run();
-  perimeter.run();
-  if (RaspberryPIUse)
-    MyRpi.run();
-  else
-    readSerial();
-
-  if (bluetoothUse)
-  {
-    rc.readSerial();
-  }
-  readSensors();
-  //checkIfStuck();
-  checkRobotStats();
-  checkPerimeterBoundary();
-  calcOdometry();
-  //checkOdometryFaults();
-  if (stateCurr == STATE_OFF)
-    checkButton(); //read only when needed
-  motorMowControl();
-  checkTilt();
-  if ((stateCurr == STATE_PERI_OUT_STOP) && (statusCurr == NORMAL_MOWING))
-  { //read only timer here for fast processing on odo
-    checkTimer();
-  }
-  beeper();
-
-  if ((stateCurr != STATE_STATION_CHARGING) || (stateCurr != STATE_STATION) || (stateCurr != STATE_PERI_TRACK))
-  {
-    if ((imuUse) && (millis() >= nextTimeImuLoop))
+    if (bluetoothUse)
     {
-      imu.run();
-      nextTimeImuLoop = millis() + 50;
-      /* Console.print(" Yaw ");
+      rc.readSerial();
+    }
+    readSensors();
+    //checkIfStuck();
+    checkRobotStats();
+    checkPerimeterBoundary();
+    calcOdometry();
+    //checkOdometryFaults();
+    if (stateCurr == STATE_OFF)
+      checkButton(); //read only when needed
+    motorMowControl();
+    checkTilt();
+    if ((stateCurr == STATE_PERI_OUT_STOP) && (statusCurr == NORMAL_MOWING))
+    { //read only timer here for fast processing on odo
+      checkTimer();
+    }
+    beeper();
+
+    if ((stateCurr != STATE_STATION_CHARGING) || (stateCurr != STATE_STATION) || (stateCurr != STATE_PERI_TRACK))
+    {
+      if ((imuUse) && (millis() >= nextTimeImuLoop))
+      {
+        imu.run();
+        nextTimeImuLoop = millis() + 50;
+        /* Console.print(" Yaw ");
         Console.print(imu.ypr.yaw);
         Console.print(" Pitch ");
         Console.print(imu.ypr.pitch);
         Console.print(" Roll ");
         Console.println(imu.ypr.roll);
       */
+      }
     }
-  }
 
-  if (gpsUse && gpsReady)
-  {
-    gps.run();
-    //processGPSData();
-  }
-
-  if (millis() >= nextTimeInfo)
-  {
-    if ((millis() - nextTimeInfo > 250))
+    if (gpsUse && gpsReady)
     {
-      Console.print("------ LOOP NOT OK DUE IS OVERLOAD -- Over 1 sec ");
-      Console.println((millis() - nextTimeInfo));
+      gps.run();
+      //processGPSData();
     }
-    nextTimeInfo = millis() + 1000; //1000
-    printInfo(Console);
-    checkErrorCounter();
-    if (stateCurr == STATE_REMOTE)
-      printRemote();
-    loopsPerSec = loopsPerSecCounter;
-    loopsPerSecCounter = 0;
-  }
 
-  if (millis() >= nextTimePfodLoop)
-  {
-    nextTimePfodLoop = millis() + 200;
-    rc.run();
-  }
-
-  // state machine - things to do *PERMANENTLY* for current state
-  // robot state machine
-
-  switch (stateCurr)
-  {
-
-  case STATE_ERROR:
-    // fatal-error
-    checkBattery();
-    if (millis() >= nextTimeErrorBeep)
+    if (millis() >= nextTimeInfo)
     {
-      nextTimeErrorBeep = millis() + 5000;
-      setBeeper(600, 50, 50, 200, 0); //error
+      if ((millis() - nextTimeInfo > 250))
+      {
+        Console.print("------ LOOP NOT OK DUE IS OVERLOAD -- Over 1 sec ");
+        Console.println((millis() - nextTimeInfo));
+      }
+      nextTimeInfo = millis() + 1000; //1000
+      printInfo(Console);
+      checkErrorCounter();
+      if (stateCurr == STATE_REMOTE)
+        printRemote();
+      loopsPerSec = loopsPerSecCounter;
+      loopsPerSecCounter = 0;
+    }
+
+    if (millis() >= nextTimePfodLoop)
+    {
+      nextTimePfodLoop = millis() + 200;
+      rc.run();
+    }
+
+    // state machine - things to do *PERMANENTLY* for current state
+    // robot state machine
+
+    switch (stateCurr)
+    {
+
+    case STATE_ERROR:
+      // fatal-error
+      checkBattery();
+      if (millis() >= nextTimeErrorBeep)
+      {
+        nextTimeErrorBeep = millis() + 5000;
+        setBeeper(600, 50, 50, 200, 0); //error
+
+        motorControlOdo();
+      }
+      // send errors to pi
+      if ((RaspberryPIUse) && (millis() >= nextTimeSendErr))
+      {
+        nextTimeSendErr = millis() + 1000;
+        MyRpi.RaspberryPISendErr();
+      }
+      break;
+
+    case STATE_OFF:
+      // robot is turned off
+      if ((batMonitor) && (millis() - stateStartTime > 2000))
+      { //the charger is plug
+        if (chgVoltage > 5.0)
+        {
+          setNextState(STATE_STATION, 0);
+          return;
+        }
+      }
+      imuDriveHeading = imu.ypr.yaw / PI * 180;
+      motorControlOdo();
+      //bber13
+      motorMowEnable = false; //to stop mow motor in OFF mode by pressing OFF again (the one shot OFF is bypass)
+      checkSonar();           // only for test never use or the mower can't stay into the station
+      readDHT22();
+      checkBattery();
+
+      break;
+
+    case STATE_REMOTE:
+      // remote control mode (RC)
+      //if (remoteSwitch > 50) setNextState(STATE_FORWARD, 0);
+      steer = ((double)motorSpeedMaxRpm / 2) * (((double)remoteSteer) / 100.0);
+      if (remoteSpeed < 0)
+        steer *= -1;
+      motorLeftSpeedRpmSet = ((double)motorSpeedMaxRpm) * (((double)remoteSpeed) / 100.0) - steer;
+      motorRightSpeedRpmSet = ((double)motorSpeedMaxRpm) * (((double)remoteSpeed) / 100.0) + steer;
+      motorLeftSpeedRpmSet = max(-motorSpeedMaxRpm, min(motorSpeedMaxRpm, motorLeftSpeedRpmSet));
+      motorRightSpeedRpmSet = max(-motorSpeedMaxRpm, min(motorSpeedMaxRpm, motorRightSpeedRpmSet));
+      motorMowSpeedPWMSet = ((double)motorMowSpeedMaxPwm) * (((double)remoteMow) / 100.0);
+      motorControl();
+
+      break;
+
+    case STATE_MANUAL:
+      checkCurrent();
+      checkBumpers();
+      checkDrop();
+      motorControl();
+      break;
+
+    case STATE_FORWARD:
+      // driving forward
+
+      checkRain();
+      checkCurrent();
+      checkBumpers();
+      checkDrop(); // Dropsensor - Absturzsensor
+      // checkSonar();
+      checkLawn();
+      checkTimeout();
+      motorControl();
+      break;
+
+    case STATE_FORWARD_ODO:
+      // driving forward with odometry control
 
       motorControlOdo();
-    }
-    // send errors to pi
-    if ((RaspberryPIUse) && (millis() >= nextTimeSendErr))
-    {
-      nextTimeSendErr = millis() + 1000;
-      MyRpi.RaspberryPISendErr();
-    }
-    break;
 
-  case STATE_OFF:
-    // robot is turned off
-    if ((batMonitor) && (millis() - stateStartTime > 2000))
-    { //the charger is plug
-      if (chgVoltage > 5.0)
+      //manage the imu////////////////////////////////////////////////////////////
+      if (imuUse)
       {
-        setNextState(STATE_STATION, 0);
-        return;
+        //when findedYaw = 999 it's mean that the lane is changed and the imu need to be adjusted to the compass
+        if ((findedYaw == 999) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000) && (mowPatternCurr == MOW_LANES))
+        { //try to find compass yaw
+          setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
+          return;
+        }
+
+        //-----------here and before reverse the mower is stop so mark a pause to autocalibrate DMP-----------
+        if ((millis() > nextTimeToDmpAutoCalibration) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000))
+        {
+          setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
+          return;
+          // needDmpAutoCalibration = true; //the calibration start each x minutes
+          // nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
+          // endTimeCalibration = millis() + maxDurationDmpAutocalib * 1000;  //max duration calibration
+        }
       }
-    }
-    imuDriveHeading = imu.ypr.yaw / PI * 180;
-    motorControlOdo();
-    //bber13
-    motorMowEnable = false; //to stop mow motor in OFF mode by pressing OFF again (the one shot OFF is bypass)
-    checkSonar();           // only for test never use or the mower can't stay into the station
-    readDHT22();
-    checkBattery();
+      //-----------------------------------------------------------------------------
 
-    break;
+      //the normal state traitement alternatively the lenght is 300ml or 10 ml for example
+      if ((odometryRight > stateEndOdometryRight) || (odometryLeft > stateEndOdometryLeft))
+      {
+        if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir))
+        {
+          Console.println("MAX LANE LENGHT TRIGGER time to reverse");
+          setNextState(STATE_PERI_OUT_STOP, rollDir);
+        }
+        else
+        {
+          Console.println("more than 300 ML in straight line ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ? ");
+          setBeeper(300, 150, 150, 160, 0);
+          setNextState(STATE_PERI_OUT_STOP, rollDir);
+        }
+      }
 
-  case STATE_REMOTE:
-    // remote control mode (RC)
-    //if (remoteSwitch > 50) setNextState(STATE_FORWARD, 0);
-    steer = ((double)motorSpeedMaxRpm / 2) * (((double)remoteSteer) / 100.0);
-    if (remoteSpeed < 0)
-      steer *= -1;
-    motorLeftSpeedRpmSet = ((double)motorSpeedMaxRpm) * (((double)remoteSpeed) / 100.0) - steer;
-    motorRightSpeedRpmSet = ((double)motorSpeedMaxRpm) * (((double)remoteSpeed) / 100.0) + steer;
-    motorLeftSpeedRpmSet = max(-motorSpeedMaxRpm, min(motorSpeedMaxRpm, motorLeftSpeedRpmSet));
-    motorRightSpeedRpmSet = max(-motorSpeedMaxRpm, min(motorSpeedMaxRpm, motorRightSpeedRpmSet));
-    motorMowSpeedPWMSet = ((double)motorMowSpeedMaxPwm) * (((double)remoteMow) / 100.0);
-    motorControl();
+      //-----------here need to start to mow in spirale or half lane lenght-----------
+      if (highGrassDetect)
+      {
 
-    break;
+        if ((mowPatternCurr == MOW_LANES))
+        {
 
-  case STATE_MANUAL:
-    checkCurrent();
-    checkBumpers();
-    checkDrop();
-    motorControl();
-    break;
-
-  case STATE_FORWARD:
-    // driving forward
-
-    checkRain();
-    checkCurrent();
-    checkBumpers();
-    checkDrop(); // Dropsensor - Absturzsensor
-    // checkSonar();
-    checkLawn();
-    checkTimeout();
-    motorControl();
-    break;
-
-  case STATE_FORWARD_ODO:
-    // driving forward with odometry control
-
-    motorControlOdo();
-
-    //manage the imu////////////////////////////////////////////////////////////
-    if (imuUse)
-    {
-      //when findedYaw = 999 it's mean that the lane is changed and the imu need to be adjusted to the compass
-      if ((findedYaw == 999) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000) && (mowPatternCurr == MOW_LANES))
-      { //try to find compass yaw
-        setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
+          //if (halfLaneNb == 0) setNextState(STATE_ESCAPE_LANE, rollDir); //don't work need to check
+          //if (halfLaneNb == 0) setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
+          setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
+        }
+        else
+        {
+          setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
+        }
         return;
       }
 
-      //-----------here and before reverse the mower is stop so mark a pause to autocalibrate DMP-----------
-      if ((millis() > nextTimeToDmpAutoCalibration) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000))
-      {
-        setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
-        return;
-        // needDmpAutoCalibration = true; //the calibration start each x minutes
-        // nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
-        // endTimeCalibration = millis() + maxDurationDmpAutocalib * 1000;  //max duration calibration
-      }
-    }
-    //-----------------------------------------------------------------------------
+      checkRain();
+      checkCurrent();
+      checkBumpers();
+      checkDrop(); // Dropsensor - Absturzsensor
+      checkSonar();
 
-    //the normal state traitement alternatively the lenght is 300ml or 10 ml for example
-    if ((odometryRight > stateEndOdometryRight) || (odometryLeft > stateEndOdometryLeft))
-    {
-      if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir))
-      {
-        Console.println("MAX LANE LENGHT TRIGGER time to reverse");
+      //checkLawn();
+      checkTimeout();
+      checkBattery();
+
+      break;
+
+    case STATE_ESCAPE_LANE:
+      motorControlOdo();
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
         setNextState(STATE_PERI_OUT_STOP, rollDir);
-      }
-      else
+      checkCurrent();
+      checkBumpers();
+      checkDrop(); // Dropsensor - Absturzsensor
+      //checkSonar();
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        Console.println("more than 300 ML in straight line ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ? ");
-        setBeeper(300, 150, 150, 160, 0);
-        setNextState(STATE_PERI_OUT_STOP, rollDir);
+        Console.println("Warning can t escape_lane in time ");
+        setNextState(STATE_PERI_OUT_STOP, rollDir); //if the motor can't rech the odocible in slope
       }
-    }
+      break;
 
-    //-----------here need to start to mow in spirale or half lane lenght-----------
-    if (highGrassDetect)
-    {
-
-      if ((mowPatternCurr == MOW_LANES))
+    case STATE_ROLL_WAIT:
+      if ((odometryLeft >= stateEndOdometryLeft) || (odometryRight <= stateEndOdometryRight))
       {
-
-        //if (halfLaneNb == 0) setNextState(STATE_ESCAPE_LANE, rollDir); //don't work need to check
-        //if (halfLaneNb == 0) setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
-        setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
+        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+        { //wait until the 2 motor completly stop
+          Console.print(" OdometryLeft ");
+          Console.print(odometryLeft);
+          Console.print(" / stateEndOdometryLeft ");
+          Console.print(stateEndOdometryLeft);
+          Console.print(" OdometryRight ");
+          Console.print(odometryRight);
+          Console.print(" / stateEndOdometryRight ");
+          Console.print(stateEndOdometryRight);
+          Console.print(" yawtofind ");
+          Console.println(findedYaw);
+          Console.print(" odometry find the Opposit Yaw at ");
+          Console.println((imu.ypr.yaw / PI * 180));
+          setNextState(STATE_OFF, rollDir);
+          //setNextState(STATE_FORWARD_ODO, rollDir);
+        }
       }
-      else
+      motorControlOdo();
+      break;
+
+    case STATE_CIRCLE:
+      // not use
+      motorControl();
+      break;
+
+    case STATE_PERI_OBSTACLE_REV:
+      // perimeter tracking reverse for  x cm
+      motorControlOdo();
+      if ((odometryRight <= stateEndOdometryRight) || (odometryLeft <= stateEndOdometryLeft))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop
+          setNextState(STATE_PERI_OBSTACLE_ROLL, RIGHT);
+        }
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
-      }
-      return;
-    }
-
-    checkRain();
-    checkCurrent();
-    checkBumpers();
-    checkDrop(); // Dropsensor - Absturzsensor
-    checkSonar();
-
-    //checkLawn();
-    checkTimeout();
-    checkBattery();
-
-    break;
-
-  case STATE_ESCAPE_LANE:
-    motorControlOdo();
-    if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-      setNextState(STATE_PERI_OUT_STOP, rollDir);
-    checkCurrent();
-    checkBumpers();
-    checkDrop(); // Dropsensor - Absturzsensor
-    //checkSonar();
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t escape_lane in time ");
-      setNextState(STATE_PERI_OUT_STOP, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
-
-  case STATE_ROLL_WAIT:
-    if ((odometryLeft >= stateEndOdometryLeft) || (odometryRight <= stateEndOdometryRight))
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-      { //wait until the 2 motor completly stop
-        Console.print(" OdometryLeft ");
-        Console.print(odometryLeft);
-        Console.print(" / stateEndOdometryLeft ");
-        Console.print(stateEndOdometryLeft);
-        Console.print(" OdometryRight ");
-        Console.print(odometryRight);
-        Console.print(" / stateEndOdometryRight ");
-        Console.print(stateEndOdometryRight);
-        Console.print(" yawtofind ");
-        Console.println(findedYaw);
-        Console.print(" odometry find the Opposit Yaw at ");
-        Console.println((imu.ypr.yaw / PI * 180));
-        setNextState(STATE_OFF, rollDir);
-        //setNextState(STATE_FORWARD_ODO, rollDir);
-      }
-    }
-    motorControlOdo();
-    break;
-
-  case STATE_CIRCLE:
-    // not use
-    motorControl();
-    break;
-
-  case STATE_PERI_OBSTACLE_REV:
-    // perimeter tracking reverse for  x cm
-    motorControlOdo();
-    if ((odometryRight <= stateEndOdometryRight) || (odometryLeft <= stateEndOdometryLeft))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop
+        Console.println("Warning can t PERI_OBSTACLE_REV in time ");
         setNextState(STATE_PERI_OBSTACLE_ROLL, RIGHT);
       }
 
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t PERI_OBSTACLE_REV in time ");
-      setNextState(STATE_PERI_OBSTACLE_ROLL, RIGHT);
-    }
+      break;
 
-    break;
-
-  case STATE_PERI_OBSTACLE_ROLL:
-    motorControlOdo();
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-    {
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop
-        setNextState(STATE_PERI_OBSTACLE_FORW, 0);
+    case STATE_PERI_OBSTACLE_ROLL:
+      motorControlOdo();
+      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+      {
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop
+          setNextState(STATE_PERI_OBSTACLE_FORW, 0);
+        }
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t PERI_OBSTACLE_ROLL in time ");
-      setNextState(STATE_PERI_OBSTACLE_FORW, RIGHT);
-    }
-    checkCurrent();
-    checkBumpersPerimeter();
-    break;
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t PERI_OBSTACLE_ROLL in time ");
+        setNextState(STATE_PERI_OBSTACLE_FORW, RIGHT);
+      }
+      checkCurrent();
+      checkBumpersPerimeter();
+      break;
 
-  case STATE_PERI_OBSTACLE_FORW:
-    //forward
-    motorControlOdo();
-    if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-    {
+    case STATE_PERI_OBSTACLE_FORW:
+      //forward
+      motorControlOdo();
+      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+      {
 
-      setNextState(STATE_PERI_OBSTACLE_AVOID, 0);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t PERI_OBSTACLE_FORW in time ");
-      setNextState(STATE_PERI_OBSTACLE_AVOID, RIGHT);
-    }
-    checkCurrent();
-    checkBumpersPerimeter();
-    break;
+        setNextState(STATE_PERI_OBSTACLE_AVOID, 0);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t PERI_OBSTACLE_FORW in time ");
+        setNextState(STATE_PERI_OBSTACLE_AVOID, RIGHT);
+      }
+      checkCurrent();
+      checkBumpersPerimeter();
+      break;
 
-  case STATE_PERI_OBSTACLE_AVOID:
-    //circle arc
-    motorControlOdo();
-    if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
-      setNextState(STATE_PERI_FIND, 0);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can't PERI_OBSTACLE_AVOID in time ");
-      setNextState(STATE_PERI_FIND, 0);
-    }
-    checkCurrent();
-    checkBumpersPerimeter();
-    break;
+    case STATE_PERI_OBSTACLE_AVOID:
+      //circle arc
+      motorControlOdo();
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
+        setNextState(STATE_PERI_FIND, 0);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can't PERI_OBSTACLE_AVOID in time ");
+        setNextState(STATE_PERI_FIND, 0);
+      }
+      checkCurrent();
+      checkBumpersPerimeter();
+      break;
 
-  case STATE_REVERSE:
-    motorControlOdo();
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+    case STATE_REVERSE:
+      motorControlOdo();
+      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        if (rollDir == RIGHT)
+        {
+          if (motorLeftPWMCurr == 0)
+          { //wait until the left motor completly stop because rotation is inverted
+            setNextState(STATE_ROLL, rollDir);
+          }
+        }
+        else
+        {
+          if (motorRightPWMCurr == 0)
+          { //wait until the left motor completly stop because rotation is inverted
+            setNextState(STATE_ROLL, rollDir);
+          }
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t reverse in time ");
+        setNextState(STATE_ROLL, rollDir); //if the motor can't rech the odocible in slope
+      }
+
+      break;
+
+    case STATE_ROLL:
+      motorControlOdo();
       if (rollDir == RIGHT)
       {
-        if (motorLeftPWMCurr == 0)
-        { //wait until the left motor completly stop because rotation is inverted
-          setNextState(STATE_ROLL, rollDir);
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+        {
+          if (motorRightPWMCurr == 0)
+          { //wait until the left motor completly stop because rotation is inverted
+            setNextState(STATE_FORWARD_ODO, rollDir);
+          }
         }
       }
       else
       {
-        if (motorRightPWMCurr == 0)
-        { //wait until the left motor completly stop because rotation is inverted
-          setNextState(STATE_ROLL, rollDir);
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        {
+          if (motorLeftPWMCurr == 0)
+          {
+            setNextState(STATE_FORWARD_ODO, rollDir);
+          }
         }
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t reverse in time ");
-      setNextState(STATE_ROLL, rollDir); //if the motor can't rech the odocible in slope
-    }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t roll in time ");
+        setNextState(STATE_FORWARD_ODO, rollDir); //if the motor can't rech the odocible in slope
+      }
 
-    break;
+      break;
 
-  case STATE_ROLL:
-    motorControlOdo();
-    if (rollDir == RIGHT)
-    {
+    case STATE_ROLL_TONEXTTAG:
+      motorControlOdo();
+
       if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
       {
         if (motorRightPWMCurr == 0)
         { //wait until the left motor completly stop because rotation is inverted
-          setNextState(STATE_FORWARD_ODO, rollDir);
+
+          setNextState(STATE_PERI_FIND, rollDir);
         }
       }
-    }
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        if (motorLeftPWMCurr == 0)
-        {
-          setNextState(STATE_FORWARD_ODO, rollDir);
-        }
+        Console.println("Warning can t roll in time ");
+
+        setNextState(STATE_PERI_FIND, rollDir); //if the motor can't rech the odocible in slope
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t roll in time ");
-      setNextState(STATE_FORWARD_ODO, rollDir); //if the motor can't rech the odocible in slope
-    }
 
-    break;
+      break;
 
-  case STATE_ROLL_TONEXTTAG:
-    motorControlOdo();
+    case STATE_ROLL1_TO_NEWAREA:
+      motorControlOdo();
 
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-    {
-      if (motorRightPWMCurr == 0)
-      { //wait until the left motor completly stop because rotation is inverted
-
-        setNextState(STATE_PERI_FIND, rollDir);
-      }
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t roll in time ");
-
-      setNextState(STATE_PERI_FIND, rollDir); //if the motor can't rech the odocible in slope
-    }
-
-    break;
-
-  case STATE_ROLL1_TO_NEWAREA:
-    motorControlOdo();
-
-    if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-    {
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the left motor completly stop because rotation is inverted
-        setNextState(STATE_DRIVE1_TO_NEWAREA, rollDir);
-      }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t roll in time ");
-      setNextState(STATE_DRIVE1_TO_NEWAREA, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
-
-  case STATE_ROLL2_TO_NEWAREA:
-    motorControlOdo();
-    if (rollDir == RIGHT)
-    {
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
       {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
         { //wait until the left motor completly stop because rotation is inverted
-          setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
+          setNextState(STATE_DRIVE1_TO_NEWAREA, rollDir);
         }
       }
-    }
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        Console.println("Warning can t roll in time ");
+        setNextState(STATE_DRIVE1_TO_NEWAREA, rollDir); //if the motor can't rech the odocible in slope
+      }
+      break;
+
+    case STATE_ROLL2_TO_NEWAREA:
+      motorControlOdo();
+      if (rollDir == RIGHT)
+      {
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
         {
-          setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
+          if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+          { //wait until the left motor completly stop because rotation is inverted
+            setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
+          }
         }
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t roll in time ");
-      setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
-    }
-    break;
+      else
+      {
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        {
+          if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+          {
+            setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
+          }
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t roll in time ");
+        setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
+      }
+      break;
 
-  case STATE_DRIVE1_TO_NEWAREA:
-    motorControlOdo();
-    if (currDistToDrive >= newtagDistance1)
-    { // time to brake
-      setNextState(STATE_STOP_TO_NEWAREA, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t DRIVE1_TO_NEWAREA in time ");
-      setNextState(STATE_STOP_TO_NEWAREA, rollDir);
-    }
-    break;
+    case STATE_DRIVE1_TO_NEWAREA:
+      motorControlOdo();
+      if (currDistToDrive >= newtagDistance1)
+      { // time to brake
+        setNextState(STATE_STOP_TO_NEWAREA, rollDir);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t DRIVE1_TO_NEWAREA in time ");
+        setNextState(STATE_STOP_TO_NEWAREA, rollDir);
+      }
+      break;
 
-  case STATE_DRIVE2_TO_NEWAREA:
-    motorControlOdo();
-    if (currDistToDrive >= newtagDistance2)
-    { // time to brake
-      setNextState(STATE_STOP_TO_NEWAREA, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t DRIVE2_TO_NEWAREA in time ");
-      setNextState(STATE_STOP_TO_NEWAREA, rollDir);
-    }
-    break;
+    case STATE_DRIVE2_TO_NEWAREA:
+      motorControlOdo();
+      if (currDistToDrive >= newtagDistance2)
+      { // time to brake
+        setNextState(STATE_STOP_TO_NEWAREA, rollDir);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t DRIVE2_TO_NEWAREA in time ");
+        setNextState(STATE_STOP_TO_NEWAREA, rollDir);
+      }
+      break;
 
-  case STATE_STOP_TO_NEWAREA:
-    motorControlOdo();
+    case STATE_STOP_TO_NEWAREA:
+      motorControlOdo();
 
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          if (stateLast == STATE_DRIVE1_TO_NEWAREA)
+          { //2 possibility
+            setNextState(STATE_ROLL2_TO_NEWAREA, rollDir);
+          }
+          else
+          {
+            setNextState(STATE_WAIT_FOR_SIG2, rollDir);
+          }
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t  stop ON BUMPER in time ");
         if (stateLast == STATE_DRIVE1_TO_NEWAREA)
-        { //2 possibility
+        {
           setNextState(STATE_ROLL2_TO_NEWAREA, rollDir);
         }
         else
@@ -5558,287 +5580,329 @@ void Robot::loop()
           setNextState(STATE_WAIT_FOR_SIG2, rollDir);
         }
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop ON BUMPER in time ");
-      if (stateLast == STATE_DRIVE1_TO_NEWAREA)
-      {
-        setNextState(STATE_ROLL2_TO_NEWAREA, rollDir);
+
+      break;
+
+    case STATE_WAIT_FOR_SIG2:
+      motorControlOdo();
+
+      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+      { //wait until the 2 motors completly stop because rotation is inverted
+
+        if (millis() >= nextTimeReadSmoothPeriMag)
+        {
+          nextTimeReadSmoothPeriMag = millis() + 1000;
+          smoothPeriMag = perimeter.getSmoothMagnitude(0);
+          Console.print("SmoothMagnitude =  ");
+          Console.println(smoothPeriMag);
+          if ((perimeterInside) && (smoothPeriMag > 350)) //check if signal here and inside need a big value to be sure it is not only noise
+          {
+            if (areaToGo == 1)
+            {
+              statusCurr = BACK_TO_STATION; //if we are in the area1 it is to go to station
+              periFindDriveHeading = imu.ypr.yaw;
+            }
+            else
+            {
+              areaInMowing = areaToGo;
+              statusCurr = TRACK_TO_START;
+            }
+            if (RaspberryPIUse)
+              MyRpi.SendStatusToPi();
+            setNextState(STATE_PERI_FIND, rollDir);
+            return;
+          }
+        }
+      }
+      if (millis() > (stateStartTime + 180000))
+      { //wait the signal for 3 minutes
+        Console.println("Warning can t find the signal for area2 ");
+        setNextState(STATE_ERROR, rollDir);
+      }
+
+      break;
+
+    case STATE_TEST_COMPASS:
+      motorControlOdo();
+
+      YawActualDeg = (imu.ypr.yaw / PI * 180);
+
+      if ((imu.distance180(YawActualDeg, yawToFind)) < 30)
+      { //reduce speed to be sure stop
+        PwmLeftSpeed = SpeedOdoMin / 2;
+        PwmRightSpeed = -SpeedOdoMin / 2;
       }
       else
       {
-        setNextState(STATE_WAIT_FOR_SIG2, rollDir);
+        PwmLeftSpeed = SpeedOdoMin;
+        PwmRightSpeed = -SpeedOdoMin;
       }
-    }
 
-    break;
-
-  case STATE_WAIT_FOR_SIG2:
-    motorControlOdo();
-
-    if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-    { //wait until the 2 motors completly stop because rotation is inverted
-
-      if (millis() >= nextTimeReadSmoothPeriMag)
+      if ((YawActualDeg >= yawToFind - 1) && (YawActualDeg <= yawToFind + 1))
       {
-        nextTimeReadSmoothPeriMag = millis() + 1000;
-        smoothPeriMag = perimeter.getSmoothMagnitude(0);
-        Console.print("SmoothMagnitude =  ");
-        Console.println(smoothPeriMag);
-        if ((perimeterInside) && (smoothPeriMag > 350)) //check if signal here and inside need a big value to be sure it is not only noise
+        Console.print(" OdometryLeft ");
+        Console.print(odometryLeft);
+        Console.print(" OdometryRight ");
+        Console.print(odometryRight);
+        Console.print(" Find YAW ****************************************  ");
+        Console.println((imu.ypr.yaw / PI * 180));
+        setNextState(STATE_OFF, rollDir);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t TestCompass in time ");
+        setNextState(STATE_OFF, rollDir);
+      }
+
+      break;
+    case STATE_CALIB_MOTOR_SPEED:
+      motorControlOdo();
+      if ((motorRightPWMCurr == 0) && (motorLeftPWMCurr == 0))
+      {
+        Console.println("Calibration finish ");
+        Console.print("Real State Duration : ");
+        Tempovar = millis() - stateStartTime;
+        Console.println(Tempovar);
+        Console.print("Compute Max State Duration : ");
+        Console.println(MaxOdoStateDuration);
+        motorTickPerSecond = 1000 * stateEndOdometryRight / Tempovar;
+
+        Console.print(" motorTickPerSecond ");
+        Console.println(motorTickPerSecond);
+        setNextState(STATE_OFF, 0);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t TestMotor in time please check your Odometry or speed setting ");
+        setNextState(STATE_OFF, rollDir);
+      }
+
+      break;
+
+    case STATE_TEST_MOTOR:
+      motorControlOdo();
+      if ((motorRightPWMCurr == 0) && (motorLeftPWMCurr == 0))
+      {
+        Console.println("Test finish ");
+        Console.print("Real State Duration : ");
+        Console.println(millis() - stateStartTime);
+        Console.print("Compute Max State Duration : ");
+        Console.println(MaxOdoStateDuration);
+        setNextState(STATE_OFF, 0);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t TestMotor in time please check your Odometry or speed setting ");
+        setNextState(STATE_OFF, rollDir);
+      }
+      break;
+
+    case STATE_ROLL_TO_FIND_YAW:
+      motorControlOdo();
+      imu.run();
+      if ((yawToFind - 2 < (imu.comYaw / PI * 180)) && (yawToFind + 2 > (imu.comYaw / PI * 180)))
+      { //at +-2 degres
+
+        findedYaw = (imu.comYaw / PI * 180);
+        setNextState(STATE_STOP_CALIBRATE, rollDir);
+      }
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration + 6000))
+      {
+        Console.println("Warning can t roll to find yaw in time The Compass is certainly HS ");
+        setNextState(STATE_STOP_CALIBRATE, rollDir);
+      }
+      break;
+
+    //not use actually
+    case STATE_PERI_ROLL:
+      // perimeter find  roll
+      if (millis() >= stateEndTime)
+        setNextState(STATE_PERI_FIND, 0);
+      motorControl();
+      break;
+
+    //not use actually
+    case STATE_PERI_REV: //obstacle in perifind
+      // perimeter tracking reverse
+      //bb
+      Console.println(odometryRight);
+
+      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        setNextState(STATE_PERI_ROLL, rollDir);
+      motorControlOdo();
+      break;
+
+    case STATE_PERI_FIND:
+      // find perimeter
+      if (!perimeterInside)
+      {
+        Console.println("Not inside so start to track the wire");
+        setNextState(STATE_PERI_STOP_TOTRACK, 0);
+        return;
+      }
+      checkSonar();
+      checkBumpersPerimeter();
+      motorControlOdo();
+      break;
+
+    case STATE_PERI_TRACK:
+      // track perimeter
+      checkCurrent();
+      checkBumpersPerimeter();
+      checkSonarPeriTrack();
+      if (ActualSpeedPeriPWM != MaxSpeedperiPwm)
+      {
+        if (totalDistDrive > whereToResetSpeed)
         {
-          if (areaToGo == 1)
+          Console.print("Distance OK, time to reset the initial Speed : ");
+          Console.println(ActualSpeedPeriPWM);
+          ActualSpeedPeriPWM = MaxSpeedperiPwm;
+        }
+      }
+      //********************************* if start by timer
+      if (statusCurr == TRACK_TO_START)
+      {
+        //bber11
+        //areaToGo need to be use here to avoid start mowing before reach the rfid tag in area1
+        // if ((areaToGo == areaInMowing) && (startByTimer) && (totalDistDrive > whereToStart * 100)) {
+
+        if ((areaToGo == areaInMowing) && (totalDistDrive >= whereToStart * 100))
+        {
+          startByTimer = false;
+          Console.print("Distance OK, time to start mowing into new area ");
+          Console.println(areaInMowing);
+          areaToGo = 1; //after mowing the mower need to back to station
+          setNextState(STATE_PERI_STOP_TOROLL, rollDir);
+          return;
+        }
+      }
+      motorControlPerimeter();
+      break;
+
+    case STATE_STATION:
+      // waiting until auto-start by user or timer triggered
+      if (batMonitor)
+      {
+        if (chgVoltage > 5.0)
+        {
+          if (batVoltage < startChargingIfBelow)
+          { //read the battery voltage immediatly before it increase
+            setNextState(STATE_STATION_CHARGING, 0);
+            return;
+          }
+          else
+          { //bber20
+            if (millis() - stateStartTime > 10000)
+              checkTimer(); //only check timer after 10 second to avoid restart before charging and check non stop after but real only 60 sec
+          }
+        }
+        else
+        {
+          //bber20
+          Console.println("We are in station but ChargeVoltage is lost ??? ");
+          setNextState(STATE_OFF, 0);
+          return;
+        }
+      }
+      else
+      {
+        if (millis() - stateStartTime > 10000)
+          checkTimer(); //only check timer after 10 second to avoid restart before charging
+      }
+
+      break;
+
+    case STATE_STATION_CHARGING:
+      // waiting until charging completed
+      if (batMonitor)
+      {
+        if ((chgCurrent < batFullCurrent) && (millis() - stateStartTime > 2000))
+        {
+          setNextState(STATE_STATION, 0);
+          return;
+        }
+        if (millis() - stateStartTime > chargingTimeout)
+        {
+          Console.println("End of charging duration check the batfullCurrent to try to stop before");
+          setNextState(STATE_STATION, 0);
+          return;
+        }
+      }
+      // SendBat to Pi when charging
+      if (RaspberryPIUse)
+      {
+        if (millis() >= nextTimeChgRasPISendBat)
+        {
+          nextTimeChgRasPISendBat = millis() + 5000; // delay ms
+          MyRpi.RaspberryPISendBat();
+        }
+      }
+      readDHT22();
+
+      break;
+
+    case STATE_STOP_ON_BUMPER:
+      motorControlOdo();
+
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          if (statusCurr == BACK_TO_STATION)
           {
-            statusCurr = BACK_TO_STATION; //if we are in the area1 it is to go to station
-            periFindDriveHeading = imu.ypr.yaw;
+            setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
           }
           else
           {
-            areaInMowing = areaToGo;
-            statusCurr = TRACK_TO_START;
+            setNextState(STATE_PERI_OUT_REV, rollDir);
           }
-          if (RaspberryPIUse)
-            MyRpi.SendStatusToPi();
-          setNextState(STATE_PERI_FIND, rollDir);
+          return;
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t  stop ON BUMPER in time ");
+        setNextState(STATE_PERI_OUT_REV, rollDir); //if the motor can't rech the odocible in slope
+      }
+      break;
+
+    case STATE_PERI_OUT_STOP:
+      motorControlOdo();
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          setNextState(STATE_PERI_OUT_REV, rollDir);
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t peri out stop in time ");
+        setNextState(STATE_PERI_OUT_REV, rollDir); //if the motor can't rech the odocible in slope
+      }
+      break;
+
+    case STATE_SONAR_TRIG:
+      motorControlOdo();
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+      {
+        setBeeper(0, 0, 0, 0, 0);
+
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          //bber10
+          if (stateLast == STATE_PERI_FIND)
+          {
+            setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
+          }
+          else
+          {
+            setNextState(STATE_PERI_OUT_REV, rollDir);
+          }
           return;
         }
       }
-    }
-    if (millis() > (stateStartTime + 180000))
-    { //wait the signal for 3 minutes
-      Console.println("Warning can t find the signal for area2 ");
-      setNextState(STATE_ERROR, rollDir);
-    }
-
-    break;
-
-  case STATE_TEST_COMPASS:
-    motorControlOdo();
-
-    YawActualDeg = (imu.ypr.yaw / PI * 180);
-
-    if ((imu.distance180(YawActualDeg, yawToFind)) < 30)
-    { //reduce speed to be sure stop
-      PwmLeftSpeed = SpeedOdoMin / 2;
-      PwmRightSpeed = -SpeedOdoMin / 2;
-    }
-    else
-    {
-      PwmLeftSpeed = SpeedOdoMin;
-      PwmRightSpeed = -SpeedOdoMin;
-    }
-
-    if ((YawActualDeg >= yawToFind - 1) && (YawActualDeg <= yawToFind + 1))
-    {
-      Console.print(" OdometryLeft ");
-      Console.print(odometryLeft);
-      Console.print(" OdometryRight ");
-      Console.print(odometryRight);
-      Console.print(" Find YAW ****************************************  ");
-      Console.println((imu.ypr.yaw / PI * 180));
-      setNextState(STATE_OFF, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t TestCompass in time ");
-      setNextState(STATE_OFF, rollDir);
-    }
-
-    break;
-  case STATE_CALIB_MOTOR_SPEED:
-    motorControlOdo();
-    if ((motorRightPWMCurr == 0) && (motorLeftPWMCurr == 0))
-    {
-      Console.println("Calibration finish ");
-      Console.print("Real State Duration : ");
-      Tempovar = millis() - stateStartTime;
-      Console.println(Tempovar);
-      Console.print("Compute Max State Duration : ");
-      Console.println(MaxOdoStateDuration);
-      motorTickPerSecond = 1000 * stateEndOdometryRight / Tempovar;
-
-      Console.print(" motorTickPerSecond ");
-      Console.println(motorTickPerSecond);
-      setNextState(STATE_OFF, 0);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t TestMotor in time please check your Odometry or speed setting ");
-      setNextState(STATE_OFF, rollDir);
-    }
-
-    break;
-
-  case STATE_TEST_MOTOR:
-    motorControlOdo();
-    if ((motorRightPWMCurr == 0) && (motorLeftPWMCurr == 0))
-    {
-      Console.println("Test finish ");
-      Console.print("Real State Duration : ");
-      Console.println(millis() - stateStartTime);
-      Console.print("Compute Max State Duration : ");
-      Console.println(MaxOdoStateDuration);
-      setNextState(STATE_OFF, 0);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t TestMotor in time please check your Odometry or speed setting ");
-      setNextState(STATE_OFF, rollDir);
-    }
-    break;
-
-  case STATE_ROLL_TO_FIND_YAW:
-    motorControlOdo();
-    imu.run();
-    if ((yawToFind - 2 < (imu.comYaw / PI * 180)) && (yawToFind + 2 > (imu.comYaw / PI * 180)))
-    { //at +-2 degres
-
-      findedYaw = (imu.comYaw / PI * 180);
-      setNextState(STATE_STOP_CALIBRATE, rollDir);
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration + 6000))
-    {
-      Console.println("Warning can t roll to find yaw in time The Compass is certainly HS ");
-      setNextState(STATE_STOP_CALIBRATE, rollDir);
-    }
-    break;
-
-  //not use actually
-  case STATE_PERI_ROLL:
-    // perimeter find  roll
-    if (millis() >= stateEndTime)
-      setNextState(STATE_PERI_FIND, 0);
-    motorControl();
-    break;
-
-  //not use actually
-  case STATE_PERI_REV: //obstacle in perifind
-    // perimeter tracking reverse
-    //bb
-    Console.println(odometryRight);
-
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-      setNextState(STATE_PERI_ROLL, rollDir);
-    motorControlOdo();
-    break;
-
-  case STATE_PERI_FIND:
-    // find perimeter
-    if (!perimeterInside)
-    {
-      Console.println("Not inside so start to track the wire");
-      setNextState(STATE_PERI_STOP_TOTRACK, 0);
-      return;
-    }
-    checkSonar();
-    checkBumpersPerimeter();
-    motorControlOdo();
-    break;
-
-  case STATE_PERI_TRACK:
-    // track perimeter
-    checkCurrent();
-    checkBumpersPerimeter();
-    checkSonarPeriTrack();
-    if (ActualSpeedPeriPWM != MaxSpeedperiPwm)
-    {
-      if (totalDistDrive > whereToResetSpeed)
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        Console.print("Distance OK, time to reset the initial Speed : ");
-        Console.println(ActualSpeedPeriPWM);
-        ActualSpeedPeriPWM = MaxSpeedperiPwm;
-      }
-    }
-    //********************************* if start by timer
-    if (statusCurr == TRACK_TO_START)
-    {
-      //bber11
-      //areaToGo need to be use here to avoid start mowing before reach the rfid tag in area1
-      // if ((areaToGo == areaInMowing) && (startByTimer) && (totalDistDrive > whereToStart * 100)) {
-
-      if ((areaToGo == areaInMowing) && (totalDistDrive >= whereToStart * 100))
-      {
-        startByTimer = false;
-        Console.print("Distance OK, time to start mowing into new area ");
-        Console.println(areaInMowing);
-        areaToGo = 1; //after mowing the mower need to back to station
-        setNextState(STATE_PERI_STOP_TOROLL, rollDir);
-        return;
-      }
-    }
-    motorControlPerimeter();
-    break;
-
-  case STATE_STATION:
-    // waiting until auto-start by user or timer triggered
-    if (batMonitor)
-    {
-      if (chgVoltage > 5.0)
-      {
-        if (batVoltage < startChargingIfBelow)
-        { //read the battery voltage immediatly before it increase
-          setNextState(STATE_STATION_CHARGING, 0);
-          return;
-        }
-        else
-        { //bber20
-          if (millis() - stateStartTime > 10000)
-            checkTimer(); //only check timer after 10 second to avoid restart before charging and check non stop after but real only 60 sec
-        }
-      }
-      else
-      {
-        //bber20
-        Console.println("We are in station but ChargeVoltage is lost ??? ");
-        setNextState(STATE_OFF, 0);
-        return;
-      }
-    }
-    else
-    {
-      if (millis() - stateStartTime > 10000)
-        checkTimer(); //only check timer after 10 second to avoid restart before charging
-    }
-
-    break;
-
-  case STATE_STATION_CHARGING:
-    // waiting until charging completed
-    if (batMonitor)
-    {
-      if ((chgCurrent < batFullCurrent) && (millis() - stateStartTime > 2000))
-      {
-        setNextState(STATE_STATION, 0);
-        return;
-      }
-      if (millis() - stateStartTime > chargingTimeout)
-      {
-        Console.println("End of charging duration check the batfullCurrent to try to stop before");
-        setNextState(STATE_STATION, 0);
-        return;
-      }
-    }
-    // SendBat to Pi when charging
-    if (RaspberryPIUse)
-    {
-      if (millis() >= nextTimeChgRasPISendBat)
-      {
-        nextTimeChgRasPISendBat = millis() + 5000; // delay ms
-        MyRpi.RaspberryPISendBat();
-      }
-    }
-    readDHT22();
-
-    break;
-
-  case STATE_STOP_ON_BUMPER:
-    motorControlOdo();
-
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
-        if (statusCurr == BACK_TO_STATION)
+        Console.println("Warning can t sonar trig in time ");
+        if (stateCurr == STATE_PERI_FIND)
         {
           setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
         }
@@ -5848,572 +5912,539 @@ void Robot::loop()
         }
         return;
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop ON BUMPER in time ");
-      setNextState(STATE_PERI_OUT_REV, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
+      checkCurrent();
+      checkBumpers();
+      break;
 
-  case STATE_PERI_OUT_STOP:
-    motorControlOdo();
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
-        setNextState(STATE_PERI_OUT_REV, rollDir);
-      }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t peri out stop in time ");
-      setNextState(STATE_PERI_OUT_REV, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
+    case STATE_STOP_TO_FIND_YAW:
+      motorControlOdo();
 
-  case STATE_SONAR_TRIG:
-    motorControlOdo();
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-    {
-      setBeeper(0, 0, 0, 0, 0);
-
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
-        //bber10
-        if (stateLast == STATE_PERI_FIND)
-        {
-          setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          if (laneUseNr == 1)
+            yawToFind = yawSet1;
+          if (laneUseNr == 2)
+            yawToFind = yawSet2;
+          if (laneUseNr == 3)
+            yawToFind = yawSet3;
+          setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);
         }
-        else
-        {
-          setNextState(STATE_PERI_OUT_REV, rollDir);
-        }
-        return;
-      }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t sonar trig in time ");
-      if (stateCurr == STATE_PERI_FIND)
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
-      }
-      else
-      {
-        setNextState(STATE_PERI_OUT_REV, rollDir);
-      }
-      return;
-    }
-    checkCurrent();
-    checkBumpers();
-    break;
-
-  case STATE_STOP_TO_FIND_YAW:
-    motorControlOdo();
-
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
+        Console.println("Warning can t peri out stop in time ");
         if (laneUseNr == 1)
           yawToFind = yawSet1;
         if (laneUseNr == 2)
           yawToFind = yawSet2;
         if (laneUseNr == 3)
           yawToFind = yawSet3;
-        setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);
+        setNextState(STATE_ROLL_TO_FIND_YAW, rollDir); //if the motor can't rech the odocible in slope
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t peri out stop in time ");
-      if (laneUseNr == 1)
-        yawToFind = yawSet1;
-      if (laneUseNr == 2)
-        yawToFind = yawSet2;
-      if (laneUseNr == 3)
-        yawToFind = yawSet3;
-      setNextState(STATE_ROLL_TO_FIND_YAW, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
+      break;
 
-  case STATE_PERI_STOP_TOROLL:
-    motorControlOdo();
+    case STATE_PERI_STOP_TOROLL:
+      motorControlOdo();
 
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          if (statusCurr == TRACK_TO_START)
+            setNextState(STATE_STATION_ROLL, rollDir);
+          else
+            setNextState(STATE_ROLL_TONEXTTAG, rollDir);
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t stop to track in time ");
         if (statusCurr == TRACK_TO_START)
           setNextState(STATE_STATION_ROLL, rollDir);
         else
           setNextState(STATE_ROLL_TONEXTTAG, rollDir);
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t stop to track in time ");
-      if (statusCurr == TRACK_TO_START)
-        setNextState(STATE_STATION_ROLL, rollDir);
-      else
-        setNextState(STATE_ROLL_TONEXTTAG, rollDir);
-    }
-    break;
+      break;
 
-  case STATE_PERI_STOP_TO_FAST_START:
-    motorControlOdo();
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
+    case STATE_PERI_STOP_TO_FAST_START:
+      motorControlOdo();
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          setNextState(STATE_ROLL_TONEXTTAG, rollDir);
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t stop to track in time ");
         setNextState(STATE_ROLL_TONEXTTAG, rollDir);
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t stop to track in time ");
-      setNextState(STATE_ROLL_TONEXTTAG, rollDir);
-    }
-    break;
+      break;
 
-  case STATE_PERI_STOP_TO_NEWAREA:
-    motorControlOdo();
+    case STATE_PERI_STOP_TO_NEWAREA:
+      motorControlOdo();
 
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          setNextState(STATE_ROLL1_TO_NEWAREA, rollDir);
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t stop  in time ");
+
         setNextState(STATE_ROLL1_TO_NEWAREA, rollDir);
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t stop  in time ");
+      break;
 
-      setNextState(STATE_ROLL1_TO_NEWAREA, rollDir);
-    }
-    break;
-
-  case STATE_PERI_STOP_TOTRACK:
-    motorControlOdo();
-    if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
-      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-      { //wait until the 2 motors completly stop because rotation is inverted
-        setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir);
+    case STATE_PERI_STOP_TOTRACK:
+      motorControlOdo();
+      if (((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)))
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir);
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t stop to track in time ");
+        setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir); //if the motor can't rech the odocible in slope
       }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t stop to track in time ");
-      setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
+      break;
 
-  case STATE_AUTO_CALIBRATE:
-    setBeeper(2000, 150, 150, 160, 50);
-    if (millis() > nextTimeAddYawMedian)
-    { // compute a median of accelGyro and Compass  yaw
-      compassYawMedian.add(imu.comYaw);
-      accelGyroYawMedian.add(imu.ypr.yaw);
-      nextTimeAddYawMedian = millis() + 70; // the value are read each 70ms
-    }
-    if (accelGyroYawMedian.getCount() > 56)
-    { //we have the value of 4 secondes try to verify if the drift is less than x deg/sec
-      Console.println("4 sec of read value, verify if the drift is stop");
-      if (abs(accelGyroYawMedian.getHighest() - accelGyroYawMedian.getLowest()) < 4 * maxDriftPerSecond * PI / 180)
-      {                                                                                                                                    //drift is OK restart mowing
-        imu.CompassGyroOffset = distancePI(scalePI(accelGyroYawMedian.getMedian() - imu.CompassGyroOffset), compassYawMedian.getMedian()); //change the Gyro offset according to Compass Yaw
-        Console.println("Calib OK next state out rev");
-        setBeeper(0, 0, 0, 0, 0); //stop sound immediatly
+    case STATE_AUTO_CALIBRATE:
+      setBeeper(2000, 150, 150, 160, 50);
+      if (millis() > nextTimeAddYawMedian)
+      { // compute a median of accelGyro and Compass  yaw
+        compassYawMedian.add(imu.comYaw);
+        accelGyroYawMedian.add(imu.ypr.yaw);
+        nextTimeAddYawMedian = millis() + 70; // the value are read each 70ms
+      }
+      if (accelGyroYawMedian.getCount() > 56)
+      { //we have the value of 4 secondes try to verify if the drift is less than x deg/sec
+        Console.println("4 sec of read value, verify if the drift is stop");
+        if (abs(accelGyroYawMedian.getHighest() - accelGyroYawMedian.getLowest()) < 4 * maxDriftPerSecond * PI / 180)
+        {                                                                                                                                    //drift is OK restart mowing
+          imu.CompassGyroOffset = distancePI(scalePI(accelGyroYawMedian.getMedian() - imu.CompassGyroOffset), compassYawMedian.getMedian()); //change the Gyro offset according to Compass Yaw
+          Console.println("Calib OK next state out rev");
+          setBeeper(0, 0, 0, 0, 0); //stop sound immediatly
+          if (stopMotorDuringCalib)
+            motorMowEnable = true; //restart the mow motor
+          if (perimeterInside)
+          {
+            setNextState(STATE_FORWARD_ODO, rollDir); //if not on the wire continue in forward
+          }
+          else
+          {
+            setNextState(STATE_PERI_OUT_REV, rollDir);
+          }
+          return;
+        }
+        else
+        { //not OK try to wait 4 secondes more
+          Console.println("Calib BAD wait again 4 sec");
+          compassYawMedian.clear();
+          accelGyroYawMedian.clear();
+        }
+      }
+      if (millis() > endTimeCalibration)
+      { //we have wait enought and the result is not OK start to mow in random mode or make a total calibration
+        mowPatternCurr == MOW_RANDOM;
         if (stopMotorDuringCalib)
-          motorMowEnable = true; //restart the mow motor
+          motorMowEnable = true; //stop the mow motor
+        Console.println("Auto calibration of DMP is not OK mowing Drift too important");
+        nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
+        setBeeper(0, 0, 0, 0, 0);
         if (perimeterInside)
         {
+          if (mowPatternCurr == MOW_LANES)
+          { //change the rolldir now because again when new forward_odo only in lane mowing
+            // if (rollDir == 0) rollDir = 1;
+            // else rollDir = 0;
+          }
           setNextState(STATE_FORWARD_ODO, rollDir); //if not on the wire continue in forward
         }
         else
         {
           setNextState(STATE_PERI_OUT_REV, rollDir);
         }
-        return;
       }
-      else
-      { //not OK try to wait 4 secondes more
-        Console.println("Calib BAD wait again 4 sec");
-        compassYawMedian.clear();
-        accelGyroYawMedian.clear();
-      }
-    }
-    if (millis() > endTimeCalibration)
-    { //we have wait enought and the result is not OK start to mow in random mode or make a total calibration
-      mowPatternCurr == MOW_RANDOM;
-      if (stopMotorDuringCalib)
-        motorMowEnable = true; //stop the mow motor
-      Console.println("Auto calibration of DMP is not OK mowing Drift too important");
-      nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
-      setBeeper(0, 0, 0, 0, 0);
-      if (perimeterInside)
-      {
-        if (mowPatternCurr == MOW_LANES)
-        { //change the rolldir now because again when new forward_odo only in lane mowing
-          // if (rollDir == 0) rollDir = 1;
-          // else rollDir = 0;
-        }
-        setNextState(STATE_FORWARD_ODO, rollDir); //if not on the wire continue in forward
-      }
-      else
-      {
-        setNextState(STATE_PERI_OUT_REV, rollDir);
-      }
-    }
 
-    break;
+      break;
 
-  case STATE_STOP_CALIBRATE:
-    motorControlOdo();
-    if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-    { //wait until the 2 motors completly stop because rotation is inverted
-      setNextState(STATE_AUTO_CALIBRATE, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop to calibrate in time ");
-      setNextState(STATE_AUTO_CALIBRATE, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
-
-  case STATE_STOP_BEFORE_SPIRALE:
-    motorControlOdo();
-    if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
-    { //wait until the 2 motors completly stop because rotation is inverted
-      setNextState(STATE_ROTATE_RIGHT_360, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop before spirale in time ");
-      setNextState(STATE_ROTATE_RIGHT_360, rollDir); //if the motor can't rech the odocible in slope
-    }
-    break;
-
-  case STATE_ROTATE_RIGHT_360:
-    motorControlOdo();
-    checkCurrent();
-    if ((odometryRight <= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
+    case STATE_STOP_CALIBRATE:
+      motorControlOdo();
       if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
       { //wait until the 2 motors completly stop because rotation is inverted
+        setNextState(STATE_AUTO_CALIBRATE, rollDir);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t  stop to calibrate in time ");
+        setNextState(STATE_AUTO_CALIBRATE, rollDir); //if the motor can't rech the odocible in slope
+      }
+      break;
+
+    case STATE_STOP_BEFORE_SPIRALE:
+      motorControlOdo();
+      if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+      { //wait until the 2 motors completly stop because rotation is inverted
+        setNextState(STATE_ROTATE_RIGHT_360, rollDir);
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t  stop before spirale in time ");
+        setNextState(STATE_ROTATE_RIGHT_360, rollDir); //if the motor can't rech the odocible in slope
+      }
+      break;
+
+    case STATE_ROTATE_RIGHT_360:
+      motorControlOdo();
+      checkCurrent();
+      if ((odometryRight <= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
+        if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)
+        { //wait until the 2 motors completly stop because rotation is inverted
+          setNextState(STATE_MOW_SPIRALE, rollDir);
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t  stop before rotate right 360 in time ");
+        setNextState(STATE_MOW_SPIRALE, rollDir); //if the motor can't rech the odocible in slope
+      }
+
+      break;
+    case STATE_NEXT_SPIRE:
+      motorControlOdo();
+      checkCurrent();
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
         setNextState(STATE_MOW_SPIRALE, rollDir);
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop before rotate right 360 in time ");
-      setNextState(STATE_MOW_SPIRALE, rollDir); //if the motor can't rech the odocible in slope
-    }
-
-    break;
-  case STATE_NEXT_SPIRE:
-    motorControlOdo();
-    checkCurrent();
-    if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
-      setNextState(STATE_MOW_SPIRALE, rollDir);
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t  stop before next spire in time ");
-      setNextState(STATE_MOW_SPIRALE, rollDir); //if the motor can't rech the odocible in slope
-    }
-
-    break;
-  case STATE_MOW_SPIRALE:
-    motorControlOdo();
-    checkCurrent();
-    checkBumpers();
-    checkDrop(); // Dropsensor - Absturzsensor
-    checkSonar();
-
-    //checkLawn();
-    checkTimeout();
-
-    //*************************************end of the spirale ***********************************************
-    if (spiraleNbTurn >= 8)
-    {
-      spiraleNbTurn = 0;
-      highGrassDetect = false;
-      setNextState(STATE_PERI_OUT_STOP, RIGHT); //stop the spirale or setNextState(STATE_PERI_OUT_FORW, rollDir)
-      return;
-    }
-    //********************************************************************************************
-    if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
-      if (!perimeterInside)
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        setNextState(STATE_PERI_OUT_STOP, rollDir);
+        Console.println("Warning can t  stop before next spire in time ");
+        setNextState(STATE_MOW_SPIRALE, rollDir); //if the motor can't rech the odocible in slope
       }
-      else
+
+      break;
+    case STATE_MOW_SPIRALE:
+      motorControlOdo();
+      checkCurrent();
+      checkBumpers();
+      checkDrop(); // Dropsensor - Absturzsensor
+      checkSonar();
+
+      //checkLawn();
+      checkTimeout();
+
+      //*************************************end of the spirale ***********************************************
+      if (spiraleNbTurn >= 8)
       {
-        setNextState(STATE_NEXT_SPIRE, rollDir);
+        spiraleNbTurn = 0;
+        highGrassDetect = false;
+        setNextState(STATE_PERI_OUT_STOP, RIGHT); //stop the spirale or setNextState(STATE_PERI_OUT_FORW, rollDir)
+        return;
       }
-      return;
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t MOW_SPIRALE in time ");
-      setNextState(STATE_NEXT_SPIRE, rollDir); //if the motor can't rech the odocible in slope
-    }
-
-    break;
-
-  case STATE_PERI_OUT_REV:
-    motorControlOdo();
-
-    if (mowPatternCurr == MOW_LANES)
-    { //  *************************LANE***************************************
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-        if (rollDir == RIGHT)
+      //********************************************************************************************
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
+        if (!perimeterInside)
         {
-          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-          { //wait until the 2 motor completly stop because need precision
-            setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
-          }
+          setNextState(STATE_PERI_OUT_STOP, rollDir);
         }
         else
         {
-          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          setNextState(STATE_NEXT_SPIRE, rollDir);
+        }
+        return;
+      }
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t MOW_SPIRALE in time ");
+        setNextState(STATE_NEXT_SPIRE, rollDir); //if the motor can't rech the odocible in slope
+      }
+
+      break;
+
+    case STATE_PERI_OUT_REV:
+      motorControlOdo();
+
+      if (mowPatternCurr == MOW_LANES)
+      { //  *************************LANE***************************************
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+          if (rollDir == RIGHT)
           {
-            setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+            if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+            { //wait until the 2 motor completly stop because need precision
+              setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+            }
+          }
+          else
+          {
+            if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+            {
+              setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+            }
+          }
+      }
+      else
+      { //  *************************RANDOM***************************************
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+          if (rollDir == RIGHT)
+          {
+            if (motorLeftPWMCurr == 0)
+            { //wait until the left motor completly stop because rotation is inverted
+
+              setNextState(STATE_PERI_OUT_ROLL, rollDir);
+            }
+          }
+          else
+          {
+            if (motorRightPWMCurr == 0)
+            { //wait until the right motor completly stop because rotation is inverted
+              setNextState(STATE_PERI_OUT_ROLL, rollDir);
+            }
+          }
+      }
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t peri out rev in time ");
+        setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir); //if the motor can't rech the odocible in slope
+      }
+
+      break;
+
+    case STATE_PERI_OUT_ROLL:
+      motorControlOdo();
+      if (rollDir == RIGHT)
+      {
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+        {
+          if (motorRightPWMCurr == 0)
+          { //wait until the left motor completly stop because rotation is inverted
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_PERI_OUT_FORW, rollDir);
           }
         }
-    }
-    else
-    { //  *************************RANDOM***************************************
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-        if (rollDir == RIGHT)
+      }
+      else
+      {
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
         {
           if (motorLeftPWMCurr == 0)
           { //wait until the left motor completly stop because rotation is inverted
-
-            setNextState(STATE_PERI_OUT_ROLL, rollDir);
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_PERI_OUT_FORW, rollDir);
           }
         }
-        else
-        {
-          if (motorRightPWMCurr == 0)
-          { //wait until the right motor completly stop because rotation is inverted
-            setNextState(STATE_PERI_OUT_ROLL, rollDir);
-          }
-        }
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t peri out rev in time ");
-      setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir); //if the motor can't rech the odocible in slope
-    }
-
-    break;
-
-  case STATE_PERI_OUT_ROLL:
-    motorControlOdo();
-    if (rollDir == RIGHT)
-    {
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-      {
-        if (motorRightPWMCurr == 0)
-        { //wait until the left motor completly stop because rotation is inverted
-          if (!perimeterInside)
-            setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-          else
-            setNextState(STATE_PERI_OUT_FORW, rollDir);
-        }
       }
-    }
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        if (motorLeftPWMCurr == 0)
-        { //wait until the left motor completly stop because rotation is inverted
-          if (!perimeterInside)
-            setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-          else
-            setNextState(STATE_PERI_OUT_FORW, rollDir);
-        }
+        Console.println("Warning can t peri out roll in time ");
+        setNextState(STATE_PERI_OUT_FORW, rollDir); //if the motor can't rech the odocible in slope
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t peri out roll in time ");
-      setNextState(STATE_PERI_OUT_FORW, rollDir); //if the motor can't rech the odocible in slope
-    }
 
-    break;
+      break;
 
-  case STATE_PERI_OUT_ROLL_TOINSIDE:
-    motorControlOdo();
-    //bber17
-    if (RollToInsideQty >= 10)
-    {
-      Console.println("ERROR Mower is lost out the wire and can't find the signal Roll to inside occur more than 10 Time");
-      setNextState(STATE_ERROR, rollDir);
-      return;
-    }
-
-    if (rollDir == RIGHT)
-    {
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+    case STATE_PERI_OUT_ROLL_TOINSIDE:
+      motorControlOdo();
+      //bber17
+      if (RollToInsideQty >= 10)
       {
-        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the 2 motor completly stop
-          if (!perimeterInside)
-            setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
-          else
-            setNextState(STATE_PERI_OUT_FORW, rollDir);
-        }
-      }
-    }
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-      {
-        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the 2 motor completly stop
-          if (!perimeterInside)
-            setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
-          else
-            setNextState(STATE_PERI_OUT_FORW, rollDir);
-        }
-      }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t Roll to inside in time ");
-      if (!perimeterInside)
-        setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
-      else
-        setNextState(STATE_PERI_OUT_FORW, rollDir);
-    }
-    break;
-
-  case STATE_PERI_OUT_ROLL_TOTRACK:
-    motorControlOdo();
-
-    if (perimeterInside)
-    {
-      setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
-      return;
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t find perimeter Wire while PERI_OUT_ROLL_TOTRACK in time ");
-      if (!perimeterInside)
-        setNextState(STATE_WAIT_AND_REPEAT, 0); //again until find the inside
-      else
-        setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
-    }
-    break;
-
-  case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
-    motorControlOdo();
-
-    if (perimeterInside)
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-      {
-        lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
-        setNextState(STATE_PERI_TRACK, 0);
+        Console.println("ERROR Mower is lost out the wire and can't find the signal Roll to inside occur more than 10 Time");
+        setNextState(STATE_ERROR, rollDir);
         return;
       }
-    }
 
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t PERI_OUT_STOP_ROLL_TOTRACK in time ");
-      if (!perimeterInside)
-        setNextState(STATE_PERI_OUT_ROLL_TOTRACK, 0); //again until find the inside
+      if (rollDir == RIGHT)
+      {
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the 2 motor completly stop
+            if (!perimeterInside)
+              setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
+            else
+              setNextState(STATE_PERI_OUT_FORW, rollDir);
+          }
+        }
+      }
       else
-        setNextState(STATE_PERI_TRACK, 0);
-    }
-    break;
-
-  case STATE_PERI_OUT_LANE_ROLL1:
-    motorControlOdo();
-
-    if (rollDir == RIGHT)
-    {
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
       {
-        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the left motor completly stop because rotation is inverted
-          if (!perimeterInside)
-            setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-          else
-            setNextState(STATE_NEXT_LANE_FORW, rollDir);
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the 2 motor completly stop
+            if (!perimeterInside)
+              setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
+            else
+              setNextState(STATE_PERI_OUT_FORW, rollDir);
+          }
         }
       }
-    }
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t Roll to inside in time ");
+        if (!perimeterInside)
+          setNextState(STATE_WAIT_AND_REPEAT, rollDir); //again until find the inside
+        else
+          setNextState(STATE_PERI_OUT_FORW, rollDir);
+      }
+      break;
+
+    case STATE_PERI_OUT_ROLL_TOTRACK:
+      motorControlOdo();
+
+      if (perimeterInside)
+      {
+        setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+        return;
+      }
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t find perimeter Wire while PERI_OUT_ROLL_TOTRACK in time ");
+        if (!perimeterInside)
+          setNextState(STATE_WAIT_AND_REPEAT, 0); //again until find the inside
+        else
+          setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+      }
+      break;
+
+    case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
+      motorControlOdo();
+
+      if (perimeterInside)
       {
         if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the left motor completly stop because rotation is inverted
-          if (!perimeterInside)
-            setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-          else
-            setNextState(STATE_NEXT_LANE_FORW, rollDir);
+        {
+          lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
+          setNextState(STATE_PERI_TRACK, 0);
+          return;
         }
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t Roll1 by lane in time ");
 
-      setNextState(STATE_NEXT_LANE_FORW, rollDir); //if the motor can't reach the odocible in slope
-    }
-    break;
-
-  case STATE_NEXT_LANE_FORW:
-    motorControlOdo();
-
-    //bber14
-    //if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-    if (!perimeterInside)
-    {
-      setNextState(STATE_PERI_OUT_STOP, rollDir);
-      return;
-    }
-
-    if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
       {
-        setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir);
+        Console.println("Warning can t PERI_OUT_STOP_ROLL_TOTRACK in time ");
+        if (!perimeterInside)
+          setNextState(STATE_PERI_OUT_ROLL_TOTRACK, 0); //again until find the inside
+        else
+          setNextState(STATE_PERI_TRACK, 0);
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    {
-      Console.println("Warning can t reach next lane in time ");
-      setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir); //if the motor can't reach the odocible in slope for example
-    }
+      break;
 
-    break;
+    case STATE_PERI_OUT_LANE_ROLL1:
+      motorControlOdo();
 
-  case STATE_PERI_OUT_LANE_ROLL2:
-    motorControlOdo();
-    if (rollDir == RIGHT)
-    {
-      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+      if (rollDir == RIGHT)
+      {
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the left motor completly stop because rotation is inverted
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_NEXT_LANE_FORW, rollDir);
+          }
+        }
+      }
+      else
+      {
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the left motor completly stop because rotation is inverted
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_NEXT_LANE_FORW, rollDir);
+          }
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t Roll1 by lane in time ");
+
+        setNextState(STATE_NEXT_LANE_FORW, rollDir); //if the motor can't reach the odocible in slope
+      }
+      break;
+
+    case STATE_NEXT_LANE_FORW:
+      motorControlOdo();
+
+      //bber14
+      //if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+      if (!perimeterInside)
+      {
+        setNextState(STATE_PERI_OUT_STOP, rollDir);
+        return;
+      }
+
+      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
       {
         if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the 2 motor completly stop
+        {
+          setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir);
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      {
+        Console.println("Warning can t reach next lane in time ");
+        setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir); //if the motor can't reach the odocible in slope for example
+      }
+
+      break;
+
+    case STATE_PERI_OUT_LANE_ROLL2:
+      motorControlOdo();
+      if (rollDir == RIGHT)
+      {
+        if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the 2 motor completly stop
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_FORWARD_ODO, rollDir); // forward odo to straight line
+            rollDir = LEFT;                             //invert the next rotate
+          }
+        }
+      }
+
+      else
+      {
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the 2 motor completly stop
+            if (!perimeterInside)
+              setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            else
+              setNextState(STATE_FORWARD_ODO, rollDir);
+            rollDir = RIGHT; // invert the next rotate
+          }
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      { //the motor have not enought power to reach the cible
+        Console.println("Warning can t make the roll2 in time ");
+        if (rollDir == RIGHT)
+        {
           if (!perimeterInside)
             setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else
             setNextState(STATE_FORWARD_ODO, rollDir); // forward odo to straight line
           rollDir = LEFT;                             //invert the next rotate
         }
-      }
-    }
-
-    else
-    {
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-      {
-        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-        { //wait until the 2 motor completly stop
+        else
+        {
           if (!perimeterInside)
             setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else
@@ -6421,192 +6452,163 @@ void Robot::loop()
           rollDir = RIGHT; // invert the next rotate
         }
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    { //the motor have not enought power to reach the cible
-      Console.println("Warning can t make the roll2 in time ");
-      if (rollDir == RIGHT)
-      {
-        if (!perimeterInside)
-          setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-        else
-          setNextState(STATE_FORWARD_ODO, rollDir); // forward odo to straight line
-        rollDir = LEFT;                             //invert the next rotate
-      }
-      else
-      {
-        if (!perimeterInside)
-          setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-        else
-          setNextState(STATE_FORWARD_ODO, rollDir);
-        rollDir = RIGHT; // invert the next rotate
-      }
-    }
-    break;
+      break;
 
-  case STATE_PERI_OUT_FORW:
-    motorControlOdo();
-    if (!perimeterInside)
-      setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-    if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
-      setNextState(STATE_FORWARD_ODO, rollDir);
-      //motorControl();
-    }
-    break;
+    case STATE_PERI_OUT_FORW:
+      motorControlOdo();
+      if (!perimeterInside)
+        setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+      if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
+        setNextState(STATE_FORWARD_ODO, rollDir);
+        //motorControl();
+      }
+      break;
 
-  case STATE_STATION_CHECK:
-    if (statusCurr == MOW_WIRE)
-    { //it is the last status
-      Console.print("Total distance drive ");
-      Console.print(totalDistDrive / 100);
-      Console.println(" meters ");
-      Console.print("Total duration ");
-      Console.print((stateStartTime - millis()) / 1000);
-      Console.println(" secondes ");
-    }
-    // check for charging voltage here after detect station
-    if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)) //move some CM to be sure the contact is OK
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-      { //wait until the 2 motor completly stop
-        //need to adapt if station is traversante
+    case STATE_STATION_CHECK:
+      if (statusCurr == MOW_WIRE)
+        // check for charging voltage here after detect station
+        if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)) //move some CM to be sure the contact is OK
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+          { //wait until the 2 motor completly stop
+            //need to adapt if station is traversante
+            if (millis() >= delayToReadVoltageStation)
+            { //wait 1.5 sec after all stop and before read voltage
+              //bber30
+              nextTimeBattery = millis();
+              readSensors(); //read the chgVoltage immediatly
+              if (chgVoltage > 5.0)
+              {
+                Console.println("Charge Voltage detected ");
+                setNextState(STATE_STATION, rollDir); // we are into the station
+                return;
+              }
+              else
+              {
+                Console.println("No Voltage detected so certainly Obstacle ");
+                setNextState(STATE_PERI_OBSTACLE_REV, rollDir); // not into the station so avoid obstacle
+                return;
+              }
+            }
+          }
+        }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      { //the motor have not enought power to reach the cible
+        Console.println("Warning can t make the station check in time ");
         if (millis() >= delayToReadVoltageStation)
-        { //wait 1.5 sec after all stop and before read voltage
-          //bber30
+        {
           nextTimeBattery = millis();
-          readSensors(); //read the chgVoltage immediatly
+          readSensors(); //read the chgVoltage
           if (chgVoltage > 5.0)
           {
-            Console.println("Charge Voltage detected ");
             setNextState(STATE_STATION, rollDir); // we are into the station
             return;
           }
           else
           {
-            Console.println("No Voltage detected so certainly Obstacle ");
             setNextState(STATE_PERI_OBSTACLE_REV, rollDir); // not into the station so avoid obstacle
             return;
           }
         }
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    { //the motor have not enought power to reach the cible
-      Console.println("Warning can t make the station check in time ");
-      if (millis() >= delayToReadVoltageStation)
+      motorControlOdo();
+      break;
+
+    case STATE_STATION_REV:
+
+      motorControlOdo();
+      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
       {
-        nextTimeBattery = millis();
-        readSensors(); //read the chgVoltage
-        if (chgVoltage > 5.0)
-        {
-          setNextState(STATE_STATION, rollDir); // we are into the station
-          return;
+        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+        { //wait until the 2 motor completly stop
+          setNextState(STATE_STATION_ROLL, 1);
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      { //the motor have not enought power to reach the cible
+        Console.print("Warning station rev not in time Max Compute duration in ms :");
+        Console.println(MaxOdoStateDuration);
+        Console.print(" Odo Left Cible/Actual : ");
+        Console.print(stateEndOdometryLeft);
+        Console.print("/");
+        Console.println(odometryLeft);
+        Console.print(" Odo Right Cible/Actual : ");
+        Console.print(stateEndOdometryRight);
+        Console.print("/");
+        Console.println(odometryRight);
+        setNextState(STATE_STATION_ROLL, 1); //if the motor can't reach the odocible in slope
+      }
+      break;
+
+    case STATE_STATION_ROLL:
+      motorControlOdo();
+      if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
+      {
+        if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
+        { //wait until the 2 motor completly stop
+          setNextState(STATE_STATION_FORW, rollDir);
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      { //the motor have not enought power to reach the cible
+        Console.println("Warning can t make the station roll in time ");
+        setNextState(STATE_STATION_FORW, rollDir); //if the motor can't reach the odocible in slope
+      }
+      break;
+
+    case STATE_STATION_FORW:
+      // forward (charge station)
+      //disabble the sonar during 30 seconds
+
+      nextTimeCheckSonar = millis() + 10000; //Do not check the sonar during 30 second  to avoid detect the station
+
+      //justChangeLaneDir=false;
+      motorControlOdo();
+
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
+      {
+        if ((whereToStart != 0) && (startByTimer))
+        { //if ((whereToStart != 0) make a circle arround the station if not start immediatly
+          setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
         }
         else
         {
-          setNextState(STATE_PERI_OBSTACLE_REV, rollDir); // not into the station so avoid obstacle
-          return;
+          statusCurr = NORMAL_MOWING;
+          if (RaspberryPIUse)
+            MyRpi.SendStatusToPi();
+          setNextState(STATE_FORWARD_ODO, rollDir);
         }
       }
-    }
-    motorControlOdo();
-    break;
 
-  case STATE_STATION_REV:
-
-    motorControlOdo();
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-      { //wait until the 2 motor completly stop
-        setNextState(STATE_STATION_ROLL, 1);
+      if (millis() > (stateStartTime + MaxOdoStateDuration))
+      { //the motor have not enought power to reach the cible
+        Console.println("Warning can t make the station forw in time ");
+        if ((whereToStart != 0) && (startByTimer))
+        {
+          setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
+        }
+        else
+          setNextState(STATE_FORWARD_ODO, rollDir);
       }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    { //the motor have not enought power to reach the cible
-      Console.print("Warning station rev not in time Max Compute duration in ms :");
-      Console.println(MaxOdoStateDuration);
-      Console.print(" Odo Left Cible/Actual : ");
-      Console.print(stateEndOdometryLeft);
-      Console.print("/");
-      Console.println(odometryLeft);
-      Console.print(" Odo Right Cible/Actual : ");
-      Console.print(stateEndOdometryRight);
-      Console.print("/");
-      Console.println(odometryRight);
-      setNextState(STATE_STATION_ROLL, 1); //if the motor can't reach the odocible in slope
-    }
-    break;
+      break;
 
-  case STATE_STATION_ROLL:
-    motorControlOdo();
-    if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft))
-    {
-      if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
-      { //wait until the 2 motor completly stop
-        setNextState(STATE_STATION_FORW, rollDir);
-      }
-    }
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    { //the motor have not enought power to reach the cible
-      Console.println("Warning can t make the station roll in time ");
-      setNextState(STATE_STATION_FORW, rollDir); //if the motor can't reach the odocible in slope
-    }
-    break;
+    case STATE_WAIT_AND_REPEAT:
+      if (millis() > (stateStartTime + 500))
+        setNextState(stateLast, rollDir); //1000
+      break;
 
-  case STATE_STATION_FORW:
-    // forward (charge station)
-    //disabble the sonar during 30 seconds
+    } // end switch
 
-    nextTimeCheckSonar = millis() + 10000; //Do not check the sonar during 30 second  to avoid detect the station
+    bumperRight = false;
+    bumperLeft = false;
+    dropRight = false; // Dropsensor - Absturzsensor
+    dropLeft = false;  // Dropsensor - Absturzsensor
 
-    //justChangeLaneDir=false;
-    motorControlOdo();
-
-    if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-    {
-      if ((whereToStart != 0) && (startByTimer))
-      { //if ((whereToStart != 0) make a circle arround the station if not start immediatly
-        setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
-      }
-      else
-      {
-        statusCurr = NORMAL_MOWING;
-        if (RaspberryPIUse)
-          MyRpi.SendStatusToPi();
-        setNextState(STATE_FORWARD_ODO, rollDir);
-      }
-    }
-
-    if (millis() > (stateStartTime + MaxOdoStateDuration))
-    { //the motor have not enought power to reach the cible
-      Console.println("Warning can t make the station forw in time ");
-      if ((whereToStart != 0) && (startByTimer))
-      {
-        setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
-      }
-      else
-        setNextState(STATE_FORWARD_ODO, rollDir);
-    }
-    break;
-
-  case STATE_WAIT_AND_REPEAT:
-    if (millis() > (stateStartTime + 500))
-      setNextState(stateLast, rollDir); //1000
-    break;
-
-  } // end switch
-
-  bumperRight = false;
-  bumperLeft = false;
-  dropRight = false; // Dropsensor - Absturzsensor
-  dropLeft = false;  // Dropsensor - Absturzsensor
-
-  loopsPerSecCounter++;
-  watchdogReset();
-  //perimeter.speedTest();
-  /*
+    loopsPerSecCounter++;
+    watchdogReset();
+    //perimeter.speedTest();
+    /*
     StartReadAt = millis();
     distance_find = sensor.readRangeSingleMillimeters();
     EndReadAt = millis();
@@ -6616,4 +6618,4 @@ void Robot::loop()
     Console.print("         Read Duration in ms ");
     Console.println(ReadDuration);
   */
-}
+  }
