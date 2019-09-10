@@ -789,26 +789,19 @@ void RemoteControl::sendPerimeterMenu(boolean update)
   serialPort->print(F("|e00~Use "));
   sendYesNo(robot->perimeterUse);
   serialPort->println(F("|e02~Value Left/Right"));
+  serialPort->print(F("|e09~Actual Mowing Area"));
+  serialPort->print(robot->areaInMowing);
+  serialPort->println(F("|e02~Mag / Smag"));
   serialPort->print(robot->perimeterMag);
   serialPort->print(F("/"));
-  serialPort->print(robot->perimeterMagRight);
-  if (robot->perimeterMag < 0)
-    serialPort->print(" (inside)");
-  else
-    serialPort->print(" (outside)");
-  serialPort->print(F("|e09~Mowing Area: "));
-  serialPort->print(robot->areaInMowing);
-  sendSlider("e08", F("Timed-out if below smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 500);
+  serialPort->print(robot->perimeter.getSmoothMagnitude(0));
+  //serialPort->print(robot->perimeterMagRight);
+  //if (robot->perimeterMag < 0) serialPort->print(" (inside)");
+  //else serialPort->print(" (outside)");
+  sendSlider("e08", F("Timed-out if below Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 500);
   sendSlider("e14", F("Timeout (s) if not inside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
   sendSlider("e04", F("Trigger timeout"), robot->perimeterTriggerTimeout, "", 1, 1000);
-  //sendSlider("e05", F("Perimeter out roll time max"), robot->perimeterOutRollTimeMax, "", 1, 8000);
-  //sendSlider("e06", F("Perimeter out roll time min"), robot->perimeterOutRollTimeMin, "", 1, 8000);
-  //sendSlider("e15", F("Perimeter out reverse time"), robot->perimeterOutRevTime, "", 1, 8000);
-  //sendSlider("e16", F("Perimeter tracking roll time"), robot->perimeterTrackRollTime, "", 1, 8000);
-  //sendSlider("e17", F("Perimeter tracking reverse time"), robot->perimeterTrackRevTime, "", 1, 8000);
   sendSlider("e18", F("Tracking Max Speed PWM"), robot->MaxSpeedperiPwm, "", 1, 255);
-  //sendSlider("e19", F("Reverse (cm) after wire trigger"), robot->DistPeriOutRev, "", 1 , 50, 1);
-  //sendSlider("e24", F("Stop (cm) after wire trigger"), robot->DistPeriOutStop, "", 1 ,30, 1);
   sendSlider("e20", F("Circle Arc distance (cm) Obstacle while tracking"), robot->DistPeriObstacleAvoid, "", 10, 400, 50);
   sendSlider("e25", F("Left motor speed divider to adjust arc radius"), robot->motorLeftSpeedDivider, "", 0.1, 3, 1);
   sendSlider("e21", F("Perimeter MAG MAX VALUE"), robot->perimeterMagMaxValue, "", 1, 2500, 500);
@@ -1759,6 +1752,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
     {
       if (robot->mowPatternName() == "WIRE")
       {
+        robot->totalDistDrive = 0;
         robot->statusCurr = TRACK_TO_START; //status change later into STATE_PERI_STOP_TOTRACK
         robot->setNextState(STATE_PERI_FIND, 0);
       }

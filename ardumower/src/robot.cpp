@@ -1733,10 +1733,18 @@ void Robot::motorControlPerimeter()
 
     if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut)
     {
-      Console.println("Error: tracking error");
-      addErrorCounter(ERR_TRACKING);
-      // whereToStart = 99999;
-      setNextState(STATE_PERI_FIND, 0);
+      if (perimeterInside)
+      {
+        Console.println("Tracking Fail but and we are inside, So start to find again the perimeter");
+        addErrorCounter(ERR_TRACKING);
+        setNextState(STATE_PERI_FIND, 0);
+      }
+      else
+      {
+        Console.println("Tracking Fail and we are outside, So stop all");
+        addErrorCounter(ERR_TRACKING);
+        setNextState(STATE_ERROR, 0);
+      }
     }
     return;
   }
@@ -2166,8 +2174,8 @@ void Robot::setup()
   // watchdog enable at the end of the setup
   if (Enable_DueWatchdog)
   {
-    Console.println("Watchdog is enabled and set to 4 secondes");
-    watchdogEnable(4000); // Watchdog trigger after  4 sec if not reseted. (was 2000)
+    Console.println("Watchdog is enabled and set to 2 secondes");
+    watchdogEnable(2000); // Watchdog trigger after  2 sec if not reseted. (was 2000)
   }
   else
   {
@@ -2720,7 +2728,7 @@ void Robot::readSensors()
     }
   }
 
-  if ((perimeterUse) && (millis() >= nextTimePerimeter))
+  if ((stateCurr != STATE_STATION) && (perimeterUse) && (millis() >= nextTimePerimeter))
   {
     //bb
     nextTimePerimeter = millis() + 15; // 50
@@ -2751,9 +2759,11 @@ void Robot::readSensors()
 
     if (perimeter.signalTimedOut(0) || ((perimeter.read2Coil) && perimeter.signalTimedOut(1)))
     {
-
       if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))
       { // all the other state are distance limited
+        //need to find a way in tracking mode maybe timeout error if the tracking is perfect, the mower is so near the wire than the mag is near 0 (adjust the timedOutIfBelowSmag)
+        //if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
+        // all the other state are distance limited
         Console.println("Error: Timeout , perimeter too far away");
         addErrorCounter(ERR_PERIMETER_TIMEOUT);
         setNextState(STATE_ERROR, 0);
@@ -6446,6 +6456,15 @@ void Robot::loop()
     break;
 
   case STATE_STATION_CHECK:
+    if (statusCurr == MOW_WIRE)
+    { //it is the last status
+      Console.print("Total distance drive ");
+      Console.print(totalDistDrive / 100);
+      Console.println(" meters ");
+      Console.print("Total duration ");
+      Console.print((stateStartTime - millis()) / 1000);
+      Console.println(" secondes ");
+    }
     // check for charging voltage here after detect station
     if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)) //move some CM to be sure the contact is OK
     {
