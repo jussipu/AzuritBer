@@ -288,7 +288,7 @@ public:
   unsigned long nextTimeGPS;
   unsigned long nextTimeCheckIfStuck;
   float stuckIfGpsSpeedBelow;
-  int gpsSpeedIgnoreTime; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
+  int gpsBaudrate; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
   int robotIsStuckCounter;
   // -------- odometry state --------------------------
   boolean odometryUse;             // use odometry?
@@ -398,7 +398,7 @@ public:
   unsigned long motorRightZeroTimeout;
   boolean rotateLeft;
   unsigned long nextTimeRotationChange;
-
+  unsigned long nextTimeSendTagToPi;
   unsigned long nextTimeMotorControl;
   unsigned long nextTimeMotorImuControl;
 

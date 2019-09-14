@@ -938,6 +938,7 @@ void RemoteControl::sendGPSMenu(boolean update)
   else
     serialPort->print(F("{.GPS RFID`1000"));
   serialPort->print(F("|q00~GPS Use(Need Reboot) "));
+  sendSlider("q03", F("GPS Baudrate"), robot->gpsBaudrate, "", 1, 38400, 9600);
   sendYesNo(robot->gpsUse);
   serialPort->print(F("|q01~RFID Use : "));
   sendYesNo(robot->rfidUse);
@@ -952,6 +953,8 @@ void RemoteControl::processGPSMenu(String pfodCmd)
     robot->gpsUse = !robot->gpsUse;
   else if (pfodCmd.startsWith("q01"))
     robot->rfidUse = !robot->rfidUse;
+  else if (pfodCmd.startsWith("q03"))
+    processSlider(pfodCmd, robot->gpsBaudrate, 1);
   sendGPSMenu(true);
 }
 
@@ -1728,7 +1731,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
       // robot->mowPatternCurr = 1;
       robot->laneUseNr = 1;
       robot->rollDir = 1;
-      robot->whereToStart = 2;
+      robot->whereToStart = 1;
       robot->areaToGo = 1;
       robot->actualLenghtByLane = 40;
       robot->beaconToStart = 0;
