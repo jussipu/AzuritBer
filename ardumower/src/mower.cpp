@@ -261,10 +261,10 @@ Mower::Mower()
 ISR(PCINT0_vect)
 {
   unsigned long timeMicros = micros();
-  boolean remoteSpeedState = digitalRead(pinRemoteSpeed);
-  boolean remoteSteerState = digitalRead(pinRemoteSteer);
-  boolean remoteMowState = digitalRead(pinRemoteMow);
-  boolean remoteSwitchState = digitalRead(pinRemoteSwitch);
+  bool remoteSpeedState = digitalRead(pinRemoteSpeed);
+  bool remoteSteerState = digitalRead(pinRemoteSteer);
+  bool remoteMowState = digitalRead(pinRemoteMow);
+  bool remoteSwitchState = digitalRead(pinRemoteSwitch);
   robot.setRemotePPMState(timeMicros, remoteSpeedState, remoteSteerState, remoteMowState, remoteSwitchState);
 }
 
@@ -300,7 +300,6 @@ NewPing NewSonarCenter(pinSonarCenterTrigger, pinSonarCenterEcho, 110);
 
 void Mower::setup()
 {
-
   PinMan.begin();
   // keep battery switched ON (keep this at system start!)
   pinMode(pinBatterySwitch, OUTPUT);
@@ -447,9 +446,7 @@ void Mower::setup()
     rc.initSerial(&Serial1, ESP8266_BAUDRATE);
   }
   else if (bluetoothUse)
-  {
     rc.initSerial(&Bluetooth, BLUETOOTH_BAUDRATE);
-  }
 
   // enable interrupts
   //-----------------------------------------------------------------------------------------------------------------UweZ geändert Anfang---------------------------------
@@ -653,7 +650,7 @@ void Mower::setActuator(char type, int value)
   }
 }
 
-void Mower::configureBluetooth(boolean quick)
+void Mower::configureBluetooth(bool quick)
 {
   BluetoothConfig bt;
   bt.setParams(name, BLUETOOTH_PIN, BLUETOOTH_BAUDRATE, quick);

@@ -1,5 +1,4 @@
 // timer-based mowing
-
 void Robot::setDefaultTime()
 {
   datetime.time.hour = 0;
@@ -17,13 +16,12 @@ void Robot::setDefaultTime()
 // check timer
 void Robot::checkTimer()
 {
-
   if (millis() < nextTimeTimer)
     return;
   nextTimeTimer = millis() + 60000;        // one minute check
   srand(time2minutes(datetime.time));      // initializes the pseudo-random number generator for c++ rand()
   randomSeed(time2minutes(datetime.time)); // initializes the pseudo-random number generator for arduino random()
-  boolean stopTimerTriggered = true;
+  bool stopTimerTriggered = true;
   if (timerUse)
   {
     Console.println("checktimer");
@@ -41,16 +39,13 @@ void Robot::checkTimer()
           Console.print(i);
           Console.print(" startmin ");
           Console.print(startmin);
-
           Console.print(" stopmin ");
           Console.print(stopmin);
-
           Console.print(" currmin ");
           Console.println(currmin);
 
-          if ((currmin >= startmin) && (currmin < stopmin))
+          if ((currmin >= startmin) && (currmin < stopmin)) // start timer triggered
           {
-            // start timer triggered
             stopTimerTriggered = false;
             if ((stateCurr == STATE_STATION))
             {
@@ -77,21 +72,30 @@ void Robot::checkTimer()
               Console.println(whereToStart);
               setNextState(STATE_STATION_REV, 0);
             }
+            if ((stateCurr == STATE_OFF) && (resetByWDT))
+            {
+              resetByWDT = false;
+              Console.println(F("Trying once to recover from watchdog reset"));
+              ActualRunningTimer = i;
+              mowPatternCurr = timer[i].startMowPattern;
+              setNextState(STATE_FORWARD_ODO, 0);
+            }
           }
         }
-        if ((stateCurr != STATE_STATION) && (stopTimerTriggered) && (ActualRunningTimer == i))
-        { //Stop only the running timer
-
+        if ((stateCurr != STATE_STATION) && (stopTimerTriggered) && (ActualRunningTimer == i)) // Stop only the running timer
+        {
           Console.println(F("timer stop triggered"));
           ActualRunningTimer = 99;
           if (perimeterUse)
-          {
             setNextState(STATE_PERI_FIND, 0);
-          }
           else
-          {
             setNextState(STATE_OFF, 0);
-          }
+        }
+        if ((stateCurr == STATE_OFF) && (stopTimerTriggered) && (perimeterUse) && (resetByWDT))
+        {
+          resetByWDT = false;
+          Console.println(F("Screw you guys, I'm going home!!!"));
+          setNextState(STATE_PERI_FIND, 0);
         }
       }
     }

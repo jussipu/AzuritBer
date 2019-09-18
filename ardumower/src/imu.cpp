@@ -410,7 +410,7 @@ void IMUClass::readHMC5883L()
   }
 }
 
-void IMUClass::loadSaveCalib(boolean readflag)
+void IMUClass::loadSaveCalib(bool readflag)
 {
   int addr = ADDR;
   short magic = MAGIC;
@@ -624,7 +624,7 @@ void IMUClass::calibComUpdate()
   delay(20);
   readHMC5883L();
   watchdogReset();
-  boolean newfound = false;
+  bool newfound = false;
   if ((abs(com.x - comLast.x) < 10) && (abs(com.y - comLast.y) < 10) && (abs(com.z - comLast.z) < 10))
   {
     if (com.x < comMin.x)

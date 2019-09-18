@@ -1,7 +1,4 @@
 /*
-
-
-
         DUE and ODOMETRY MANDATORY VERSION
         PCB1.3
         FOR BY LANE USE, IMU GY-88 MANDATORY
@@ -18,8 +15,6 @@
             #define Console Serial
             //#define Console SerialUSB
         to have access to the Console on the PC else  PI  received the Console Output
-
-
 
 
   Ardumower (www.ardumower.de)
@@ -46,10 +41,9 @@
 
   Private-use only! (you need to ask for a commercial-use)
 
-
   Documentation:  http://wiki.ardumower.de
-
 */
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "config.h"

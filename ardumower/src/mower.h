@@ -156,7 +156,7 @@ public:
   // virtual void resetMotorFault();
   virtual int readSensor(char type);
   virtual void setActuator(char type, int value);
-  virtual void configureBluetooth(boolean quick);
+  virtual void configureBluetooth(bool quick);
 };
 
 extern Mower robot;

@@ -258,7 +258,7 @@ void RemoteControl::processSlider(String result, short &value, double scale)
   }
 }
 
-void RemoteControl::sendMainMenu(boolean update)
+void RemoteControl::sendMainMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -274,7 +274,7 @@ void RemoteControl::sendMainMenu(boolean update)
   serialPort->println(F("|y4~Error counters}"));
 }
 
-void RemoteControl::sendPlotMenu(boolean update)
+void RemoteControl::sendPlotMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -284,7 +284,7 @@ void RemoteControl::sendPlotMenu(boolean update)
   serialPort->println(F("|y1~Battery|y2~Odometry2D|y11~Motor control|y10~GPS2D}"));
 }
 
-void RemoteControl::sendSettingsMenu(boolean update)
+void RemoteControl::sendSettingsMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -339,7 +339,7 @@ void RemoteControl::processSettingsMenu(String pfodCmd)
     sendSettingsMenu(true);
 }
 
-void RemoteControl::sendErrorMenu(boolean update)
+void RemoteControl::sendErrorMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -399,7 +399,7 @@ void RemoteControl::processErrorMenu(String pfodCmd)
   sendErrorMenu(true);
 }
 
-void RemoteControl::sendMotorMenu(boolean update)
+void RemoteControl::sendMotorMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -575,7 +575,7 @@ void RemoteControl::processMotorMenu(String pfodCmd)
   sendMotorMenu(true);
 }
 
-void RemoteControl::sendMowMenu(boolean update)
+void RemoteControl::sendMowMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -677,7 +677,7 @@ void RemoteControl::processMowMenu(String pfodCmd)
   sendMowMenu(true);
 }
 
-void RemoteControl::sendBumperMenu(boolean update)
+void RemoteControl::sendBumperMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -707,7 +707,7 @@ void RemoteControl::processBumperMenu(String pfodCmd)
   sendBumperMenu(true);
 }
 
-void RemoteControl::sendDropMenu(boolean update)
+void RemoteControl::sendDropMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -734,7 +734,7 @@ void RemoteControl::processDropMenu(String pfodCmd)
   sendDropMenu(true);
 }
 
-void RemoteControl::sendSonarMenu(boolean update)
+void RemoteControl::sendSonarMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -780,7 +780,7 @@ void RemoteControl::processSonarMenu(String pfodCmd)
   sendSonarMenu(true);
 }
 
-void RemoteControl::sendPerimeterMenu(boolean update)
+void RemoteControl::sendPerimeterMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -866,7 +866,7 @@ void RemoteControl::processPerimeterMenu(String pfodCmd)
   sendPerimeterMenu(true);
 }
 
-void RemoteControl::sendLawnSensorMenu(boolean update)
+void RemoteControl::sendLawnSensorMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -890,7 +890,7 @@ void RemoteControl::processLawnSensorMenu(String pfodCmd)
   sendLawnSensorMenu(true);
 }
 
-void RemoteControl::sendRainMenu(boolean update)
+void RemoteControl::sendRainMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -931,7 +931,7 @@ void RemoteControl::processRainMenu(String pfodCmd)
   sendRainMenu(true);
 }
 
-void RemoteControl::sendGPSMenu(boolean update)
+void RemoteControl::sendGPSMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -958,7 +958,7 @@ void RemoteControl::processGPSMenu(String pfodCmd)
   sendGPSMenu(true);
 }
 
-void RemoteControl::sendByLaneMenu(boolean update)
+void RemoteControl::sendByLaneMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1067,7 +1067,7 @@ void RemoteControl::processByLaneMenu(String pfodCmd)
   sendByLaneMenu(true);
 }
 
-void RemoteControl::sendImuMenu(boolean update)
+void RemoteControl::sendImuMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1133,7 +1133,7 @@ void RemoteControl::processImuMenu(String pfodCmd)
   sendImuMenu(true);
 }
 
-void RemoteControl::sendRemoteMenu(boolean update)
+void RemoteControl::sendRemoteMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1161,7 +1161,7 @@ void RemoteControl::processRemoteMenu(String pfodCmd)
   sendRemoteMenu(true);
 }
 
-void RemoteControl::sendBatteryMenu(boolean update)
+void RemoteControl::sendBatteryMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1230,7 +1230,7 @@ void RemoteControl::processBatteryMenu(String pfodCmd)
   sendBatteryMenu(true);
 }
 
-void RemoteControl::sendStationMenu(boolean update)
+void RemoteControl::sendStationMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1270,7 +1270,7 @@ void RemoteControl::processStationMenu(String pfodCmd)
   sendStationMenu(true);
 }
 
-void RemoteControl::sendOdometryMenu(boolean update)
+void RemoteControl::sendOdometryMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1306,7 +1306,7 @@ void RemoteControl::processOdometryMenu(String pfodCmd)
   sendOdometryMenu(true);
 }
 
-void RemoteControl::sendDateTimeMenu(boolean update)
+void RemoteControl::sendDateTimeMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1345,7 +1345,7 @@ void RemoteControl::processDateTimeMenu(String pfodCmd)
   robot->setActuator(ACT_RTC, 0);
 }
 
-void RemoteControl::sendTimerDetailMenu(int timerIdx, boolean update)
+void RemoteControl::sendTimerDetailMenu(int timerIdx, bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1414,8 +1414,8 @@ void RemoteControl::sendTimerDetailMenu(int timerIdx, boolean update)
 void RemoteControl::processTimerDetailMenu(String pfodCmd)
 {
   timehm_t time;
-  boolean checkStop = false;
-  boolean checkStart = false;
+  bool checkStop = false;
+  bool checkStart = false;
   int startmin, stopmin;
   int timerIdx = pfodCmd[2] - '0';
   if (pfodCmd.startsWith("p0"))
@@ -1540,7 +1540,7 @@ void RemoteControl::processTimerDetailMenu(String pfodCmd)
   sendTimerDetailMenu(timerIdx, true);
 }
 
-void RemoteControl::sendTimerMenu(boolean update)
+void RemoteControl::sendTimerMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1573,7 +1573,7 @@ void RemoteControl::processTimerMenu(String pfodCmd)
   }
 }
 
-void RemoteControl::sendFactorySettingsMenu(boolean update)
+void RemoteControl::sendFactorySettingsMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1590,7 +1590,7 @@ void RemoteControl::processFactorySettingsMenu(String pfodCmd)
   sendFactorySettingsMenu(true);
 }
 
-void RemoteControl::sendInfoMenu(boolean update)
+void RemoteControl::sendInfoMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1633,7 +1633,7 @@ void RemoteControl::processInfoMenu(String pfodCmd)
   sendInfoMenu(true);
 }
 
-void RemoteControl::sendCommandMenu(boolean update)
+void RemoteControl::sendCommandMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1809,7 +1809,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
   }
 }
 
-void RemoteControl::sendManualMenu(boolean update)
+void RemoteControl::sendManualMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1890,7 +1890,7 @@ void RemoteControl::processManualMenu(String pfodCmd)
   }
 }
 
-void RemoteControl::sendTestOdoMenu(boolean update)
+void RemoteControl::sendTestOdoMenu(bool update)
 {
   if (update)
     serialPort->print("{:");
@@ -1994,7 +1994,7 @@ void RemoteControl::processTestOdoMenu(String pfodCmd)
   }
 }
 
-void RemoteControl::sendCompassMenu(boolean update)
+void RemoteControl::sendCompassMenu(bool update)
 {
   if (update)
     serialPort->print("{:");

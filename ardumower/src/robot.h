@@ -28,7 +28,6 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-
 //#include <Servo.h>  // for RC brushless contoller
 #include "drivers.h"
 #include "pid.h"
@@ -44,7 +43,6 @@
 
 /*
   Generic robot class - subclass to implement concrete hardware!
-
 */
 
 // code version
@@ -244,7 +242,7 @@ enum
 class Robot
 {
 public:
-  boolean debugConsole;
+  bool debugConsole;
   String name;
   bool developerActive;
   // --------- state machine --------------------------
@@ -266,21 +264,21 @@ public:
   // --------- timer ----------------------------------
   ttimer_t timer[MAX_TIMERS];
   datetime_t datetime;
-  boolean timerUse; // use timer?
+  bool timerUse; // use timer?
   unsigned long nextTimeTimer;
   byte ActualRunningTimer;
   // ----- bluetooth -------------------------------------
-  boolean bluetoothUse; // use Bluetooth module?
+  bool bluetoothUse; // use Bluetooth module?
   // ----- esp8266 ---------------------------------------
-  boolean esp8266Use; // use ESP8266 Wifi module?
+  bool esp8266Use; // use ESP8266 Wifi module?
   String esp8266ConfigString = "";
   // -------- mow pattern -----------------------------
   byte mowPatternCurr;
   char *mowPatternName();
   // -------- gps state -------------------------------
   GPS gps;
-  boolean gpsUse; // use GPS?
-  boolean gpsReady;
+  bool gpsUse; // use GPS?
+  bool gpsReady;
   float gpsLat;
   float gpsLon;
   float gpsX; // X position (m)
@@ -291,19 +289,19 @@ public:
   int gpsBaudrate; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
   int robotIsStuckCounter;
   // -------- odometry state --------------------------
-  boolean odometryUse;             // use odometry?
-  boolean twoWayOdometrySensorUse; // free for something else
-  int odometryTicksPerRevolution;  // encoder ticks per one full resolution
-  float odometryTicksPerCm;        // encoder ticks per cm
-  float odometryWheelBaseCm;       // wheel-to-wheel distance (cm)
-  boolean odometryRightSwapDir;    // inverse right encoder direction?
-  boolean odometryLeftSwapDir;     // inverse left encoder direction?
-  int odometryLeft;                // left wheel counter
-  int odometryRight;               // right wheel counter
-  boolean odometryLeftLastState;
-  boolean odometryLeftLastState2;
-  boolean odometryRightLastState;
-  boolean odometryRightLastState2;
+  bool odometryUse;               // use odometry?
+  bool twoWayOdometrySensorUse;   // free for something else
+  int odometryTicksPerRevolution; // encoder ticks per one full resolution
+  float odometryTicksPerCm;       // encoder ticks per cm
+  float odometryWheelBaseCm;      // wheel-to-wheel distance (cm)
+  bool odometryRightSwapDir;      // inverse right encoder direction?
+  bool odometryLeftSwapDir;       // inverse left encoder direction?
+  int odometryLeft;               // left wheel counter
+  int odometryRight;              // right wheel counter
+  bool odometryLeftLastState;
+  bool odometryLeftLastState2;
+  bool odometryRightLastState;
+  bool odometryRightLastState2;
   float odometryTheta;     // theta angle (radiant)
   float odometryX;         // X map position (cm)
   float odometryY;         // Y map position (cm)
@@ -326,22 +324,22 @@ public:
   int currDistToDrive;     //IMU staright line and distance control
 
   // -------- RC remote control state -----------------
-  boolean remoteUse; // use model remote control (R/C)?
-  int remoteSteer;   // range -100..100
-  int remoteSpeed;   // range -100..100
-  int remoteMow;     // range 0..100
-  int remoteSwitch;  // range 0..100
+  bool remoteUse;   // use model remote control (R/C)?
+  int remoteSteer;  // range -100..100
+  int remoteSpeed;  // range -100..100
+  int remoteMow;    // range 0..100
+  int remoteSwitch; // range 0..100
   unsigned long remoteSteerLastTime;
   unsigned long remoteSpeedLastTime;
   unsigned long remoteMowLastTime;
   unsigned long remoteSwitchLastTime;
-  boolean remoteSteerLastState;
-  boolean remoteSpeedLastState;
-  boolean remoteMowLastState;
-  boolean remoteSwitchLastState;
+  bool remoteSteerLastState;
+  bool remoteSpeedLastState;
+  bool remoteMowLastState;
+  bool remoteSwitchLastState;
   unsigned long nextTimeRTC;
   String rfidTagFind;
-  boolean rfidUse;
+  bool rfidUse;
 
   // --------- wheel motor state ----------------------------
   // wheel motor speed ( <0 backward, >0 forward); range -motorSpeedMaxRpm..motorSpeedMaxRpm
@@ -368,12 +366,12 @@ public:
   int motorRollDegMin;
   //int DistPeriOutRev;
 
-  long motorForwTimeMax;       // max. forward time (ms) / timeout
-  float motorBiDirSpeedRatio1; // bidir mow pattern speed ratio 1
-  float motorBiDirSpeedRatio2; // bidir mow pattern speed ratio 2
-  bool motorRightSwapDir;      // inverse right motor direction?
-  bool motorLeftSwapDir;       // inverse left motor direction?
-  int motorLeftSpeedRpmSet;    // set speed
+  unsigned long motorForwTimeMax; // max. forward time (ms) / timeout
+  float motorBiDirSpeedRatio1;    // bidir mow pattern speed ratio 1
+  float motorBiDirSpeedRatio2;    // bidir mow pattern speed ratio 2
+  bool motorRightSwapDir;         // inverse right motor direction?
+  bool motorLeftSwapDir;          // inverse left motor direction?
+  int motorLeftSpeedRpmSet;       // set speed
   int motorRightSpeedRpmSet;
   //bb
   int motorOdoAccel;
@@ -396,7 +394,7 @@ public:
   unsigned long lastSetMotorSpeedTime;
   unsigned long motorLeftZeroTimeout;
   unsigned long motorRightZeroTimeout;
-  boolean rotateLeft;
+  bool rotateLeft;
   unsigned long nextTimeRotationChange;
   unsigned long nextTimeSendTagToPi;
   unsigned long nextTimeMotorControl;
@@ -434,11 +432,11 @@ public:
   float PrevStateOdoDepassLeft;
   float PrevStateOdoDepassRight;
   float motorLeftSpeedDivider;
-  boolean UseAccelRight;
-  boolean UseBrakeRight;
-  boolean UseAccelLeft;
-  boolean UseBrakeLeft;
-  boolean odoLeftRightCorrection;
+  bool UseAccelRight;
+  bool UseBrakeRight;
+  bool UseAccelLeft;
+  bool UseBrakeLeft;
+  bool odoLeftRightCorrection;
   int AngleRotate;
   int newtagRotAngle1;
   int newtagRotAngle2;
@@ -453,14 +451,14 @@ public:
 
   // -------- mower motor state -----------------------
   int motorMowRpmCounter; // mower motor speed state
-  boolean secondMowMotor; // second mow motor
-  boolean motorMowRpmLastState;
-  boolean motorMowEnable;   // motor can be temporary disabled if stucked etc. with this
-  boolean motorMowForceOff; // user switch for mower motor on/off has highest priority
-  // boolean ignoreRfidTag ; // use to stay on wire when mow perimeter
-  boolean highGrassDetect;         //detect that the mow motor is on high load so high grass
+  bool secondMowMotor;    // second mow motor
+  bool motorMowRpmLastState;
+  bool motorMowEnable;   // motor can be temporary disabled if stucked etc. with this
+  bool motorMowForceOff; // user switch for mower motor on/off has highest priority
+  // bool ignoreRfidTag ; // use to stay on wire when mow perimeter
+  bool highGrassDetect;            //detect that the mow motor is on high load so high grass
   float triggerMotorMowHightGrass; // motor mower percent of power vs power Max  trigger to start spirale or half lane
-  // boolean motorMowEnableOverride ; // user switch for mower motor on/off has highest priority if true the motor is stop
+  // bool motorMowEnableOverride ; // user switch for mower motor on/off has highest priority if true the motor is stop
   // mower motor sppeed; range 0..motorMowSpeedMaxPwm
   float motorMowAccel;     // motor mower acceleration (warning: do not set too high)
   int motorMowSpeedMaxPwm; // motor mower max PWM
@@ -470,7 +468,7 @@ public:
   byte spiraleNbTurn; //count the number of revolution of the spirale (10 revolutions for example before stop)
   byte halfLaneNb;    //count the number of lane same as spirale (10  for example before stop)
 
-  boolean motorMowModulate;  // motor mower cutter modulation?
+  bool motorMowModulate;     // motor mower cutter modulation?
   int motorMowRPMSet;        // motor mower RPM (only for cutter modulation)
   float motor1MowSenseScale; // motor 1 mower sense scale (mA=(ADC-zero)/scale)
   float motor2MowSenseScale; // motor 2 mower sense scale (mA=(ADC-zero)/scale)
@@ -491,32 +489,32 @@ public:
 
   // --------- bumper state ---------------------------
   // bumper state (true = pressed)
-  boolean bumperUse; // has bumpers?
-  boolean tiltUse;   // has tilt sensor?
-  boolean tilt;
+  bool bumperUse; // has bumpers?
+  bool tiltUse;   // has tilt sensor?
+  bool tilt;
   int bumperLeftCounter;
-  boolean bumperLeft;
+  bool bumperLeft;
   int bumperRightCounter;
-  boolean bumperRight;
+  bool bumperRight;
   unsigned long nextTimeBumper;
   // --------- drop state ---------------------------
   // bumper state (true = pressed)                                                                                                  // Dropsensor - Absturzsensor vorhanden ?
-  boolean dropUse;            // has drops?                                                                                           // Dropsensor - Absturzsensor Zähler links
+  bool dropUse;               // has drops?                                                                                           // Dropsensor - Absturzsensor Zähler links
   int dropLeftCounter;        // Dropsensor - Absturzsensor
-  boolean dropLeft;           // Dropsensor - Absturzsensor links betätigt ?
+  bool dropLeft;              // Dropsensor - Absturzsensor links betätigt ?
   int dropRightCounter;       // Dropsensor - Absturzsensor
-  boolean dropRight;          // Dropsensor - Absturzsensor rechts betätigt ?
+  bool dropRight;             // Dropsensor - Absturzsensor rechts betätigt ?
   unsigned long nextTimeDrop; // Dropsensor - Absturzsensor
-  boolean dropcontact;        // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 für Öffner - 1 Schließer
+  bool dropcontact;           // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 für Öffner - 1 Schließer
   // ------- IMU state --------------------------------
   IMUClass imu;
-  boolean imuUse;               // use IMU?
-  boolean stopMotorDuringCalib; // Stop mow motor during auto calibration
-  PID imuDirPID;                // direction PID controller
-  PID imuRollPID;               // roll PID controller
-  float imuDriveHeading;        // drive heading (IMU)
-  float periFindDriveHeading;   // drive heading when search for other rfid tag or go to station
-  float remoteDriveHeading;     // drive heading  when rfid tag to go to area2
+  bool imuUse;                // use IMU?
+  bool stopMotorDuringCalib;  // Stop mow motor during auto calibration
+  PID imuDirPID;              // direction PID controller
+  PID imuRollPID;             // roll PID controller
+  float imuDriveHeading;      // drive heading (IMU)
+  float periFindDriveHeading; // drive heading when search for other rfid tag or go to station
+  float remoteDriveHeading;   // drive heading  when rfid tag to go to area2
   float newtagRotAngle1Radian;
 
   float imuRollHeading; // roll heading  (IMU)
@@ -529,7 +527,7 @@ public:
   //unsigned long nextTimeImuUse;
   unsigned long nextTimeToDmpAutoCalibration;
   unsigned long endTimeCalibration;
-  boolean needDmpAutoCalibration;
+  bool needDmpAutoCalibration;
   //float lastLaneYawMedian; //use to know the last lane direction in bylaneodo mowing
   float YawActualDeg;
 
@@ -557,7 +555,7 @@ public:
   int correctLeft;
   int correctRight;
   float YawMedianDeg;
-  boolean justChangeLaneDir; //
+  bool justChangeLaneDir; //
   byte actualRollDirToCalibrate;
   float prevYawCalcOdo;
   unsigned long nextTimeImuLoop;
@@ -571,7 +569,7 @@ public:
   PerimeterClass perimeter;
 
   // Perimeter perimeter;
-  boolean perimeterUse; // use perimeter?
+  bool perimeterUse; // use perimeter?
   //int perimeterOutRollTimeMax ;  //free but conserve for eeprom recovery
   //int perimeterOutRollTimeMin; //free but conserve for eeprom recovery
   int perimeterOutRevTime;
@@ -581,7 +579,7 @@ public:
   int perimeterMag;                   // perimeter magnitude
   int perimeterMagRight;              // perimeter magnitude
   byte areaInMowing;                  //it's the area in mowing nr
-  boolean perimeterInside;            // is inside perimeter?
+  bool perimeterInside;               // is inside perimeter?
   unsigned long perimeterTriggerTime; // time to trigger perimeter transition (timeout)
   int perimeterTriggerMinSmag;        // perimeter trigger timeout (ms)
   unsigned long perimeterLastTransitionTime;
@@ -589,7 +587,7 @@ public:
   unsigned long nextTimePerimeter;
   int trackingPerimeterTransitionTimeOut;
   int trackingErrorTimeOut;
-  boolean trakBlockInnerWheel;
+  bool trakBlockInnerWheel;
 
   //add BB
   int leftSpeedperi;
@@ -612,7 +610,7 @@ public:
   int DistPeriOutStop;
   int perimeterMagMaxValue;
   int Tempovar;
-  boolean lastPerimeterTrackInside; // was inside or outside
+  bool lastPerimeterTrackInside; // was inside or outside
   float PeriCoeffAccel;
   float R;
   int smoothPeriMag;
@@ -620,9 +618,9 @@ public:
 
   //End add bb
   //  --------- lawn state ----------------------------
-  boolean lawnSensorUse; // use capacitive Sensor
+  bool lawnSensorUse; // use capacitive Sensor
   int lawnSensorCounter;
-  boolean lawnSensor;    // lawn capacity sensor state (true = no lawn detected)
+  bool lawnSensor;       // lawn capacity sensor state (true = no lawn detected)
   float lawnSensorFront; // front lawn sensor capacity (time)
   float lawnSensorFrontOld;
   float lawnSensorBack; // back lawn sensor capacity (time)
@@ -630,24 +628,24 @@ public:
   unsigned long nextTimeLawnSensor;
   unsigned long nextTimeLawnSensorCheck;
   // --------- rain -----------------------------------
-  boolean rain;
-  boolean rainWS; // weather station
-  boolean rainUse;
+  bool rain;
+  bool rainWS; // weather station
+  bool rainUse;
   int rainCounter;
   int rainReadDelay; // rain read delay
   int wsRainData;    // WS rain data selection
   unsigned long nextTimeRain;
   // --------- sonar ----------------------------------
   // ultra sonic sensor distance-to-obstacle (cm)
-  boolean sonarUse; // use ultra sonic sensor?
-  boolean sonarLeftUse;
-  boolean sonarRightUse;
-  boolean sonarCenterUse;
+  bool sonarUse; // use ultra sonic sensor?
+  bool sonarLeftUse;
+  bool sonarRightUse;
+  bool sonarCenterUse;
   int sonarTriggerBelow; // start to reverse
   int sonarSlowBelow;    // start to slow not use but stay here to keep the compatibily with 1.08
-  unsigned int sonarDistCenter;
-  unsigned int sonarDistRight;
-  unsigned int sonarDistLeft;
+  int sonarDistCenter;
+  int sonarDistRight;
+  int sonarDistLeft;
   //unsigned int sonarDistCounter ;
   //unsigned int tempSonarDistCounter ;
   unsigned long sonarObstacleTimeout;
@@ -655,19 +653,19 @@ public:
   unsigned long nextTimeCheckSonar;
   byte distToObstacle; //min distance to obstacle in CM of the 3 sonars
   byte sonarToFrontDist;
-  //boolean sonarReduceSpeed ; // if true the mower reduce speed
+  //bool sonarReduceSpeed ; // if true the mower reduce speed
 
   // --------- pfodApp ----------------------------------
   RemoteControl rc; // pfodApp
   unsigned long nextTimePfodLoop;
   // ----- other -----------------------------------------
-  boolean buttonUse;   // has digital ON/OFF button?
+  bool buttonUse;      // has digital ON/OFF button?
   bool RaspberryPIUse; //a raspberryPI is connected to USBNativeport
 
   unsigned long beepOnOFFDuration; //variable use for the beeper
   bool beepState;                  //for the beeper true when sound
   unsigned long nextTimeBeeper;    // use for beeper
-  boolean startByTimer;            // use to know if the start is initiate by timer or manual via PFOD
+  bool startByTimer;               // use to know if the start is initiate by timer or manual via PFOD
   int whereToStart;                // use to know where the mower need to leave the wire and start to mow
   int whereToResetSpeed;           // use with Rfid Speed to know when reset to maxpwm
   int beaconToStart;               // use to know where the mower need to leave the wire and start to mow
@@ -680,12 +678,12 @@ public:
   float maxTemperature; //switch to OFF when reach this temp
 
   // ----- user-defined switch ---------------------------
-  boolean userSwitch1; // user-defined switch 1 (default value)
-  boolean userSwitch2; // user-defined switch 2 (default value)
-  boolean userSwitch3; // user-defined switch 3 (default value)
+  bool userSwitch1; // user-defined switch 1 (default value)
+  bool userSwitch2; // user-defined switch 2 (default value)
+  bool userSwitch3; // user-defined switch 3 (default value)
   // --------- charging -------------------------------
 
-  boolean batMonitor;            // monitor battery and charge voltage?
+  bool batMonitor;               // monitor battery and charge voltage?
   float batGoHomeIfBelow;        // drive home voltage (Volt)
   float batSwitchOffIfBelow;     // switch off if below voltage (Volt)
   int batSwitchOffIfIdle;        // switch off battery if idle for minutes
@@ -711,7 +709,7 @@ public:
   byte stationRollAngle;        // charge station roll angle
   int stationForwDist;          // charge station forward distance cm
   byte stationCheckDist;        // charge station check distance cm
-  boolean UseBumperDock;        //bumper is pressed when docking or not
+  bool UseBumperDock;           //bumper is pressed when docking or not
   byte dockingSpeed;            //speed docking is (percent of maxspeed) when sonar detect something while tracking
   unsigned long totalDistDrive; //use to check when to leave the wire in start timer mode
   unsigned long nextTimeBattery;
@@ -728,6 +726,7 @@ public:
   byte errorCounterMax[ERR_ENUM_COUNT];
   byte errorCounter[ERR_ENUM_COUNT];
   // --------- other ----------------------------------
+  bool resetByWDT; // watchdog reset detection
   int loopsPerSec; // main loops per second
   int loopsPerSecCounter;
   byte buttonCounter;
@@ -749,8 +748,8 @@ public:
   int beepfrequenceOff;      // div by 10 frequence OFF normaly 0 but can be use to make other tone
 
   // ------------robot stats---------------------------
-  boolean statsOverride;
-  boolean statsMowTimeTotalStart;
+  bool statsOverride;
+  bool statsMowTimeTotalStart;
   unsigned int statsMowTimeMinutesTripCounter;
   unsigned long statsMowTimeMinutesTotal;
   float statsMowTimeHoursTotal;
@@ -769,18 +768,17 @@ public:
   virtual void resetIdleTime();
 
   // call this from R/C control interrupt
-  virtual void setRemotePPMState(unsigned long timeMicros, boolean remoteSpeedState, boolean remoteSteerState,
-                                 boolean remoteMowState, boolean remoteSwitchState);
+  virtual void setRemotePPMState(unsigned long timeMicros, bool remoteSpeedState, bool remoteSteerState, bool remoteMowState, bool remoteSwitchState);
 
   // call this from hall sensor interrupt
-  virtual void setMotorMowRPMState(boolean motorMowRpmState);
+  virtual void setMotorMowRPMState(bool motorMowRpmState);
 
   // state machine
   virtual void setNextState(byte stateNew, byte dir);
 
   // motor
-  virtual void setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel);
-  virtual void setMotorMowPWM(int pwm, boolean useAccel);
+  virtual void setMotorPWM(int pwmLeft, int pwmRight, bool useAccel);
+  virtual void setMotorMowPWM(int pwm, bool useAccel);
 
   // GPS
   virtual void processGPSData();
@@ -799,7 +797,7 @@ public:
   virtual void newTagFind();
 
   // other
-  // virtual void beep(int numberOfBeeps, boolean shortbeep);
+  // virtual void beep(int numberOfBeeps, bool shortbeep);
   virtual void printInfo(Stream &s);
   virtual void setUserSwitches();
   virtual void addErrorCounter(byte errType);
@@ -814,9 +812,9 @@ public:
 protected:
   // convert ppm time to RC slider value
   virtual int rcValue(int ppmTime);
-  virtual void loadSaveErrorCounters(boolean readflag);
-  virtual void loadSaveUserSettings(boolean readflag);
-  virtual void loadSaveRobotStats(boolean readflag);
+  virtual void loadSaveErrorCounters(bool readflag);
+  virtual void loadSaveUserSettings(bool readflag);
+  virtual void loadSaveRobotStats(bool readflag);
   virtual void loadUserSettings();
   virtual void checkErrorCounter();
 
@@ -851,7 +849,6 @@ protected:
   virtual void motorControl();
 
   //bb
-
   virtual void OdoRampCompute();
   virtual void motorControlOdo();
   virtual void motorControlPerimeter();
@@ -881,7 +878,7 @@ protected:
   virtual void commsMenuBT();
   virtual void commsMenuWifi();
   virtual void commsMenuSelect();
-  virtual void configureBluetooth(boolean quick){};
+  virtual void configureBluetooth(bool quick){};
 
   virtual void beeper();
 
