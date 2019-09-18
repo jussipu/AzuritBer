@@ -5162,12 +5162,7 @@ void Robot::loop()
     readDHT22();
     checkBattery();
     if ((timerUse) && (resetByWDT)) // check timer after wdt reset
-    {
-      // Console.println("Watchdog activated reboot detected. Trying to recover by checking timer once.");
-      // nextTimeTimer = millis();
       checkTimer();
-      // resetByWDT = false;
-    }
     break;
 
   case STATE_REMOTE:

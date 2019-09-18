@@ -75,7 +75,7 @@ void Robot::checkTimer()
             if ((stateCurr == STATE_OFF) && (resetByWDT))
             {
               resetByWDT = false;
-              Console.println(F("Trying once to recover from watchdog reset"));
+              Console.println(F("WDT reset detected, trying to continue mowing."));
               ActualRunningTimer = i;
               mowPatternCurr = timer[i].startMowPattern;
               setNextState(STATE_FORWARD_ODO, 0);
@@ -94,7 +94,7 @@ void Robot::checkTimer()
         if ((stateCurr == STATE_OFF) && (stopTimerTriggered) && (perimeterUse) && (resetByWDT))
         {
           resetByWDT = false;
-          Console.println(F("Screw you guys, I'm going home!!!"));
+          Console.println(F("WDT reset detected, trying to go home."));
           setNextState(STATE_PERI_FIND, 0);
         }
       }
