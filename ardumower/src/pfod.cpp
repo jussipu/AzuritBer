@@ -386,6 +386,8 @@ void RemoteControl::sendErrorMenu(bool update)
   serialPort->print(robot->errorCounterMax[ERR_STUCK]);
   serialPort->print(F("|zz~EEPROM data "));
   serialPort->print(robot->errorCounterMax[ERR_EEPROM_DATA]);
+  serialPort->print(F("|zz~Temp high "));
+  serialPort->print(robot->errorCounterMax[ERR_TEMP_HIGH]);
   serialPort->println("}");
 }
 
@@ -907,11 +909,17 @@ void RemoteControl::sendRainMenu(bool update)
 
   serialPort->println(F("|m03~DHT22 Use "));
   sendYesNo(robot->DHT22Use);
-  serialPort->println(F("|m04~Temperature "));
+  serialPort->println(F("|m04~DHT temp "));
   serialPort->print(robot->temperatureDht);
   serialPort->println(F("|m05~Humidity "));
   serialPort->print(robot->humidityDht);
-  sendSlider("m06", F("Maximum Temperature"), robot->maxTemperature, "", 1, 80, 20);
+  sendSlider("m06", F("DHT max temp"), robot->maxTemperature, "", 1, 80, 20);
+
+  serialPort->println(F("|m09~Raspberry temp Use "));
+  sendYesNo(robot->raspiTempUse);
+  serialPort->println(F("|m10~Raspberry temp "));
+  serialPort->print(robot->raspiTemp);
+  sendSlider("m11", F("Raspberry max temp"), robot->raspiTempMax, "", 1, 100, 40);
 
   serialPort->println("}");
 }
@@ -928,6 +936,10 @@ void RemoteControl::processRainMenu(String pfodCmd)
     processSlider(pfodCmd, robot->wsRainData, 1);
   else if (pfodCmd.startsWith("m08"))
     processSlider(pfodCmd, robot->rainReadDelay, 1);
+  else if (pfodCmd == "m09")
+    robot->raspiTempUse = !robot->raspiTempUse;
+  else if (pfodCmd.startsWith("m11"))
+    processSlider(pfodCmd, robot->raspiTempMax, 1);
   sendRainMenu(true);
 }
 

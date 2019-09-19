@@ -59,9 +59,9 @@ Mower::Mower()
   motorLeftChange = 500;
   motorRightChange = 500;
   motorOdoAccel = 1500;         // Time for accel from 0 to 100% in ms
-  motorSpeedMaxRpm = 24;        // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
-  motorSpeedMaxPwm = 190;       // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorPowerMax = 30;           // motor wheel max power (Watt)
+  motorSpeedMaxRpm = 29;        // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm = 180;       // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorPowerMax = 60;           // motor wheel max power (Watt)
   motorSenseRightScale = 3.100; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
   motorSenseLeftScale = 3.100;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
   motorPowerIgnoreTime = 2000;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
@@ -78,8 +78,8 @@ Mower::Mower()
   motorRightSwapDir = 0; // inverse right motor direction?
   motorLeftSwapDir = 0;  // inverse left motor direction?
 
-  motorRightOffsetFwd = 2;  // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
-  motorRightOffsetRev = 0;  // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
+  motorRightOffsetFwd = 3;  // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
+  motorRightOffsetRev = 3;  // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
   motorTickPerSecond = 200; // use to compute the maxodostate duration and computed on the calibration motor
 
   UseAccelLeft = 1;
@@ -87,15 +87,15 @@ Mower::Mower()
   UseAccelRight = 1;
   UseBrakeRight = 1;
   AngleRotate = 100;
-  SpeedOdoMin = 50;
-  SpeedOdoMax = 140;
+  SpeedOdoMin = 60;
+  SpeedOdoMax = 180;
   odoLeftRightCorrection = true; // left-right correction for straight lines used in manual mode
 
   // ------ mower motor -------------------------------
   secondMowMotor = true;       // one mow motor = false; two mow motors = true;
   motorMowAccel = 3000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
-  motorMowSpeedMaxPwm = 240;   // motor mower max PWM
-  motorMowPowerMax = 35.0;     // motor mower max power (Watt)
+  motorMowSpeedMaxPwm = 225;   // motor mower max PWM
+  motorMowPowerMax = 50.0;     // motor mower max power (Watt)
   motorMowModulate = 0;        // motor mower cutter modulation?
   motorMowRPMSet = 3300;       // motor mower RPM (only for cutter modulation)
   motor1MowSenseScale = 1.850; // motor 1 mower sense scale (mA=(ADC-zero)/scale)
@@ -113,9 +113,11 @@ Mower::Mower()
   rainReadDelay = 60; // rain sensor read delay s
   wsRainData = 2;     // WS rain data selection: 1=Last 15 min, 2=Last 60 min, 3=Actual hour
 
-  // ------ DHT22Use ------------------------------------
+  // ------ DHT & Raspberry temp --------------------
   DHT22Use = 1;        // use DHT22 sensor?
   maxTemperature = 55; // max temp before switch off
+  raspiTempUse = 1;    // use Raspberry temp?
+  raspiTempMax = 80;   // max temp before switch off
 
   // ------ RFID ------------------------------------
   rfidUse = 1; // use rfid
@@ -143,7 +145,7 @@ Mower::Mower()
   DistPeriOutRev = 40;           // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30;      // reverse distance when hit obstacle while tracking in cm
   DistPeriOutForw = 60;          // distance to accell
-  DistPeriOutStop = 15;          // slowing distance after crossover the wire
+  DistPeriOutStop = 25;          // slowing distance after crossover the wire
   DistPeriObstacleForw = 25;     // distance while arc circle in peri obstacle avoid
   perimeterPID.Kp = 16.5;        // perimeter PID controller
   perimeterPID.Ki = 8;
@@ -159,7 +161,7 @@ Mower::Mower()
   circleTimeForObstacle = 4000; // time while arc circle in peri obstacle avoid if no Odometry
   DistPeriObstacleAvoid = 100;  // distance while arc circle in peri obstacle avoid
   motorLeftSpeedDivider = 1.6;  // left motor speed divider to controll arc radius
-  perimeterMagMaxValue = 2000;  // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+  perimeterMagMaxValue = 2500;  // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   perimeter.read2Coil = false;
   areaToGo = 1;
   // ------ lawn sensor --------------------------------
@@ -205,7 +207,7 @@ Mower::Mower()
   batFull = 29.4;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 3;   // maximum current your charger can deliver
   batFullCurrent = 0.32;       // current flowing when battery is fully charged
-  startChargingIfBelow = 28.5; // start charging if battery Voltage is below
+  startChargingIfBelow = 28.0; // start charging if battery Voltage is below
   chargingTimeout = 21600000;  // safety timer for charging (ms)  6 hrs
   chgSenseZero = 511;          // charge current sense zero point
   batSenseFactor = 1.27;       // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
@@ -213,17 +215,17 @@ Mower::Mower()
   chgChange = 0;               // Messwertumkehr von - nach +         1 oder 0
   chgNull = 2;                 // Nullduchgang abziehen (1 oder 2)
   // ------  charging station ---------------------------
-  stationRevDist = 110;  // charge station reverse 50 cm
-  stationRollAngle = 60; // charge station roll after reverse
-  stationForwDist = 50;  // charge station accel distance cm
-  stationCheckDist = 2;  // charge station check distance cm
+  stationRevDist = 90;   // charge station reverse 50 cm
+  stationRollAngle = 55; // charge station roll after reverse
+  stationForwDist = 40;  // charge station accel distance cm
+  stationCheckDist = 1;  // charge station check distance cm
   UseBumperDock = false; // bumper is pressed when docking or not
   dockingSpeed = 60;     // speed docking is (percent of maxspeed)
   // ------ odometry ------------------------------------
   odometryUse = 1;                  // use odometry?
-  odometryTicksPerRevolution = 695; // encoder ticks per one full resolution
-  odometryTicksPerCm = 10.75;       // encoder ticks per cm
-  odometryWheelBaseCm = 39.5;       // wheel-to-wheel distance (cm)
+  odometryTicksPerRevolution = 710; // encoder ticks per one full resolution
+  odometryTicksPerCm = 10.38;       // encoder ticks per cm
+  odometryWheelBaseCm = 46;         // wheel-to-wheel distance (cm)
   odometryRightSwapDir = 0;         // inverse right encoder direction?
   odometryLeftSwapDir = 0;          // inverse left encoder direction?
 

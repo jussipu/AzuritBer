@@ -58,15 +58,15 @@ RpiRemote MyRpi;
 const char signature[] = "ArduMower";
 char *p = (char *)malloc(sizeof(signature));
 
-char *stateNames[] = {"OFF ", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
-                      "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD", "POBSCIRC", "NEXTLANE", "POUTSTOP", "LANEROL1", "LANEROL2",
-                      "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS", "ROLLTOTRACK",
-                      "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
-                      "STOPCALIB", "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360", "NEXTSPIRE", "ESCAPLANE",
-                      "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK",
-                      "STOPTOFASTSTART", "CALIBMOTORSPEED"};
+char *stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV ", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
+                      "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD", "POBSCIRC", "NEXTLANE",
+                      "POUTSTOP", "LANEROL1", "LANEROL2", "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS", "ROLLTOTRACK", "STOPTOTRACK", "AUTOCALIB",
+                      "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER", "STOPCALIB", "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360",
+                      "NEXTSPIRE", "ESCAPLANE", "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA",
+                      "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK", "STOPTOFASTSTART", "CALIBMOTORSPEED"};
 
-char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT", "WIREMOWING"};
+char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING",
+                       "SIGWAIT", "WIREMOWING"};
 
 char *mowPatternNames[] = {"RAND", "LANE", "WIRE", "ZIGZAG"};
 char *consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
@@ -477,14 +477,16 @@ void Robot::loadSaveUserSettings(bool readflag)
   //RaspberryPIUse = false;
   eereadwrite(readflag, addr, sonarToFrontDist);
   eereadwrite(readflag, addr, maxTemperature);
-  eereadwrite(readflag, addr, secondMowMotor);      // second mow motor
-  eereadwrite(readflag, addr, motor2MowSenseScale); // second mow motor scale
-  eereadwrite(readflag, addr, rainReadDelay);       // reain sensor reading delay
-  eereadwrite(readflag, addr, wsRainData);          // weather station var
-  eereadwrite(readflag, addr, dockingSpeed);        // docking speed
-  eereadwrite(readflag, addr, rfidUse);
+  eereadwrite(readflag, addr, secondMowMotor);        // second mow motor
+  eereadwrite(readflag, addr, motor2MowSenseScale);   // second mow motor scale
+  eereadwrite(readflag, addr, rainReadDelay);         // reain sensor reading delay
+  eereadwrite(readflag, addr, wsRainData);            // weather station var
+  eereadwrite(readflag, addr, dockingSpeed);          // docking speed
+  eereadwrite(readflag, addr, rfidUse);               // rfid use boolean
   eereadwrite(readflag, addr, motorLeftSpeedDivider); //
-  eereadwrite(readflag, addr, foobar);                //last won't work correctly
+  eereadwrite(readflag, addr, raspiTempUse);          // Raspberry temp boolean
+  eereadwrite(readflag, addr, raspiTempMax);          // Raspbery max temp float
+  eereadwrite(readflag, addr, foobar);                // last won't work correctly???
   if (readflag)
   {
     Console.print(F("UserSettings are read from EEprom Address : "));
@@ -625,12 +627,16 @@ void Robot::printSettingSerial()
   Console.print(F("wsRainData                                 : "));
   Console.println(wsRainData);
 
-  // ------ DHT22 Temperature -----------------------------------------------------
-  Console.println(F("----------  DHT22 Temperature --------------------------------"));
+  // ------ DHT && Raspberry Temperature ------------------------------------------
+  Console.println(F("----------  DHT & Raspberry Temperature ----------------------"));
   Console.print(F("DHT22Use                                   : "));
   Console.println(DHT22Use, 1);
-  Console.print(F("MaxTemperature                             : "));
+  Console.print(F("DHT max temp                               : "));
   Console.println(maxTemperature);
+  Console.print(F("raspiTempUse                               : "));
+  Console.println(raspiTempUse, 1);
+  Console.print(F("Raspberry max temp                         : "));
+  Console.println(raspiTempMax);
 
   watchdogReset();
 
@@ -4179,9 +4185,9 @@ void Robot::checkBattery()
     // if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_OFF) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING))  {
     if ((batVoltage < batSwitchOffIfBelow) && (stateCurr != STATE_OFF))
     {
-      Console.print(F("Batterie Voltage : "));
+      Console.print(F("Batterie Voltage: "));
       Console.print(batVoltage);
-      Console.print(F(" -- > Switch OFF Voltage : "));
+      Console.print(F(" -- > Switch OFF Voltage: "));
       Console.print(batSwitchOffIfBelow);
       Console.println(F("  Bat Voltage is very low the state is changed to OFF, so the undervoltage timer start"));
       addErrorCounter(ERR_BATTERY);
@@ -4190,9 +4196,9 @@ void Robot::checkBattery()
     }
     else if ((batVoltage < batGoHomeIfBelow) && (stateCurr == STATE_FORWARD_ODO) && (perimeterUse))
     { //actualy in mowing mode with station and perimeter
-      Console.print(F("Batterie Voltage : "));
+      Console.print(F("Batterie Voltage: "));
       Console.print(batVoltage);
-      Console.print(F(" -- > Minimum Mowing Voltage : "));
+      Console.print(F(" -- > Minimum Mowing Voltage: "));
       Console.println(batGoHomeIfBelow);
       Console.println(F(" Bat Voltage is low : The mower search the charging Station"));
       setBeeper(100, 25, 25, 200, 0);
@@ -4959,47 +4965,73 @@ void Robot::calcOdometry()
 }
 void Robot::readDHT22()
 {
-  //read only the temperature when no motor control.
+  // read only the temperature when no motor control.
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  // unsigned long timeStart = millis();
   if ((DHT22Use) && (millis() > nextTimeReadDHT22))
-  { //read only each 30 Secondes
-    // unsigned long timeStart = millis();
-    nextTimeReadDHT22 = nextTimeReadDHT22 + 30000;
+  {
+    nextTimeReadDHT22 = nextTimeReadDHT22 + 30000; // read only each 30 Secondes
     humidityDht = dht.readHumidity();
     temperatureDht = dht.readTemperature();
     if (temperatureDht >= maxTemperature)
     {
-      Console.println("Temperature too high *************** Need to stop all the PCB in the next 2 minutes");
-      Console.print("Maxi Setting = ");
+      Console.println("DHT temperature too high. Need to stop all the PCB in the next few minutes");
+      Console.print("DHT max temp = ");
       Console.print(maxTemperature);
-      Console.print(" Actual Temperature = ");
+      Console.print(" Actual DHT temp = ");
       Console.println(temperatureDht);
-
+      if (raspiTempUse)
+      {
+        Console.print("Raspberry max temp = ");
+        Console.print(raspiTempMax);
+        Console.print(" Actual raspberry temp = ");
+        Console.println(raspiTemp);
+      }
       nextTimeReadDHT22 = nextTimeReadDHT22 + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
-      batSwitchOffIfIdle = 2;                         //use to switch off after 1 minute
+      batSwitchOffIfIdle = 2;                         //use to switch off after delay
+      addErrorCounter(ERR_TEMP_HIGH);
       setNextState(STATE_ERROR, 0);
       return;
     }
-    /*
-      Console.print(" Read DHT22 temperature : ");
-      Console.print(temperatureDht);
-      Console.print("   Humidity : ");
-      Console.println(humidityDht);
-    */
     if (isnan(humidityDht) || isnan(temperatureDht))
     {
       Console.println("Failed to read from DHT sensor!");
       humidityDht = 0.00;
       temperatureDht = 0.00;
     }
-    // unsigned long timeStop = millis();
-    // if ((developerActive) && (timeStop - timeStart > 100))
+  }
+  if (raspiTempUse)
+  {
+    if (raspiTemp >= raspiTempMax)
+    {
+      Console.println("Raspberry temperature too high. Need to stop all the PCB in the next few minutes");
+      Console.print("Raspberry max temp = ");
+      Console.print(raspiTempMax);
+      Console.print(" Actual raspberry temp = ");
+      Console.println(raspiTemp);
+      if (DHT22Use)
+      {
+        Console.print("DHT max temp = ");
+        Console.print(maxTemperature);
+        Console.print(" Actual DHT temp = ");
+        Console.println(temperatureDht);
+      }
+      batSwitchOffIfIdle = 2; // use to switch off after delay
+      addErrorCounter(ERR_TEMP_HIGH);
+      setNextState(STATE_ERROR, 0);
+      return;
+    }
+    // else if ((raspiTemp >= (raspiTempMax - 15)) && (raspiTemp < raspiTempMax))
     // {
-    //   Console.print("readDHT22 executing time: ");
-    //   Console.println(timeStop - timeStart);
     // }
   }
+  // unsigned long timeStop = millis();
+  // if ((developerActive) && (timeStop - timeStart > 100))
+  // {
+  //   Console.print("readDHT22 executing time: ");
+  //   Console.println(timeStop - timeStart);
+  // }
 }
 
 void Robot::checkTimeout()

@@ -1,15 +1,14 @@
 class robot:
     def __init__(self):
-                self.stateNames = ["OFF", "REMOTE", "FORW", "ROLL", "REV", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
-                            "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD", "POBSCIRC", "NEXTLANE", "POUTSTOP", "LANEROL1", "LANEROL2",
-                            "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS", "ROLLTOTRACK",
-                            "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
-                            "STOPCALIB", "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360", "NEXTSPIRE", "ESCAPLANE",
-                            "TRACKSTOP","ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA","WAITSIG2","STOPTONEWAREA",
-                            "ROLLSTOPTOTRACK","STOPTOFASTSTART","CALIBMOTORSPEED","INC_01","INC_02","INC_03","INC_04","INC_05","INC_06"]
-        self.statusNames = ["WAIT", "NORMAL_MOWING", "SPIRALE_MOWING", "BACK_TO_STATION", 
-                      "TRACK_TO_START", "MANUAL", "REMOTE", "IN_ERROR", "IN_STATION",
-                      "TESTING","WAITSIG2","WIRE_MOWING","INC_01","INC_02","INC_03","INC_04","INC_05","INC_06"]
+                self.stateNames = ["OFF", "REMOTE", "FORW", "ROLL", "REV", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK",
+                                   "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD",
+                                   "POBSCIRC", "NEXTLANE", "POUTSTOP", "LANEROL1", "LANEROL2", "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS",
+                                   "ROLLTOTRACK", "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER", "STOPCALIB",
+                                   "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360", "NEXTSPIRE", "ESCAPLANE", "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA",
+                                   "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK",
+                                   "STOPTOFASTSTART", "CALIBMOTORSPEED", "INC_01", "INC_02", "INC_03", "INC_04", "INC_05", "INC_06"]
+        self.statusNames = ["WAIT", "NORMAL_MOWING", "SPIRALE_MOWING", "BACK_TO_STATION", "TRACK_TO_START", "MANUAL", "REMOTE", "IN_ERROR", "IN_STATION",
+                            "TESTING","WAITSIG2","WIRE_MOWING","INC_01","INC_02","INC_03","INC_04","INC_05","INC_06"]
         self.developerActive=0 
         self.motorAccel=0
         self.motorSpeedMaxRpm=0
@@ -106,7 +105,7 @@ class robot:
         self.esp8266ConfigString=0
         self.tiltUse=0
         self.trackingPerimeterTransitionTimeOut=0
-        #self.sonarSlowBelow=0    not use at all
+        # self.sonarSlowBelow=0    not use at all
         self.motorMowForceOff=0
         self.MaxSpeedperiPwm=0
         self.RollTimeFor45Deg=0
@@ -148,10 +147,12 @@ class robot:
         self.TimerstartRollDir=[0]*5
         self.TimerstartLaneMaxlengh=[0]*5
         self.TimerstartArea=[0]*5
-        #jp
+        # jp
         self.motor2MowSenseScale=0
         self.secondMowMotor=0
         self.rainReadDelay=0
         self.maxTemperature=0
         self.wsRainData=0
         self.motorLeftSpeedDivider=0.00
+        self.raspiTempUse=0
+        self.raspiTempMax=0

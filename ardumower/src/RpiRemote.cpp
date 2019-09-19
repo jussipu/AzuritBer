@@ -13,7 +13,6 @@ void RpiRemote::init()
 }
 void RpiRemote::run()
 {
-  unsigned long timeStart = millis();
   readPi();
   if (millis() >= nextTimeRaspberryPISendStat)
   {
@@ -56,12 +55,6 @@ void RpiRemote::run()
     maxRepetByLaneToPi = maxRepetByLaneToPi - 1;
     nextTimeRaspberryPISendByLane = millis() + delayByLaneToPi;
     RaspberryPISendByLane();
-  }
-  unsigned long timeStop = millis();
-  if ((robot->debugConsole) && (timeStop - timeStart > 250))
-  {
-    Console.print("RpiRemote::run executing time: ");
-    Console.println(timeStop - timeStart);
   }
 }
 
@@ -629,12 +622,11 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->dockingSpeed;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
     lineToSend = lineToSend + robot->motorLeftSpeedDivider;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->raspiTempUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";
+    lineToSend = lineToSend + robot->raspiTempMax;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
@@ -863,6 +855,8 @@ void RpiRemote::RaspberryPISendStat()
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->temperatureDht;
   lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + robot->raspiTemp;
+  lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->loopsPerSec;
   lineToSend = lineToSend + ",";
 
@@ -913,6 +907,8 @@ void RpiRemote::RaspberryPISendErr()
   lineToSend = lineToSend + robot->errorCounterMax[ERR_STUCK];
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->errorCounterMax[ERR_EEPROM_DATA];
+  lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + robot->errorCounterMax[ERR_TEMP_HIGH];
   lineToSend = lineToSend + ",";
 
   writePi(lineToSend);
@@ -1635,6 +1631,8 @@ void RpiRemote::readWrite_setting()
         robot->UseBumperDock = val[0];
         robot->dockingSpeed = val[1];
         robot->motorLeftSpeedDivider = val[2];
+        robot->raspiTempUse = val[3];
+        robot->raspiTempMax = val[4];
       }
     }
   }
