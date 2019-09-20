@@ -5,17 +5,11 @@ import sys
 import serial
 import pynmea2
 import time
-
-# import numpy as np
 import subprocess
 import pickle
-
-# import cv2
 import smtplib
 import urllib.request
 import urllib.error
-
-# import webbrowser
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -27,15 +21,15 @@ from tkinter import messagebox
 from tkinter import filedialog
 import tkinter as tk
 import math
-from config import cwd
-from config import myOS
-from config import GpsConnectedOnPi
-from config import NanoConnectedOnPi
-from config import DueConnectedOnPi
-from config import GpsIsM6n
-from config import UseWeatherStation
-from config import autoRecordBatCharge
-from config import useDebugConsole
+
+# CONFIG
+myOS = "Linux"
+DueConnectedOnPi = True
+UseWeatherStation = True
+autoRecordBatCharge = False
+GpsConnectedOnPi = False
+NanoConnectedOnPi = False
+useDebugConsole = True
 
 if myOS == "Linux":
     from Ps4remote import PS4Controller
@@ -44,18 +38,16 @@ if myOS == "Linux":
 # add to avoid KST plot error on path
 sys.path.insert(0, "/home/pi/Documents/PiArdumower")
 
-
-def ButtonFlashDue_click():
-    messagebox.showinfo(
-        "Info",
-        "Actual program use the USB Serial so it need to be closed. it will restart at the end of the Flashing",
-    )
-    Due_Serial.close()
-    time.sleep(3)
-    subprocess.call("/home/pi/Documents/PiArdumower/DueFlash.py")
-    time.sleep(3)
-    Due_Serial.open()
-
+# def ButtonFlashDue_click():
+#     messagebox.showinfo(
+#         "Info",
+#         "Actual program use the USB Serial so it need to be closed. it will restart at the end of the Flashing",
+#     )
+#     Due_Serial.close()
+#     time.sleep(3)
+#     subprocess.call("/home/pi/Documents/PiArdumower/DueFlash.py")
+#     time.sleep(3)
+#     Due_Serial.open()
 
 #################################### GPS MANAGEMENT ###############################################
 
@@ -341,7 +333,7 @@ def find_rfid_tag():
 
 def checkNetwork(url_to_check):
     try:
-        urllib.request.urlopen(url_to_check, timeout=1)
+        urllib.request.urlopen(url_to_check, timeout=2)
         return True
     except urllib.error.URLError as err:
         return False
@@ -640,7 +632,7 @@ tk_ErrTempHigh = tk.IntVar()
 firstFixFlag = False
 firstFixDate = 0
 
-fen1.title("ARDUMOWER")
+fen1.title("PiArduMower")
 fen1.geometry("800x480")
 
 
@@ -775,12 +767,8 @@ def checkSerial():  # the main loop is that
                 ):  # it is console message because the first digit is not $
                 consoleInsertText(response2)
 
-            else:  # here a nmea message
-
-                # message = pynmea2.parse(response2)
-                # decode_message(message)
-
-                try:
+            else:
+                try:  # here a nmea message
                     message = pynmea2.parse(response2)
                     decode_message(message)
                 except:
@@ -796,31 +784,36 @@ def checkSerial():  # the main loop is that
 
                 mymower.dueSerialReceived = str(mymower.dueSerialReceived,
                                                 "utf8")
-                # it is console message because the first digit is not $
+                # it is console message if the first digit is not $
                 if mymower.dueSerialReceived[:1] != "$":
                     if (len(mymower.dueSerialReceived)) > 2:
                         consoleInsertText(mymower.dueSerialReceived)
 
-                else:  # here a nmea message
-                    # print(mymower.dueSerialReceived)
-                    # message = pynmea2.parse(mymower.dueSerialReceived)
-                    # decode_message(message)
-
-                    try:
+                else:
+                    try:  # here a nmea message
                         message = pynmea2.parse(mymower.dueSerialReceived)
                         decode_message(message)
                     except:
-                        #    print("INCOMING MESSAGE ERROR FROM DUE --> " + str(mymower.dueSerialReceived))
+                        # print("INCOMING MESSAGE ERROR FROM DUE --> " + str(mymower.dueSerialReceived))
                         consoleInsertText("INCOMING MESSAGE ERROR FROM DUE" +
                                           "\n")
                         consoleInsertText(
                             str(mymower.dueSerialReceived) + "\n")
 
         except:
-            print("Due serial connection fail, trying to reset")
-            Due_Serial.close()
-            time.sleep(5)
-            Due_Serial.open()
+            try:
+                print("Due serial connection fail, trying to reset")
+                Due_Serial.close()
+                time.sleep(5)
+                Due_Serial.open()
+            except:
+                print("Serial connection reset failed, shutdown 60s")
+                time.sleep(60)
+                fen1.destroy()
+                time.sleep(1)
+                print("Fen1 destroy")
+                time.sleep(1)
+                sys.exit("Impossible to continue")
 
     if mymower.useJoystick:
         myps4.listen()
@@ -844,12 +837,6 @@ def checkSerial():  # the main loop is that
             send_pfo_message("nf", "1", "2", "3", "4", "5", "6")
         if myps4.downClick:
             ButtonStop_click()
-
-        # self.crossClick=False
-        # self.roundClick=False
-        # self.squareClick=False
-        # self.triangle_click=False
-
         if myps4.triangleClick:
             pass
             # print("triangleClick:")
@@ -884,7 +871,7 @@ def checkSerial():  # the main loop is that
             readWS()
 
     if time.time() > mower.timeToReadRPiTemp:
-        mower.timeToReadRPiTemp = time.time() + 5  # 5s delay
+        mower.timeToReadRPiTemp = time.time() + 15  # 15s delay
         readRasPiTemp()
 
     if useDebugConsole:
@@ -937,12 +924,10 @@ def decode_message(message):  # decode the nmea message
             ButtonSaveReceived_click()  # save the console txt
             consoleInsertText("All Console Data are saved" + "\n")
             print("All Console Data are saved")
-
             # txtConsoleRecu.insert('1.0', 'Start to stop the GPS Record')
             # mygpsRecord.stop()
-            consoleInsertText("The GPS Record is stopped" + "\n")
-            print("The GPS Record is stopped")
-            # text1.config(text="Start to shutdown")
+            # consoleInsertText("The GPS Record is stopped" + "\n")
+            # print("The GPS Record is stopped")
             consoleInsertText("PI start Shutdown into 5 Seconds" + "\n")
             time.sleep(1)
             print(
@@ -1180,7 +1165,6 @@ def decode_message(message):  # decode the nmea message
         mymower.pitch = message.pitch
         mymower.roll = message.roll
         mymower.Dht22Temp = message.Dht22Temp
-        mymower.raspiTemp = message.raspiTemp
         mymower.loopsPerSecond = message.loopsPerSecond
         # //bber17
         if autoRecordBatCharge:
@@ -1510,7 +1494,6 @@ def decode_message(message):  # decode the nmea message
 
 
 def refreshAllSettingPage():
-
     refreshMotorSettingPage()
     refreshPerimeterSettingPage()
     refreshMainSettingPage()
@@ -1877,7 +1860,6 @@ def refreshErrorPage():
 
 
 def refreshOdometrySettingPage():
-
     sliderodometryTicksPerRevolution.set(myRobot.odometryTicksPerRevolution)
     sliderodometryTicksPerCm.set(myRobot.odometryTicksPerCm)
     sliderodometryWheelBaseCm.set(myRobot.odometryWheelBaseCm)
@@ -1889,14 +1871,12 @@ def refreshStationSettingPage():
     sliderstationstationForwDist.set(myRobot.stationForwDist)
     sliderstationstationCheckDist.set(myRobot.stationCheckDist)
     sliderstationdockingSpeed.set(myRobot.dockingSpeed)
-
     ChkBtnuseBumperDock.deselect()
     if myRobot.useBumperDock == "1":
         ChkBtnuseBumperDock.select()
 
 
 def refreshByLaneSettingPage():
-
     sliderDistBetweenLane.set(myRobot.DistBetweenLane)
     slidermaxLenghtByLane.set(myRobot.maxLenghtByLane)
     slideryawSet1.set(myRobot.yawSet1)
@@ -1911,7 +1891,6 @@ def refreshByLaneSettingPage():
 
 
 def refreshMowMotorSettingPage():
-
     slidermowPatternDurationMax.set(myRobot.mowPatternDurationMax)
     slidermotorMowSpeedMaxPwm.set(myRobot.motorMowSpeedMaxPwm)
     slidermotorMowPowerMax.set(myRobot.motorMowPowerMax)
@@ -1921,42 +1900,33 @@ def refreshMowMotorSettingPage():
     slidermotorMowPID_Kp.set(myRobot.motorMowPID_Kp)
     slidermotorMowPID_Ki.set(myRobot.motorMowPID_Ki)
     slidermotorMowPID_Kd.set(myRobot.motorMowPID_Kd)
-
     ChkBtnmotorMowForceOff.deselect()
     if myRobot.motorMowForceOff == "1":
         ChkBtnmotorMowForceOff.select()
-
     ChkBtnsecondMowMotor.deselect()
     if myRobot.secondMowMotor == "1":
         ChkBtnsecondMowMotor.select()
 
 
 def refreshBatterySettingPage():
-
     sliderbatGoHomeIfBelow.set(myRobot.batGoHomeIfBelow)
     sliderbatSwitchOffIfBelow.set(myRobot.batSwitchOffIfBelow)
     sliderbatSwitchOffIfIdle.set(myRobot.batSwitchOffIfIdle)
     sliderstartChargingIfBelow.set(myRobot.startChargingIfBelow)
-
     sliderbatFullCurrent.set(myRobot.batFullCurrent)
     sliderbatFactor.set(myRobot.batFactor)
-
     sliderbatChgFactor.set(myRobot.batChgFactor)
     sliderbatSenseFactor.set(myRobot.batSenseFactor)
-
     ChkBtnbatMonitor.deselect()
     if myRobot.batMonitor == "1":
         ChkBtnbatMonitor.select()
 
 
 def refreshSonarSettingPage():
-
     slidersonarTriggerBelow.set(myRobot.sonarTriggerBelow)
-
     ChkBtnsonarRightUse.deselect()
     if myRobot.sonarRightUse == "1":
         ChkBtnsonarRightUse.select()
-
     ChkBtnsonarLeftUse.deselect()
     if myRobot.sonarLeftUse == "1":
         ChkBtnsonarLeftUse.select()
@@ -1976,11 +1946,9 @@ def refreshImuSettingPage():
     sliderimuDirPID_Kp.set(myRobot.imuDirPID_Kp)
     sliderimuDirPID_Ki.set(myRobot.imuDirPID_Ki)
     sliderimuDirPID_Kd.set(myRobot.imuDirPID_Kd)
-
     sliderdelayBetweenTwoDmpAutocalib.set(myRobot.delayBetweenTwoDmpAutocalib)
     slidermaxDurationDmpAutocalib.set(myRobot.maxDurationDmpAutocalib)
     slidermaxDriftPerSecond.set(myRobot.maxDriftPerSecond)
-
     ChkBtnstopMotorDuringCalib.deselect()
     if myRobot.stopMotorDuringCalib == "1":
         ChkBtnstopMotorDuringCalib.select()
@@ -1989,7 +1957,6 @@ def refreshImuSettingPage():
 def refreshTimerSettingPage():
     print("refresh setting timer")
     for i in range(5):
-
         tk_timerActive[i].set(myRobot.Timeractive[i])
         tk_timerStartTimehour[i].set(myRobot.TimerstartTime_hour[i])
         tk_timerStartTimeMinute[i].set(myRobot.TimerstartTime_minute[i])
@@ -2002,10 +1969,7 @@ def refreshTimerSettingPage():
         tk_timerStartLaneMaxlengh[i].set(myRobot.TimerstartLaneMaxlengh[i])
         tk_timerStartArea[i].set(myRobot.TimerstartArea[i])
 
-        # print(tk_timerStartArea[i])
-
         for j in range(7):
-
             tk_timerDayVar[i][j].set(myRobot.TimerdaysOfWeek[i])
 
 
@@ -2035,7 +1999,7 @@ def refreshMotorSettingPage():
     sliderSpeedOdoMax.set(myRobot.SpeedOdoMax)
     sliderLeftSense.set(myRobot.motorSenseLeftScale)
     sliderRightSense.set(myRobot.motorSenseRightScale)
-    # ButtonSendSettingToDue_click
+    ButtonSendSettingToDue_click
 
 
 def refreshMainSettingPage():
@@ -2092,12 +2056,10 @@ def refreshPerimeterSettingPage():
     sliderPeriMagMaxValue.set(myRobot.perimeterMagMaxValue)
     sliderTransitionTimeout.set(myRobot.trackingPerimeterTransitionTimeOut)
     sliderMotorLeftSpeedDivider.set(myRobot.motorLeftSpeedDivider)
-
     sliderTrackErrTimeout.set(myRobot.trackingErrorTimeOut)
     sliderTrackPid_P.set(myRobot.perimeterPID_Kp)
     sliderTrackPid_I.set(myRobot.perimeterPID_Ki)
     sliderTrackPid_D.set(myRobot.perimeterPID_Kd)
-
     ChkBtnPeriSwapLeftCoil.deselect()
     if myRobot.perimeter_swapCoilPolarityLeft == "1":
         ChkBtnPeriSwapLeftCoil.select()
@@ -2110,7 +2072,6 @@ def refreshPerimeterSettingPage():
     ChkBtnPeriBlockInnWheel.deselect()
     if myRobot.trakBlockInnerWheel == "1":
         ChkBtnPeriBlockInnWheel.select()
-
     ButtonSendSettingToDue_click
 
 
@@ -2657,12 +2618,12 @@ except:
     print("ERREUR DE CONNECTION WITH PCB1.3 DUE")
     print("************************************")
     print(" ")
+    time.sleep(60)
+    fen1.destroy()
     time.sleep(1)
-    sys.exit("Impossible de continuer")
-
-# print(cwd)
-# cwd1=cwd+"/icons/home.png"
-# print(cwd1)
+    print("Fen1 destroy")
+    time.sleep(1)
+    sys.exit("Impossible to continue")
 """-------------------ICONS LOADING---------------------"""
 imgHome = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/home.png")
 imgTrack = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/track.png")

@@ -5852,7 +5852,6 @@ void Robot::loop()
       }
     }
     readDHT22();
-
     break;
 
   case STATE_STOP_ON_BUMPER:
