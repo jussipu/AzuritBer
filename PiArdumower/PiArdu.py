@@ -37,11 +37,8 @@ from config import UseWeatherStation
 from config import autoRecordBatCharge
 from config import useDebugConsole
 
-
 if myOS == "Linux":
     from Ps4remote import PS4Controller
-
-
 """      bb file     """
 
 # add to avoid KST plot error on path
@@ -65,19 +62,16 @@ def ButtonFlashDue_click():
 
 class gpsRecord_class(object):
     """class use to start and stop the gps Record use only if the GPS is connected to the Raspberry"""
-
     def __init__(self):
         self.gpsRecord = None
 
     def start(self):
         self.stop()
-        self.gpsRecord = subprocess.Popen(
-            [
-                "/home/pi/Documents/PiArdumower/gpsrecord.py",
-                "shell=True",
-                "stdout=subprocess.PIPE",
-            ]
-        )
+        self.gpsRecord = subprocess.Popen([
+            "/home/pi/Documents/PiArdumower/gpsrecord.py",
+            "shell=True",
+            "stdout=subprocess.PIPE",
+        ])
 
     def stop(self):
         if self.gpsRecord:
@@ -93,15 +87,13 @@ mygpsRecord = gpsRecord_class()
 
 class PlotterKst_class(object):
     """class use to start and stop the kst plotting prog"""
-
     def __init__(self):
         self.PlotterKst = None
 
     def start(self, fileNameKst):
         self.stop()
         self.PlotterKst = subprocess.Popen(
-            ["kst2", fileNameKst, "shell=True", "stdout=subprocess.PIPE"]
-        )
+            ["kst2", fileNameKst, "shell=True", "stdout=subprocess.PIPE"])
 
     def stop(self):
         if self.PlotterKst:
@@ -123,9 +115,8 @@ def find_rfid_tag():
     mymower.newtagToDo = "Null"
     for i in range(0, len(rfid_list)):
         # if str("b'"+rfid_list[i][0]+"'")== str(search_code):
-        if (str(rfid_list[i][0]) == str(search_code)) & (
-            str(rfid_list[i][1]) == str(search_status)
-        ):
+        if (str(rfid_list[i][0]) == str(search_code)) & (str(
+                rfid_list[i][1]) == str(search_status)):
             mymower.newtagToDo = rfid_list[i][2]
             mymower.newtagSpeed = rfid_list[i][3]
             mymower.newtagRotAngle1 = rfid_list[i][4]
@@ -139,7 +130,8 @@ def find_rfid_tag():
         consoleInsertText("  Are not present in the database \n")
 
     else:
-        consoleInsertText("RFID Tag find ToDO is: %s" % (mymower.newtagToDo) + "\n")
+        consoleInsertText("RFID Tag find ToDO is: %s" % (mymower.newtagToDo) +
+                          "\n")
 
         if mymower.newtagToDo == "RTS":  # return to station from station area
             consoleInsertText("RFID Find faster return" + "\n")
@@ -178,9 +170,8 @@ def find_rfid_tag():
             # mower.speedIsReduce=True
             # mower.timeToResetSpeed=time.time()+5  #reduce speed for 5 secondes
             consoleInsertText("RFID detect reduce speed Tag :" + "\n")
-            consoleInsertText(
-                "Set new speed and distance : %s" % (mymower.newtagSpeed) + "\n"
-            )
+            consoleInsertText("Set new speed and distance : %s" %
+                              (mymower.newtagSpeed) + "\n")
             send_var_message(
                 "w",
                 "newtagDistance1",
@@ -209,7 +200,8 @@ def find_rfid_tag():
         if mymower.newtagToDo == "NEW_AREA":
 
             if mymower.areaToGo != mymower.areaInMowing:
-                consoleInsertText("Go to area ---> " + str(mymower.areaToGo) + "\n")
+                consoleInsertText("Go to area ---> " + str(mymower.areaToGo) +
+                                  "\n")
                 send_var_message(
                     "w",
                     "motorSpeedMaxPwm",
@@ -336,9 +328,8 @@ def find_rfid_tag():
                     "0",
                     "0",
                 )
-                send_var_message(
-                    "w", "areaToGo", "1", "0", "0", "0", "0", "0", "0", "0"
-                )
+                send_var_message("w", "areaToGo", "1", "0", "0", "0", "0", "0",
+                                 "0", "0")
 
                 send_pfo_message("ry", "1", "2", "3", "4", "5", "6")
                 # stopsender can freeze the Pi so better to put it after the remote
@@ -360,7 +351,8 @@ def checkNetwork(url_to_check):
 
 
 def readRasPiTemp():
-    mymower.raspiTemp = os.popen("/opt/vc/bin/vcgencmd measure_temp | cut -c6-9").read()
+    mymower.raspiTemp = os.popen(
+        "/opt/vc/bin/vcgencmd measure_temp | cut -c6-9").read()
     tk_raspiTemp.set(float(mymower.raspiTemp))
     send_var_message(
         "w",
@@ -390,8 +382,7 @@ def readWS():
     tempvar = int(mymower.millis) + 65000  # set nextTimeTimer (ms)
     if testnetWS:
         wsrainUrl = urllib.request.urlopen(
-            "http://192.168.1.11/meteohtml.cgi?file=" + str(rainData)
-        )
+            "http://192.168.1.11/meteohtml.cgi?file=" + str(rainData))
         wsrain = wsrainUrl.read()
         if float(wsrain) > 0:
             send_var_message(
@@ -409,21 +400,22 @@ def readWS():
             if int(myRobot.wsRainData) == 1:
                 print(str(float(wsrain)) + " mm rain in last 15 minutes")
                 consoleInsertText(
-                    str(float(wsrain)) + " mm rain in last 15 minutes" + "\n"
-                )
+                    str(float(wsrain)) + " mm rain in last 15 minutes" + "\n")
             elif int(myRobot.wsRainData) == 2:
                 print(str(float(wsrain)) + " mm rain in last 60 minutes")
                 consoleInsertText(
-                    str(float(wsrain)) + " mm rain in last 60 minutes" + "\n"
-                )
+                    str(float(wsrain)) + " mm rain in last 60 minutes" + "\n")
             elif int(myRobot.wsRainData) == 3:
                 print(float(wsrain) + " mm rain on actual hour")
-                consoleInsertText(str(float(wsrain)) + " mm rain in actual hour" + "\n")
+                consoleInsertText(
+                    str(float(wsrain)) + " mm rain in actual hour" + "\n")
             else:
                 print("WS rain data source not read from DUE yet")
-                consoleInsertText("WS rain data source not read from DUE yet" + "\n")
+                consoleInsertText("WS rain data source not read from DUE yet" +
+                                  "\n")
         else:
-            send_var_message("w", "rainWS", "0", "0", "0", "0", "0", "0", "0", "0")
+            send_var_message("w", "rainWS", "0", "0", "0", "0", "0", "0", "0",
+                             "0")
             if int(myRobot.wsRainData) == 1:
                 print("No rain in last 15 minutes")
                 consoleInsertText("No rain in last 15 minutes" + "\n")
@@ -435,7 +427,8 @@ def readWS():
                 consoleInsertText("No rain in actual hour" + "\n")
             else:
                 print("WS rain data source not read from DUE yet")
-                consoleInsertText("WS rain data source not read from DUE yet" + "\n")
+                consoleInsertText("WS rain data source not read from DUE yet" +
+                                  "\n")
 
     else:
         print("Weather station connection problem..")
@@ -454,7 +447,8 @@ def sendEmail():
         testnetEmail = checkNetwork("https://google.fi")
         if testnetEmail:
             print("Network check OK. Sending error email...")
-            consoleInsertText("Network check OK. Sending error email..." + "\n")
+            consoleInsertText("Network check OK. Sending error email..." +
+                              "\n")
             send_to_email = email  # or 'email@address.fi'
 
             msg = MIMEMultipart()
@@ -464,8 +458,9 @@ def sendEmail():
 
             msg.attach(
                 MIMEText(
-                    "Error counters:\n"
-                    + "Charger: {}\nBattery: {}\nMotor Left: {}\nMotor Right: {}\nMotor Mow: {}\nMow Sense: {}\nOdometry Left: {}\nOdometry Right: {}\nPerimeter Timeout: {}\nPerimeter Tracking: {}\nIMU Communication: {}\nIMU Calibration: {}\nIMU Tilt: {}\nRTC Communication: {}\nRTC Data: {}\nGPS Communication: {}\nGPS Data: {}\nRobot Stuck: {}\nEEPROM Data: {}\nTemp High: {}\n\n".format(
+                    "Error counters:\n" +
+                    "Charger: {}\nBattery: {}\nMotor Left: {}\nMotor Right: {}\nMotor Mow: {}\nMow Sense: {}\nOdometry Left: {}\nOdometry Right: {}\nPerimeter Timeout: {}\nPerimeter Tracking: {}\nIMU Communication: {}\nIMU Calibration: {}\nIMU Tilt: {}\nRTC Communication: {}\nRTC Data: {}\nGPS Communication: {}\nGPS Data: {}\nRobot Stuck: {}\nEEPROM Data: {}\nTemp High: {}\n\n"
+                    .format(
                         mymower.ErrCharger,
                         mymower.ErrBattery,
                         mymower.ErrMotorLeft,
@@ -486,12 +481,9 @@ def sendEmail():
                         mymower.ErrStuck,
                         mymower.ErrEepromData,
                         mymower.ErrTempHigh,
-                    )
-                    + "Console output:\n"
-                    + txtConsoleErr.get("1.0", "end"),
+                    ) + "Console output:\n" + txtConsoleErr.get("1.0", "end"),
                     "plain",
-                )
-            )
+                ))
 
             server = smtplib.SMTP("smtp.gmail.com", 587)
             server.starttls()
@@ -504,12 +496,12 @@ def sendEmail():
             return True
         else:
             print("Network connection problem. Email not sended!")
-            consoleInsertText("Network connection problem. Email not sended!" + "\n")
+            consoleInsertText("Network connection problem. Email not sended!" +
+                              "\n")
             return False
 
 
 #################################### VARIABLE INITIALISATION ###############################################
-
 
 direction_list = ["LEFT", "RIGHT"]
 days_list = [
@@ -534,7 +526,6 @@ page_list = [
     "GPS",
     "RFID",
 ]
-
 
 motPlotterKst = PlotterKst_class()
 mowPlotterKst = PlotterKst_class()
@@ -568,7 +559,6 @@ PlotVar1 = tk.IntVar()
 CamVar1 = tk.IntVar()
 StaVar1 = tk.IntVar()
 
-
 tk_date_Now = tk.StringVar()
 tk_time_Now = tk.StringVar()
 tk_MainStatusLine = tk.StringVar()
@@ -579,7 +569,6 @@ tk_date_day = tk.IntVar()
 tk_date_month = tk.IntVar()
 tk_date_year = tk.IntVar()
 tk_mowingPattern = tk.IntVar()
-
 """variable use into Auto Menu"""
 tk_batVoltage = tk.DoubleVar()
 tk_ImuYaw = tk.DoubleVar()
@@ -590,7 +579,6 @@ tk_Dht22Humid = tk.DoubleVar()
 tk_raspiTemp = tk.DoubleVar()
 tk_loopsPerSecond = tk.DoubleVar()
 tk_lastRfidFind = tk.DoubleVar()
-
 """variable use into refreh plot"""
 tk_millis = tk.IntVar()
 tk_motorLeftSenseCurrent = tk.DoubleVar()
@@ -605,7 +593,6 @@ tk_chgVoltage = tk.DoubleVar()
 tk_chgSense = tk.DoubleVar()
 tk_perimeterMag = tk.IntVar()
 tk_perimeterMagRight = tk.IntVar()
-
 
 ManualKeyboardUse = tk.IntVar()
 MainperimeterUse = tk.IntVar()
@@ -629,7 +616,6 @@ tk_laneInUse = tk.IntVar()
 tk_YawActual = tk.DoubleVar()
 tk_YawCible = tk.DoubleVar()
 tk_wsRainData = tk.IntVar()
-
 """variable use into Error page"""
 tk_ErrCharger = tk.IntVar()
 tk_ErrBattery = tk.IntVar()
@@ -785,9 +771,8 @@ def checkSerial():  # the main loop is that
         response2 = Nano_Serial.readline()
         if str(response2) != "b''":
             response2 = str(response2, "utf8")
-            if (
-                response2[:1] != "$"
-            ):  # it is console message because the first digit is not $
+            if (response2[:1] != "$"
+                ):  # it is console message because the first digit is not $
                 consoleInsertText(response2)
 
             else:  # here a nmea message
@@ -801,8 +786,7 @@ def checkSerial():  # the main loop is that
                 except:
                     print("PARSE ERROR FROM NANO MESSAGE" + str(response2))
                     consoleInsertText(
-                        "PARSE ERROR FROM NANO MESSAGE  RECU ????????" + "\n"
-                    )
+                        "PARSE ERROR FROM NANO MESSAGE  RECU ????????" + "\n")
                     consoleInsertText(response2)
 
     if DueConnectedOnPi:
@@ -810,7 +794,8 @@ def checkSerial():  # the main loop is that
             mymower.dueSerialReceived = Due_Serial.readline()
             if str(mymower.dueSerialReceived) != "b''":
 
-                mymower.dueSerialReceived = str(mymower.dueSerialReceived, "utf8")
+                mymower.dueSerialReceived = str(mymower.dueSerialReceived,
+                                                "utf8")
                 # it is console message because the first digit is not $
                 if mymower.dueSerialReceived[:1] != "$":
                     if (len(mymower.dueSerialReceived)) > 2:
@@ -826,8 +811,10 @@ def checkSerial():  # the main loop is that
                         decode_message(message)
                     except:
                         #    print("INCOMING MESSAGE ERROR FROM DUE --> " + str(mymower.dueSerialReceived))
-                        consoleInsertText("INCOMING MESSAGE ERROR FROM DUE" + "\n")
-                        consoleInsertText(str(mymower.dueSerialReceived) + "\n")
+                        consoleInsertText("INCOMING MESSAGE ERROR FROM DUE" +
+                                          "\n")
+                        consoleInsertText(
+                            str(mymower.dueSerialReceived) + "\n")
 
         except:
             print("Due serial connection fail, trying to reset")
@@ -921,11 +908,9 @@ def decode_message(message):  # decode the nmea message
         mymower.laserSensor4 = message.sensor4
         mymower.laserSensor5 = message.sensor5
         mymower.laserSensor6 = message.sensor6
-        if (
-            (int(mymower.laserSensor1) <= 800)
-            or (int(mymower.laserSensor2) <= 800)
-            or (int(mymower.laserSensor3) <= 800)
-        ):
+        if ((int(mymower.laserSensor1) <= 800)
+                or (int(mymower.laserSensor2) <= 800)
+                or (int(mymower.laserSensor3) <= 800)):
             # reduce speed for 5 secondes
             # mower.speedIsReduce=True
             # mower.timeToResetSpeed=time.time()+5
@@ -960,7 +945,8 @@ def decode_message(message):  # decode the nmea message
             # text1.config(text="Start to shutdown")
             consoleInsertText("PI start Shutdown into 5 Seconds" + "\n")
             time.sleep(1)
-            print("Start subprocess /home/pi/Documents/PiArdumower/PowerOff.py")
+            print(
+                "Start subprocess /home/pi/Documents/PiArdumower/PowerOff.py")
             subprocess.Popen("/home/pi/Documents/PiArdumower/PowerOff.py")
             fen1.destroy()
             time.sleep(1)
@@ -971,7 +957,7 @@ def decode_message(message):  # decode the nmea message
         global firstFixFlag
         global firstFixDate
         if (
-            message.status == "A"
+                message.status == "A"
         ):  # If the sentence shows that there's a fix, then we can log the line
             txtGpsRecu.insert("1.0", str(message) + "\n")
             decimalLatitude = degrees_to_decimal(message.lat, message.lat_dir)
@@ -983,25 +969,18 @@ def decode_message(message):  # decode the nmea message
 
             else:  # write the data to a simple log file and then the raw data as well:
                 with open(
-                    "/home/pi/Documents/PiArdumower/gpsdata/" + firstFixDate + ".txt",
-                    "a",
+                        "/home/pi/Documents/PiArdumower/gpsdata/" +
+                        firstFixDate + ".txt",
+                        "a",
                 ) as myfile:
-                    myfile.write(
-                        message.datestamp
-                        + ","
-                        + message.timestamp
-                        + ","
-                        + str(decimalLatitude)
-                        + ","
-                        + str(decimalLongitude)
-                        + "\n"
-                    )
+                    myfile.write(message.datestamp + "," + message.timestamp +
+                                 "," + str(decimalLatitude) + "," +
+                                 str(decimalLongitude) + "\n")
 
                 with open(
-                    "/home/pi/Documents/PiArdumower/gpsdata/Recu"
-                    + firstFixDate
-                    + ".ubx",
-                    "a",
+                        "/home/pi/Documents/PiArdumower/gpsdata/Recu" +
+                        firstFixDate + ".ubx",
+                        "a",
                 ) as myfile1:
                     myfile1.write(mymower.dueSerialReceived + "\n")
 
@@ -1015,7 +994,8 @@ def decode_message(message):  # decode the nmea message
         tk_millis.set(mymower.millis)
         tk_rollDir.set(direction_list[int(mymower.rollDir)])
         tk_laneInUse.set(mymower.laneInUse)
-        tk_YawActual.set(format(float(mymower.YawActual) * 180 / math.pi, ".1f"))
+        tk_YawActual.set(
+            format(float(mymower.YawActual) * 180 / math.pi, ".1f"))
         tk_YawCible.set(format(float(mymower.YawCible), ".1f"))
 
     if message.sentence_type == "INF":  # to refresh the info page
@@ -1024,35 +1004,23 @@ def decode_message(message):  # decode the nmea message
         mymower.version = message.version
         Infoline1.set("Firmware Version : " + mymower.version)
         mymower.statsOverride = message.statsOverride
-        Infoline2.set(
-            "Developer Active : "
-            + mymower.developerActive
-            + " / statsOverride : "
-            + str(mymower.statsOverride)
-        )
+        Infoline2.set("Developer Active : " + mymower.developerActive +
+                      " / statsOverride : " + str(mymower.statsOverride))
         mymower.statsMowTimeMinutesTrip = message.statsMowTimeMinutesTrip
         mymower.statsMowTimeHoursTotal = message.statsMowTimeHoursTotal
-        Infoline3.set(
-            "Mowing Duration Last Trip : "
-            + str(mymower.statsMowTimeMinutesTrip)
-            + " Minutes"
-        )
-        Infoline4.set(
-            "Mowing Duration Total : " + str(mymower.statsMowTimeHoursTotal) + " Hours"
-        )
+        Infoline3.set("Mowing Duration Last Trip : " +
+                      str(mymower.statsMowTimeMinutesTrip) + " Minutes")
+        Infoline4.set("Mowing Duration Total : " +
+                      str(mymower.statsMowTimeHoursTotal) + " Hours")
 
         mymower.statsBatteryChargingCounterTotal = (
-            message.statsBatteryChargingCounterTotal
-        )
+            message.statsBatteryChargingCounterTotal)
         mymower.statsBatteryChargingCapacityTrip = (
-            message.statsBatteryChargingCapacityTrip
-        )
+            message.statsBatteryChargingCapacityTrip)
         mymower.statsBatteryChargingCapacityTotal = (
-            message.statsBatteryChargingCapacityTotal
-        )
+            message.statsBatteryChargingCapacityTotal)
         mymower.statsBatteryChargingCapacityAverage = (
-            message.statsBatteryChargingCapacityAverage
-        )
+            message.statsBatteryChargingCapacityAverage)
 
     if message.sentence_type == "MOT":  # to refresh the plot page of motor wheel
         global firstplotMotx
@@ -1072,15 +1040,13 @@ def decode_message(message):  # decode the nmea message
         tk_motorRightPWMCurr.set(mymower.motorRightPWMCurr)
 
         f = open("/home/pi/Documents/PiArdumower/log/PlotMot.txt", "a+")
-        f.write(
-            "{};{};{};{};{}\n".format(
-                (int(mymower.millis) - firstplotMotx) / 1000,
-                float(mymower.motorLeftSenseCurrent),
-                float(mymower.motorRightSenseCurrent),
-                float(mymower.motorLeftPWMCurr),
-                float(mymower.motorRightPWMCurr),
-            )
-        )
+        f.write("{};{};{};{};{}\n".format(
+            (int(mymower.millis) - firstplotMotx) / 1000,
+            float(mymower.motorLeftSenseCurrent),
+            float(mymower.motorRightSenseCurrent),
+            float(mymower.motorLeftPWMCurr),
+            float(mymower.motorRightPWMCurr),
+        ))
         f.close()
 
     if message.sentence_type == "MOW":  # to refresh the plot page of motor mow
@@ -1101,14 +1067,12 @@ def decode_message(message):  # decode the nmea message
         tk_batVoltage.set(mymower.batVoltage)
 
         f = open("/home/pi/Documents/PiArdumower/log/PlotMow.txt", "a+")
-        f.write(
-            "{};{};{};{}\n".format(
-                (int(mymower.millis) - firstplotMowx) / 1000,
-                float(mymower.motor1MowSense),
-                float(mymower.motor2MowSense),
-                float(mymower.motorMowPWMCurr),
-            )
-        )
+        f.write("{};{};{};{}\n".format(
+            (int(mymower.millis) - firstplotMowx) / 1000,
+            float(mymower.motor1MowSense),
+            float(mymower.motor2MowSense),
+            float(mymower.motorMowPWMCurr),
+        ))
         f.close()
 
     if message.sentence_type == "BAT":  # to refresh the plot page of battery
@@ -1128,14 +1092,12 @@ def decode_message(message):  # decode the nmea message
         mymower.resetChargeReadings = False
 
         f = open("/home/pi/Documents/PiArdumower/log/PlotBat.txt", "a+")
-        f.write(
-            "{};{};{};{}\n".format(
-                (int(mymower.millis) - firstplotBatx) / 1000,
-                float(mymower.chgVoltage),
-                float(mymower.chgSense),
-                float(mymower.batVoltage),
-            )
-        )
+        f.write("{};{};{};{}\n".format(
+            (int(mymower.millis) - firstplotBatx) / 1000,
+            float(mymower.chgVoltage),
+            float(mymower.chgSense),
+            float(mymower.batVoltage),
+        ))
         f.close()
 
     if message.sentence_type == "PER":  # to refresh the plot page of perimeter
@@ -1154,13 +1116,11 @@ def decode_message(message):  # decode the nmea message
         tk_perimeterMagRight.set(mymower.perimeterMagRight)
 
         f = open("/home/pi/Documents/PiArdumower/log/PlotPeri.txt", "a+")
-        f.write(
-            "{};{};{}\n".format(
-                (int(mymower.millis) - firstplotPerx) / 1000,
-                float(mymower.perimeterMag),
-                float(mymower.perimeterMagRight),
-            )
-        )
+        f.write("{};{};{}\n".format(
+            (int(mymower.millis) - firstplotPerx) / 1000,
+            float(mymower.perimeterMag),
+            float(mymower.perimeterMagRight),
+        ))
         f.close()
 
     if message.sentence_type == "STU":  # message for status info send on change only
@@ -1200,8 +1160,7 @@ def decode_message(message):  # decode the nmea message
         mymower.errorResetDone = False
 
         if (myRobot.stateNames[mymower.state] == "ERR") & (
-            mymower.errorEmailSent == False
-        ):
+                mymower.errorEmailSent == False):
             ButtonSaveReceived_click()  # save the console txt
             checkMailSent = sendEmail()
             if checkMailSent:
@@ -1227,30 +1186,27 @@ def decode_message(message):  # decode the nmea message
         if autoRecordBatCharge:
             # the mower is now on charge
             if (mymower.autoRecordBatChargeOn == False) & (
-                myRobot.stateNames[mymower.state] == "CHARG"
-            ):
-                consoleInsertText("Start to record the Battery charging" + "\n")
+                    myRobot.stateNames[mymower.state] == "CHARG"):
+                consoleInsertText("Start to record the Battery charging" +
+                                  "\n")
                 SldMainBatRefresh.set(10)  # data flow 10 times each minute
                 mymower.autoRecordBatChargeOn = True
                 BtnBatPlotStartRec_click()
             # the mower is now on charge
             if (mymower.autoRecordBatChargeOn == True) & (
-                myRobot.stateNames[mymower.state] == "STAT"
-            ):
+                    myRobot.stateNames[mymower.state] == "STAT"):
                 consoleInsertText("Stop to record the Battery charging" + "\n")
                 BtnBatPlotStopRec_click()
                 mymower.autoRecordBatChargeOn = False
 
-        if (myRobot.stateNames[mymower.state] != "CHARG") & (
-            mymower.resetChargeReadings == True
-        ):
+        if (myRobot.stateNames[mymower.state] !=
+                "CHARG") & (mymower.resetChargeReadings == True):
             tk_chgVoltage.set(0)
             tk_chgSense.set(0)
             mymower.resetChargeReadings = False
 
-        if (myRobot.stateNames[mymower.state] != "ERR") & (
-            mymower.errorResetDone == False
-        ):
+        if (myRobot.stateNames[mymower.state] !=
+                "ERR") & (mymower.errorResetDone == False):
             resetErrors()
             mymower.errorEmailSent = False
             mymower.errorResetDone = True
@@ -1265,21 +1221,19 @@ def decode_message(message):  # decode the nmea message
         tk_date_Now.set(time.strftime("%d/%m/%y %H:%M:%S", time.localtime()))
         tk_time_Now.set(time.strftime("%H:%M:%S", time.localtime()))
 
-        if (mymower.sigArea2Off) & (myRobot.stateNames[mymower.state] == "WAITSIG2"):
+        if (mymower.sigArea2Off) & (
+                myRobot.stateNames[mymower.state] == "WAITSIG2"):
             if time.time() >= mower.timeToStartArea2Signal:
-                mower.timeToStartArea2Signal = time.time() + 5  # try each 5 secondes
+                mower.timeToStartArea2Signal = time.time(
+                ) + 5  # try each 5 secondes
                 ButtonWifiOn_click()  # reset dns and acces point
                 ButtonStartArea2_click()
 
-        tk_MainStatusLine.set(
-            myRobot.statusNames[mymower.status]
-            + "/"
-            + myRobot.stateNames[mymower.state]
-        )
+        tk_MainStatusLine.set(myRobot.statusNames[mymower.status] + "/" +
+                              myRobot.stateNames[mymower.state])
 
-    if (
-        message.sentence_type == "RET"
-    ):  # to fill the setting page All or name of the needed page
+    if (message.sentence_type == "RET"
+        ):  # to fill the setting page All or name of the needed page
 
         if message.setting_page == "Time":
             myDate.hour = message.val1
@@ -1310,46 +1264,41 @@ def decode_message(message):  # decode the nmea message
 
         if message.setting_page == "Timer":
             myRobot.Timeractive[int(message.pageNr)] = int(message.val1)
-            myRobot.TimerstartTime_hour[int(message.pageNr)] = int(message.val2)
-            myRobot.TimerstartTime_minute[int(message.pageNr)] = int(message.val3)
+            myRobot.TimerstartTime_hour[int(message.pageNr)] = int(
+                message.val2)
+            myRobot.TimerstartTime_minute[int(message.pageNr)] = int(
+                message.val3)
             myRobot.TimerstopTime_hour[int(message.pageNr)] = int(message.val4)
-            myRobot.TimerstopTime_minute[int(message.pageNr)] = int(message.val5)
+            myRobot.TimerstopTime_minute[int(message.pageNr)] = int(
+                message.val5)
             myRobot.TimerstartDistance[int(message.pageNr)] = int(message.val6)
-            myRobot.TimerstartMowPattern[int(message.pageNr)] = int(message.val7)
+            myRobot.TimerstartMowPattern[int(message.pageNr)] = int(
+                message.val7)
             myRobot.TimerstartNrLane[int(message.pageNr)] = int(message.val8)
             myRobot.TimerstartRollDir[int(message.pageNr)] = int(message.val9)
-            myRobot.TimerstartLaneMaxlengh[int(message.pageNr)] = int(message.val10)
+            myRobot.TimerstartLaneMaxlengh[int(message.pageNr)] = int(
+                message.val10)
 
-            tk_timerActive[int(message.pageNr)].set(
-                myRobot.Timeractive[int(message.pageNr)]
-            )
+            tk_timerActive[int(message.pageNr)].set(myRobot.Timeractive[int(
+                message.pageNr)])
             tk_timerStartTimehour[int(message.pageNr)].set(
-                myRobot.TimerstartTime_hour[int(message.pageNr)]
-            )
+                myRobot.TimerstartTime_hour[int(message.pageNr)])
             tk_timerStartTimeMinute[int(message.pageNr)].set(
-                myRobot.TimerstartTime_minute[int(message.pageNr)]
-            )
+                myRobot.TimerstartTime_minute[int(message.pageNr)])
             tk_timerStopTimehour[int(message.pageNr)].set(
-                myRobot.TimerstopTime_hour[int(message.pageNr)]
-            )
+                myRobot.TimerstopTime_hour[int(message.pageNr)])
             tk_timerStopTimeMinute[int(message.pageNr)].set(
-                myRobot.TimerstopTime_minute[int(message.pageNr)]
-            )
+                myRobot.TimerstopTime_minute[int(message.pageNr)])
             tk_timerStartDistance[int(message.pageNr)].set(
-                myRobot.TimerstartDistance[int(message.pageNr)]
-            )
+                myRobot.TimerstartDistance[int(message.pageNr)])
             tk_timerStartMowPattern[int(message.pageNr)].set(
-                myRobot.TimerstartMowPattern[int(message.pageNr)]
-            )
+                myRobot.TimerstartMowPattern[int(message.pageNr)])
             tk_timerStartNrLane[int(message.pageNr)].set(
-                myRobot.TimerstartNrLane[int(message.pageNr)]
-            )
+                myRobot.TimerstartNrLane[int(message.pageNr)])
             tk_timerStartRollDir[int(message.pageNr)].set(
-                myRobot.TimerstartRollDir[int(message.pageNr)]
-            )
+                myRobot.TimerstartRollDir[int(message.pageNr)])
             tk_timerStartLaneMaxlengh[int(message.pageNr)].set(
-                myRobot.TimerstartLaneMaxlengh[int(message.pageNr)]
-            )
+                myRobot.TimerstartLaneMaxlengh[int(message.pageNr)])
 
         # suite des timers tables
         if message.setting_page == "Timer1":
@@ -1359,7 +1308,8 @@ def decode_message(message):  # decode the nmea message
                 for j in range(7):
 
                     result = [
-                        bool((myRobot.TimerdaysOfWeek[i]) & (1 << n)) for n in range(8)
+                        bool((myRobot.TimerdaysOfWeek[i]) & (1 << n))
+                        for n in range(8)
                     ]
                     # print(result)
                     tk_timerDayVar[i][j].set(result[j])
@@ -1619,7 +1569,6 @@ def ButtonSetMotApply_click():
     myRobot.motorSenseLeftScale = sliderLeftSense.get()
     myRobot.motorSenseRightScale = sliderRightSense.get()
     ButtonSendSettingToDue_click()
-
     """PFOD VERSION not use because more slower than rewrite all variable                    
     send_pfo_message('a02',''+str(sliderPowerMax.get())+'','2','3','4','5','6',)
     send_pfo_message('a06',''+str(sliderSpeedRpmMax.get())+'','2','3','4','5','6',)
@@ -1707,7 +1656,8 @@ def ButtonSetImuApply_click():
     myRobot.imuDirPID_Ki = sliderimuDirPID_Ki.get()
     myRobot.imuDirPID_Kd = sliderimuDirPID_Kd.get()
 
-    myRobot.delayBetweenTwoDmpAutocalib = sliderdelayBetweenTwoDmpAutocalib.get()
+    myRobot.delayBetweenTwoDmpAutocalib = sliderdelayBetweenTwoDmpAutocalib.get(
+    )
     myRobot.maxDurationDmpAutocalib = slidermaxDurationDmpAutocalib.get()
     myRobot.maxDriftPerSecond = slidermaxDriftPerSecond.get()
 
@@ -1766,9 +1716,8 @@ def ButtonSetMainApply_click():
 
 def BtnMowPlotStartRec_click():
     mowPlotterKst.start("/home/pi/Documents/PiArdumower/plotMow.kst")
-    send_req_message(
-        "MOW", "" + str(SldMainMowRefresh.get()) + "", "1", "10000", "0", "0", "0"
-    )  # arduino start sending data
+    send_req_message("MOW", "" + str(SldMainMowRefresh.get()) + "", "1",
+                     "10000", "0", "0", "0")  # arduino start sending data
 
 
 def BtnMowPlotStopRec_click():
@@ -1776,7 +1725,8 @@ def BtnMowPlotStopRec_click():
     firstplotMowx = 0  # initialise the first time plot for next plot
     mowPlotterKst.stop()  # close the kst prog
 
-    send_req_message("MOW", "1", "0", "0", "0", "0", "0")  # arduino stop sending data
+    send_req_message("MOW", "1", "0", "0", "0", "0",
+                     "0")  # arduino stop sending data
 
     filename = cwd + "/log/Plotmow" + time.strftime("%Y%m%d%H%M") + ".CSV"
     try:  # avoid error if file not exit
@@ -1784,23 +1734,18 @@ def BtnMowPlotStopRec_click():
         os.rename("/home/pi/Documents/PiArdumower/log/PlotMow.txt", filename)
     except OSError:
         pass
-
     """recreate an empty txt file to have correct auto legend into the graph """
     f = open("/home/pi/Documents/PiArdumower/log/PlotMow.txt", "w")
-    f.write(
-        "{};{};{};{}\n".format(
-            "Time", "motor1MowSense", "motor2MowSense", "motorMowPWMCurr"
-        )
-    )
+    f.write("{};{};{};{}\n".format("Time", "motor1MowSense", "motor2MowSense",
+                                   "motorMowPWMCurr"))
     f.write("{};{};{};{}\n".format("0", "0", "0", "0"))
     f.close()
 
 
 def BtnPeriPlotStartRec_click():
     periPlotterKst.start("/home/pi/Documents/PiArdumower/plotPeri.kst")
-    send_req_message(
-        "PERI", "" + str(SldMainPeriRefresh.get()) + "", "1", "10000", "0", "0", "0"
-    )
+    send_req_message("PERI", "" + str(SldMainPeriRefresh.get()) + "", "1",
+                     "10000", "0", "0", "0")
 
 
 def BtnPeriPlotStopRec_click():
@@ -1814,7 +1759,8 @@ def BtnPeriPlotStopRec_click():
     try:
         # keep a copy of the plot and clear the last kst file
         os.rename("/home/pi/Documents/PiArdumower/log/PlotPeri.txt", filename)
-        messagebox.showinfo("Info", "File " + filename + " created in log directory")
+        messagebox.showinfo("Info",
+                            "File " + filename + " created in log directory")
     except OSError:
         pass
     """recreate an empty txt file to have correct auto legend into the graph """
@@ -1826,13 +1772,11 @@ def BtnPeriPlotStopRec_click():
 
 def BtnBatPlotStartRec_click():
 
-    if (
-        mymower.autoRecordBatChargeOn != True
-    ):  # it's not the auto record so need to start KST
+    if (mymower.autoRecordBatChargeOn !=
+            True):  # it's not the auto record so need to start KST
         batPlotterKst.start("/home/pi/Documents/PiArdumower/plotBat.kst")
-    send_req_message(
-        "BAT", "" + str(SldMainBatRefresh.get()) + "", "1", "10000", "0", "0", "0"
-    )
+    send_req_message("BAT", "" + str(SldMainBatRefresh.get()) + "", "1",
+                     "10000", "0", "0", "0")
 
 
 def BtnBatPlotStopRec_click():
@@ -1842,24 +1786,21 @@ def BtnBatPlotStopRec_click():
 
     send_req_message("BAT", "1", "0", "0", "0", "0", "0")
 
-    filename = (
-        "/home/pi/Documents/PiArdumower/log/PlotBattery"
-        + time.strftime("%Y%m%d%H%M")
-        + ".CSV"
-    )
+    filename = ("/home/pi/Documents/PiArdumower/log/PlotBattery" +
+                time.strftime("%Y%m%d%H%M") + ".CSV")
     try:
         # keep a copy of the plot and clear the last kst file
         os.rename("/home/pi/Documents/PiArdumower/log/PlotBat.txt", filename)
         # //bber17
         if mymower.autoRecordBatChargeOn == False:
             messagebox.showinfo(
-                "Info", "File " + filename + " created in log directory"
-            )
+                "Info", "File " + filename + " created in log directory")
     except OSError:
         pass
     """recreate an empty txt file to have correct auto legend into the graph """
     f = open("/home/pi/Documents/PiArdumower/log/PlotBat.txt", "w")
-    f.write("{};{};{};{}\n".format("Time", "chgVoltage", "chgSense", "batVoltage"))
+    f.write("{};{};{};{}\n".format("Time", "chgVoltage", "chgSense",
+                                   "batVoltage"))
     f.write("{};{};{};{}\n".format("0", "0", "0", "0"))
     f.close()
 
@@ -1874,9 +1815,8 @@ def BtnBylaneStopRec_click():
 
 def BtnMotPlotStartRec_click():
     motPlotterKst.start("/home/pi/Documents/PiArdumower/plotMot.kst")
-    send_req_message(
-        "MOT", "" + str(SldMainWheelRefresh.get()) + "", "1", "10000", "0", "0", "0"
-    )
+    send_req_message("MOT", "" + str(SldMainWheelRefresh.get()) + "", "1",
+                     "10000", "0", "0", "0")
 
 
 def BtnMotPlotStopRec_click():
@@ -1884,28 +1824,24 @@ def BtnMotPlotStopRec_click():
     firstplotMotx = 0
     motPlotterKst.stop()  # close the kst prog
     send_req_message("MOT", "1", "0", "0", "0", "0", "0")
-    filename = (
-        "/home/pi/Documents/PiArdumower/log/PlotMotor"
-        + time.strftime("%Y%m%d%H%M")
-        + ".CSV"
-    )
+    filename = ("/home/pi/Documents/PiArdumower/log/PlotMotor" +
+                time.strftime("%Y%m%d%H%M") + ".CSV")
     try:
         # keep a copy of the plot and clear the last kst file
         os.rename("/home/pi/Documents/PiArdumower/log/PlotMot.txt", filename)
-        messagebox.showinfo("Info", "File " + filename + " created in log directory")
+        messagebox.showinfo("Info",
+                            "File " + filename + " created in log directory")
     except OSError:
         pass
     """recreate an empty txt file to have correct auto legend into the graph """
     f = open("/home/pi/Documents/PiArdumower/log/PlotMot.txt", "w")
-    f.write(
-        "{};{};{};{};{}\n".format(
-            "Time",
-            "motorLeftSenseCurrent",
-            "motorRightSenseCurrent",
-            "motorLeftPWMCurr",
-            "motorRightPWMCurr",
-        )
-    )
+    f.write("{};{};{};{};{}\n".format(
+        "Time",
+        "motorLeftSenseCurrent",
+        "motorRightSenseCurrent",
+        "motorLeftPWMCurr",
+        "motorRightPWMCurr",
+    ))
     f.write("{};{};{};{};{}\n".format("0", "0", "0", "0", "0"))
     f.close()
 
@@ -2179,25 +2115,16 @@ def refreshPerimeterSettingPage():
 
 
 def ButtonSaveReceived_click():
-    fileName = (
-        "/home/pi/Documents/PiArdumower/log/"
-        + time.strftime("%Y%m%d%H%M")
-        + "_Received.txt"
-    )
+    fileName = ("/home/pi/Documents/PiArdumower/log/" +
+                time.strftime("%Y%m%d%H%M") + "_Received.txt")
     with open(fileName, "w") as f:
         f.write(txtRecu.get("1.0", "end"))
-    fileName = (
-        "/home/pi/Documents/PiArdumower/log/"
-        + time.strftime("%Y%m%d%H%M")
-        + "_Send.txt"
-    )
+    fileName = ("/home/pi/Documents/PiArdumower/log/" +
+                time.strftime("%Y%m%d%H%M") + "_Send.txt")
     with open(fileName, "w") as f:
         f.write(txtSend.get("1.0", "end"))
-    fileName = (
-        "/home/pi/Documents/PiArdumower/log/"
-        + time.strftime("%Y%m%d%H%M")
-        + "_Console.txt"
-    )
+    fileName = ("/home/pi/Documents/PiArdumower/log/" +
+                time.strftime("%Y%m%d%H%M") + "_Console.txt")
     with open(fileName, "w") as f:
         f.write(txtConsoleRecu.get("1.0", "end"))
 
@@ -2598,34 +2525,34 @@ def ButtonSendSettingToDue_click():
     )
 
     consoleInsertText(
-        "All Setting are change into the Due but not save for the moment" + "\n"
-    )
+        "All Setting are change into the Due but not save for the moment" +
+        "\n")
 
 
 def read_all_setting():
-    Send_reqSetting_message(
-        "All", "r", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
-    )
+    Send_reqSetting_message("All", "r", "0", "0", "0", "0", "0", "0", "0", "0",
+                            "0", "0", "0")
 
 
 def read_time_setting():
-    Send_reqSetting_message(
-        "Time", "r", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
-    )
+    Send_reqSetting_message("Time", "r", "0", "0", "0", "0", "0", "0", "0",
+                            "0", "0", "0", "0")
 
 
 def send_req_message(val1, val2, val3, val4, val5, val6, val7):
-    message = pynmea2.VAR("RM", "REQ", (val1, val2, val3, val4, val5, val6, val7))
+    message = pynmea2.VAR("RM", "REQ",
+                          (val1, val2, val3, val4, val5, val6, val7))
     message = str(message)
     rpiCheckSum = message[-2:]
     message = message + "\r" + "\n"
     send_serial_message(message)
 
 
-def send_var_message(val1, val2, val3, val4, val5, val6, val7, val8, val9, val10):
+def send_var_message(val1, val2, val3, val4, val5, val6, val7, val8, val9,
+                     val10):
     message = pynmea2.VAR(
-        "RM", "VAR", (val1, val2, val3, val4, val5, val6, val7, val8, val9, val10)
-    )
+        "RM", "VAR",
+        (val1, val2, val3, val4, val5, val6, val7, val8, val9, val10))
     message = str(message)
     rpiCheckSum = message[-2:]
     message = message + "\r" + "\n"
@@ -2641,16 +2568,16 @@ def send_cmd_message(val1, val2, val3, val4, val5):
 
 
 def send_pfo_message(val1, val2, val3, val4, val5, val6, val7):
-    message = pynmea2.PFO("RM", "PFO", (val1, val2, val3, val4, val5, val6, val7))
+    message = pynmea2.PFO("RM", "PFO",
+                          (val1, val2, val3, val4, val5, val6, val7))
     message = str(message)
     rpiCheckSum = message[-2:]
     message = message + "\r" + "\n"
     send_serial_message(message)
 
 
-def Send_reqSetting_message(
-    val1, val2, val3, val4, val5, val6, val7, val8, val9, val10, val11, val12, val13
-):
+def Send_reqSetting_message(val1, val2, val3, val4, val5, val6, val7, val8,
+                            val9, val10, val11, val12, val13):
     message = pynmea2.SET(
         "RM",
         "SET",
@@ -2704,7 +2631,6 @@ try:
         byteResponse = Nano_Serial.readline()
         print(str(byteResponse))
 
-
 except:
     print(" ")
     print("******************************")
@@ -2714,7 +2640,6 @@ except:
 
     time.sleep(1)
     # sys.exit("Impossible de continuer")
-
 """ ------------------- connecting the the PCB1.3 arduino due ------------ """
 try:
     if DueConnectedOnPi:
@@ -2726,7 +2651,6 @@ try:
         byteResponse = Due_Serial.readline()
         print(str(byteResponse))
 
-
 except:
     print(" ")
     print("************************************")
@@ -2736,45 +2660,52 @@ except:
     time.sleep(1)
     sys.exit("Impossible de continuer")
 
-
 # print(cwd)
 # cwd1=cwd+"/icons/home.png"
 # print(cwd1)
-
 """-------------------ICONS LOADING---------------------"""
 imgHome = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/home.png")
 imgTrack = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/track.png")
-imgStopAll = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/stop all.png")
-imgstartMow = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/startmow.png")
+imgStopAll = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/stop all.png")
+imgstartMow = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/startmow.png")
 imgBack = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/back.png")
-imgBladeStop = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/bladeoff.png")
-imgBladeStart = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/bladeon.png")
-imgForward = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/forward.png")
-imgReverse = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/reverse.png")
+imgBladeStop = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/bladeoff.png")
+imgBladeStart = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/bladeon.png")
+imgForward = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/forward.png")
+imgReverse = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/reverse.png")
 imgLeft = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/left.png")
 imgRight = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/right.png")
 imgStop = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/stop.png")
-imgArdumower = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/ardumower.png")
-imgManual = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/manual.png")
+imgArdumower = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/ardumower.png")
+imgManual = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/manual.png")
 imgAuto = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/auto.png")
 imgTest = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/test.png")
-imgConsole = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/console.png")
-imgSetting = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/setting.png")
-imgPowerOff = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/off.png")
+imgConsole = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/console.png")
+imgSetting = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/setting.png")
+imgPowerOff = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/off.png")
 imgPlot = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/plot.png")
-imgSchedule = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/schedule.png")
+imgSchedule = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/schedule.png")
 imgGps = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/gps.png")
 imgJoystickON = tk.PhotoImage(
-    file="/home/pi/Documents/PiArdumower/icons/joystick_on.png"
-)
+    file="/home/pi/Documents/PiArdumower/icons/joystick_on.png")
 imgJoystickOFF = tk.PhotoImage(
-    file="/home/pi/Documents/PiArdumower/icons/joystick_off.png"
-)
-imgJoystick = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/joystick.png")
+    file="/home/pi/Documents/PiArdumower/icons/joystick_off.png")
+imgJoystick = tk.PhotoImage(
+    file="/home/pi/Documents/PiArdumower/icons/joystick.png")
 imgRfid = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/rfid.png")
 imgError = tk.PhotoImage(file="/home/pi/Documents/PiArdumower/icons/error.png")
-
-
 """ THE SETTING PAGE ****************************************************"""
 
 TabSetting = ttk.Notebook(fen1)
@@ -2797,7 +2728,6 @@ tabByLane = tk.Frame(TabSetting, width=800, height=380)
 # tabRfid=tk.Frame(TabSetting,width=800,height=380)
 tabRainTemp = tk.Frame(TabSetting, width=800, height=380)
 
-
 TabSetting.add(tabMain, text="Main")
 TabSetting.add(tabWheelMotor, text="Wheels Motor")
 TabSetting.add(tabMowMotor, text="Mow Motor")
@@ -2813,10 +2743,7 @@ TabSetting.add(tabByLane, text="ByLane")
 # TabSetting.add(tabRfid,text="Rfid")
 TabSetting.add(tabRainTemp, text="Rain/Temp")
 
-
 # print (TabSetting.index(TabSetting.select()))
-
-
 """************* Main setting *****************************"""
 
 ButtonSaveSettingToFile = tk.Button(tabMain)
@@ -2859,7 +2786,6 @@ ButtonWifiOn.place(x=450, y=255, height=40, width=100)
 ButtonWifiOn.configure(command=ButtonWifiOn_click)
 ButtonWifiOn.configure(text="Wifi On")
 
-
 ButtonWifiOff = tk.Button(tabMain)
 ButtonWifiOff.place(x=560, y=255, height=40, width=100)
 ButtonWifiOff.configure(command=ButtonWifiOff_click)
@@ -2883,12 +2809,10 @@ ButtonBTOn.place(x=450, y=300, height=40, width=100)
 ButtonBTOn.configure(command=ButtonBTOn_click)
 ButtonBTOn.configure(text="BT On")
 
-
 ButtonBTOff = tk.Button(tabMain)
 ButtonBTOff.place(x=560, y=300, height=40, width=100)
 ButtonBTOff.configure(command=ButtonBTOff_click)
 ButtonBTOff.configure(text="BT Off")
-
 
 ChkBtnperimeterUse = tk.Checkbutton(
     tabMain,
@@ -2898,13 +2822,17 @@ ChkBtnperimeterUse = tk.Checkbutton(
     anchor="nw",
 )
 ChkBtnperimeterUse.place(x=270, y=10, width=250, height=20)
-ChkBtnimuUse = tk.Checkbutton(
-    tabMain, text="Use IMU", relief=tk.SOLID, variable=MainimuUse, anchor="nw"
-)
+ChkBtnimuUse = tk.Checkbutton(tabMain,
+                              text="Use IMU",
+                              relief=tk.SOLID,
+                              variable=MainimuUse,
+                              anchor="nw")
 ChkBtnimuUse.place(x=270, y=40, width=250, height=20)
-ChkBtngpsUse = tk.Checkbutton(
-    tabMain, text="Use GPS", relief=tk.SOLID, variable=MaingpsUse, anchor="nw"
-)
+ChkBtngpsUse = tk.Checkbutton(tabMain,
+                              text="Use GPS",
+                              relief=tk.SOLID,
+                              variable=MaingpsUse,
+                              anchor="nw")
 ChkBtngpsUse.place(x=270, y=70, width=250, height=20)
 ChkBtnbluetoothUse = tk.Checkbutton(
     tabMain,
@@ -2914,17 +2842,23 @@ ChkBtnbluetoothUse = tk.Checkbutton(
     anchor="nw",
 )
 ChkBtnbluetoothUse.place(x=270, y=100, width=250, height=20)
-ChkBtnbumperUse = tk.Checkbutton(
-    tabMain, text="Use Bumper", relief=tk.SOLID, variable=MainbumperUse, anchor="nw"
-)
+ChkBtnbumperUse = tk.Checkbutton(tabMain,
+                                 text="Use Bumper",
+                                 relief=tk.SOLID,
+                                 variable=MainbumperUse,
+                                 anchor="nw")
 ChkBtnbumperUse.place(x=270, y=130, width=250, height=20)
-ChkBtnsonarUse = tk.Checkbutton(
-    tabMain, text="Use Sonar", relief=tk.SOLID, variable=MainsonarUse, anchor="nw"
-)
+ChkBtnsonarUse = tk.Checkbutton(tabMain,
+                                text="Use Sonar",
+                                relief=tk.SOLID,
+                                variable=MainsonarUse,
+                                anchor="nw")
 ChkBtnsonarUse.place(x=270, y=160, width=250, height=20)
-ChkBtnDHT22Use = tk.Checkbutton(
-    tabMain, text="Use DHT22", relief=tk.SOLID, variable=MainDHT22Use, anchor="nw"
-)
+ChkBtnDHT22Use = tk.Checkbutton(tabMain,
+                                text="Use DHT22",
+                                relief=tk.SOLID,
+                                variable=MainDHT22Use,
+                                anchor="nw")
 ChkBtnDHT22Use.place(x=270, y=190, width=250, height=20)
 ChkBtnRasPiTempUse = tk.Checkbutton(
     tabMain,
@@ -2942,25 +2876,35 @@ ChkBtnlawnSensorUse = tk.Checkbutton(
     anchor="nw",
 )
 ChkBtnlawnSensorUse.place(x=530, y=10, width=250, height=20)
-ChkBtntimerUse = tk.Checkbutton(
-    tabMain, text="Use Timer", relief=tk.SOLID, variable=MaintimerUse, anchor="nw"
-)
+ChkBtntimerUse = tk.Checkbutton(tabMain,
+                                text="Use Timer",
+                                relief=tk.SOLID,
+                                variable=MaintimerUse,
+                                anchor="nw")
 ChkBtntimerUse.place(x=530, y=40, width=250, height=20)
-ChkBtnrainUse = tk.Checkbutton(
-    tabMain, text="Use Rain Sensor", relief=tk.SOLID, variable=MainrainUse, anchor="nw"
-)
+ChkBtnrainUse = tk.Checkbutton(tabMain,
+                               text="Use Rain Sensor",
+                               relief=tk.SOLID,
+                               variable=MainrainUse,
+                               anchor="nw")
 ChkBtnrainUse.place(x=530, y=70, width=250, height=20)
-ChkBtndropUse = tk.Checkbutton(
-    tabMain, text="Use Drop Sensor", relief=tk.SOLID, variable=MaindropUse, anchor="nw"
-)
+ChkBtndropUse = tk.Checkbutton(tabMain,
+                               text="Use Drop Sensor",
+                               relief=tk.SOLID,
+                               variable=MaindropUse,
+                               anchor="nw")
 ChkBtndropUse.place(x=530, y=100, width=250, height=20)
-ChkBtnesp8266Use = tk.Checkbutton(
-    tabMain, text="Use Esp8266", relief=tk.SOLID, variable=Mainesp8266Use, anchor="nw"
-)
+ChkBtnesp8266Use = tk.Checkbutton(tabMain,
+                                  text="Use Esp8266",
+                                  relief=tk.SOLID,
+                                  variable=Mainesp8266Use,
+                                  anchor="nw")
 ChkBtnesp8266Use.place(x=530, y=130, width=250, height=20)
-ChkBtntiltUse = tk.Checkbutton(
-    tabMain, text="Use Tilt Sensor", relief=tk.SOLID, variable=MaintiltUse, anchor="nw"
-)
+ChkBtntiltUse = tk.Checkbutton(tabMain,
+                               text="Use Tilt Sensor",
+                               relief=tk.SOLID,
+                               variable=MaintiltUse,
+                               anchor="nw")
 ChkBtntiltUse.place(x=530, y=160, width=250, height=20)
 
 ButtonRequestMainSettingFomMower = tk.Button(tabMain)
@@ -2970,18 +2914,18 @@ ButtonRequestMainSettingFomMower.configure(text="Read All From Mower")
 
 ButtonSetMainApply = tk.Button(tabMain)
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-ButtonSetMainApply.configure(command=ButtonSetMainApply_click, text="Send To Mower")
+ButtonSetMainApply.configure(command=ButtonSetMainApply_click,
+                             text="Send To Mower")
 
 ButtonSendSettingToEeprom = tk.Button(tabMain)
 ButtonSendSettingToEeprom.place(x=30, y=300, height=25, width=200)
 ButtonSendSettingToEeprom.configure(command=ButtonSendSettingToEeprom_click)
 ButtonSendSettingToEeprom.configure(text="Save setting into RTC Eeprom")
 
-
-ButtonBackHome = tk.Button(TabSetting, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(TabSetting,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """************* Mow motor setting *****************************"""
 
 ChkBtnmotorMowForceOff = tk.Checkbutton(
@@ -3088,18 +3032,15 @@ slidermowPatternDurationMax = tk.Scale(
 )
 slidermowPatternDurationMax.place(x=270, y=160, width=250, height=50)
 
-
-ButtonRequestMainSettingFomMower = tk.Button(
-    tabMowMotor, command=read_all_setting, text="Read All From Mower"
-)
+ButtonRequestMainSettingFomMower = tk.Button(tabMowMotor,
+                                             command=read_all_setting,
+                                             text="Read All From Mower")
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
 
-ButtonSetMainApply = tk.Button(
-    tabMowMotor, command=ButtonSetMowMotorApply_click, text="Send To Mower"
-)
+ButtonSetMainApply = tk.Button(tabMowMotor,
+                               command=ButtonSetMowMotorApply_click,
+                               text="Send To Mower")
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-
-
 """************* Station setting *****************************"""
 
 ChkBtnuseBumperDock = tk.Checkbutton(
@@ -3157,17 +3098,15 @@ sliderstationdockingSpeed = tk.Scale(
 )
 sliderstationdockingSpeed.place(x=10, y=240, width=250, height=50)
 
-ButtonRequestMainSettingFomMower = tk.Button(
-    tabStation, command=read_all_setting, text="Read All From Mower"
-)
+ButtonRequestMainSettingFomMower = tk.Button(tabStation,
+                                             command=read_all_setting,
+                                             text="Read All From Mower")
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
 
-ButtonSetMainApply = tk.Button(
-    tabStation, command=ButtonSetStationApply_click, text="Send To Mower"
-)
+ButtonSetMainApply = tk.Button(tabStation,
+                               command=ButtonSetStationApply_click,
+                               text="Send To Mower")
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-
-
 """************* Odometry setting *****************************"""
 
 sliderodometryTicksPerRevolution = tk.Scale(
@@ -3200,19 +3139,16 @@ sliderodometryWheelBaseCm = tk.Scale(
 )
 sliderodometryWheelBaseCm.place(x=10, y=110, width=250, height=50)
 
-ButtonRequestMainSettingFomMower = tk.Button(
-    tabOdometry, command=read_all_setting, text="Read All From Mower"
-)
+ButtonRequestMainSettingFomMower = tk.Button(tabOdometry,
+                                             command=read_all_setting,
+                                             text="Read All From Mower")
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
 
-ButtonSetMainApply = tk.Button(
-    tabOdometry, command=ButtonSetOdometryApply_click, text="Send To Mower"
-)
+ButtonSetMainApply = tk.Button(tabOdometry,
+                               command=ButtonSetOdometryApply_click,
+                               text="Send To Mower")
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-
-
 """************* Date Time setting *****************************"""
-
 
 sliderdate_hour = tk.Scale(
     tabDateTime,
@@ -3280,24 +3216,22 @@ sliderdate_year = tk.Scale(
 )
 sliderdate_year.place(x=270, y=160, width=250, height=50)
 
-ButtonRequestTimeSettingFomMower = tk.Button(
-    tabDateTime, command=read_time_setting, text="Read Time From Mower"
-)
+ButtonRequestTimeSettingFomMower = tk.Button(tabDateTime,
+                                             command=read_time_setting,
+                                             text="Read Time From Mower")
 ButtonRequestTimeSettingFomMower.place(x=10, y=350, height=25, width=150)
 
-ButtonSetMainApply = tk.Button(
-    tabDateTime, command=ButtonSendSettingDateTimeToDue_click, text="Send Time To Mower"
-)
+ButtonSetMainApply = tk.Button(tabDateTime,
+                               command=ButtonSendSettingDateTimeToDue_click,
+                               text="Send Time To Mower")
 ButtonSetMainApply.place(x=300, y=350, height=25, width=150)
-
 
 tk.Label(
     tabDateTime,
-    text="To use the date and time the Use Timer need to be checked into the Main Setting",
+    text=
+    "To use the date and time the Use Timer need to be checked into the Main Setting",
     fg="green",
 ).place(x=50, y=300, width=700, height=20)
-
-
 """************* Battery setting *****************************"""
 
 ChkBtnbatMonitor = tk.Checkbutton(
@@ -3400,10 +3334,12 @@ batteryFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(batteryFrame, text="BATTERY (V)", fg="green").pack(side="top", anchor="n")
-tk.Label(batteryFrame, textvariable=tk_batVoltage, fg="red", font=("Arial", 18)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(batteryFrame, text="BATTERY (V)", fg="green").pack(side="top",
+                                                            anchor="n")
+tk.Label(batteryFrame,
+         textvariable=tk_batVoltage,
+         fg="red",
+         font=("Arial", 18)).pack(side="bottom", anchor="n")
 
 # charging voltage
 batteryFrame = tk.Frame(tabBattery)
@@ -3415,10 +3351,12 @@ batteryFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(batteryFrame, text="CHARGING (V)", fg="green").pack(side="top", anchor="n")
-tk.Label(batteryFrame, textvariable=tk_chgVoltage, fg="red", font=("Arial", 18)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(batteryFrame, text="CHARGING (V)", fg="green").pack(side="top",
+                                                             anchor="n")
+tk.Label(batteryFrame,
+         textvariable=tk_chgVoltage,
+         fg="red",
+         font=("Arial", 18)).pack(side="bottom", anchor="n")
 
 # charge current
 batteryFrame = tk.Frame(tabBattery)
@@ -3430,35 +3368,39 @@ batteryFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(batteryFrame, text="CURRENT (A)", fg="green").pack(side="top", anchor="n")
-tk.Label(batteryFrame, textvariable=tk_chgSense, fg="red", font=("Arial", 18)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(batteryFrame, text="CURRENT (A)", fg="green").pack(side="top",
+                                                            anchor="n")
+tk.Label(batteryFrame, textvariable=tk_chgSense, fg="red",
+         font=("Arial", 18)).pack(side="bottom", anchor="n")
 
-ButtonRequestMainSettingFomMower = tk.Button(
-    tabBattery, command=read_all_setting, text="Read All From Mower"
-)
+ButtonRequestMainSettingFomMower = tk.Button(tabBattery,
+                                             command=read_all_setting,
+                                             text="Read All From Mower")
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
 
-ButtonSetMainApply = tk.Button(
-    tabBattery, command=ButtonSetBatteryApply_click, text="Send To Mower"
-)
+ButtonSetMainApply = tk.Button(tabBattery,
+                               command=ButtonSetBatteryApply_click,
+                               text="Send To Mower")
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-
-
 """************* SONAR setting *****************************"""
 
-ChkBtnsonarCenterUse = tk.Checkbutton(
-    tabSonar, text="Use Sonar center", relief=tk.SOLID, variable=SonVar1, anchor="nw"
-)
+ChkBtnsonarCenterUse = tk.Checkbutton(tabSonar,
+                                      text="Use Sonar center",
+                                      relief=tk.SOLID,
+                                      variable=SonVar1,
+                                      anchor="nw")
 ChkBtnsonarCenterUse.place(x=10, y=10, width=250, height=20)
-ChkBtnsonarLeftUse = tk.Checkbutton(
-    tabSonar, text="Use Sonar Left", relief=tk.SOLID, variable=SonVar2, anchor="nw"
-)
+ChkBtnsonarLeftUse = tk.Checkbutton(tabSonar,
+                                    text="Use Sonar Left",
+                                    relief=tk.SOLID,
+                                    variable=SonVar2,
+                                    anchor="nw")
 ChkBtnsonarLeftUse.place(x=10, y=40, width=250, height=20)
-ChkBtnsonarRightUse = tk.Checkbutton(
-    tabSonar, text="Use Sonar Right", relief=tk.SOLID, variable=SonVar3, anchor="nw"
-)
+ChkBtnsonarRightUse = tk.Checkbutton(tabSonar,
+                                     text="Use Sonar Right",
+                                     relief=tk.SOLID,
+                                     variable=SonVar3,
+                                     anchor="nw")
 ChkBtnsonarRightUse.place(x=10, y=70, width=250, height=20)
 
 slidersonarTriggerBelow = tk.Scale(
@@ -3478,9 +3420,8 @@ ButtonRequestMainSettingFomMower.configure(text="Read All From Mower")
 
 ButtonSetMainApply = tk.Button(tabSonar)
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-ButtonSetMainApply.configure(command=ButtonSetSonarApply_click, text="Send To Mower")
-
-
+ButtonSetMainApply.configure(command=ButtonSetSonarApply_click,
+                             text="Send To Mower")
 """************* IMU setting *****************************"""
 sliderimuDirPID_Kp = tk.Scale(
     tabImu,
@@ -3551,12 +3492,12 @@ ChkBtnstopMotorDuringCalib = tk.Checkbutton(
 ChkBtnstopMotorDuringCalib.place(x=5, y=320, width=250, height=20)
 ButtonGyroCal = tk.Button(tabImu)
 ButtonGyroCal.place(x=330, y=10, height=40, width=200)
-ButtonGyroCal.configure(command=ButtonGyroCal_click, text="Start GYRO Calibration")
+ButtonGyroCal.configure(command=ButtonGyroCal_click,
+                        text="Start GYRO Calibration")
 ButtonCompasCal = tk.Button(tabImu)
 ButtonCompasCal.place(x=330, y=60, height=40, width=200)
-ButtonCompasCal.configure(
-    command=ButtonCompasCal_click, text="Start COMPAS Calibration"
-)
+ButtonCompasCal.configure(command=ButtonCompasCal_click,
+                          text="Start COMPAS Calibration")
 
 ButtonRequestMainSettingFomMower = tk.Button(tabImu)
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
@@ -3565,8 +3506,8 @@ ButtonRequestMainSettingFomMower.configure(text="Read All From Mower")
 
 ButtonSetMainApply = tk.Button(tabImu)
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-ButtonSetMainApply.configure(command=ButtonSetImuApply_click, text="Send To Mower")
-
+ButtonSetMainApply.configure(command=ButtonSetImuApply_click,
+                             text="Send To Mower")
 """************* Motor setting *****************************"""
 
 sliderPowerMax = tk.Scale(
@@ -3741,17 +3682,19 @@ sliderRightSense = tk.Scale(
 )
 sliderRightSense.place(x=535, y=160, width=250, height=50)
 
-
-ChkBtnMotorSwapLeftDir = tk.Checkbutton(
-    tabWheelMotor, text="Swap left Dir", relief=tk.SOLID, variable=MotVar1, anchor="nw"
-)
+ChkBtnMotorSwapLeftDir = tk.Checkbutton(tabWheelMotor,
+                                        text="Swap left Dir",
+                                        relief=tk.SOLID,
+                                        variable=MotVar1,
+                                        anchor="nw")
 ChkBtnMotorSwapLeftDir.place(x=535, y=215, width=130, height=20)
 
-ChkBtnMotorSwapRightDir = tk.Checkbutton(
-    tabWheelMotor, text="Swap right Dir", relief=tk.SOLID, variable=MotVar2, anchor="nw"
-)
+ChkBtnMotorSwapRightDir = tk.Checkbutton(tabWheelMotor,
+                                         text="Swap right Dir",
+                                         relief=tk.SOLID,
+                                         variable=MotVar2,
+                                         anchor="nw")
 ChkBtnMotorSwapRightDir.place(x=535, y=240, width=130, height=20)
-
 
 ButtonRequestMotSettingFomMower = tk.Button(tabWheelMotor)
 ButtonRequestMotSettingFomMower.place(x=535, y=270, height=25, width=140)
@@ -3760,9 +3703,8 @@ ButtonRequestMotSettingFomMower.configure(text="Read From Mower")
 
 ButtonSetMotApply = tk.Button(tabWheelMotor)
 ButtonSetMotApply.place(x=535, y=300, height=25, width=100)
-ButtonSetMotApply.configure(command=ButtonSetMotApply_click, text="Send To Mower")
-
-
+ButtonSetMotApply.configure(command=ButtonSetMotApply_click,
+                            text="Send To Mower")
 """************* Perimeter setting *****************************"""
 
 
@@ -3809,11 +3751,13 @@ def ButtonStartArea2_click():
         consoleInsertText("Area2 Sender is Running" + "\n")
     else:
         mymower.sigArea2Off = True
-        consoleInsertText("*********** Area2 Sender FAIL To Start ************" + "\n")
+        consoleInsertText(
+            "*********** Area2 Sender FAIL To Start ************" + "\n")
         print(error_output)
         consoleInsertText(str(error_output) + "\n")
 
-    send_var_message("w", "areaInMowing", "2", "0", "0", "0", "0", "0", "0", "0")
+    send_var_message("w", "areaInMowing", "2", "0", "0", "0", "0", "0", "0",
+                     "0")
 
 
 def ButtonStopArea2_click():
@@ -3830,10 +3774,12 @@ def ButtonStopArea2_click():
         consoleInsertText("Area2 Sender is Stop" + "\n")
     else:
         print("Area2 Sender FAIL TO response")
-        consoleInsertText("*********** Area2 Sender FAIL To Stop ************" + "\n")
+        consoleInsertText(
+            "*********** Area2 Sender FAIL To Stop ************" + "\n")
         print(error_output)
         consoleInsertText(str(error_output) + "\n")
-    send_var_message("w", "areaInMowing", "1", "0", "0", "0", "0", "0", "0", "0")
+    send_var_message("w", "areaInMowing", "1", "0", "0", "0", "0", "0", "0",
+                     "0")
 
 
 sliderTimeBelowSmag = tk.Scale(
@@ -3984,7 +3930,6 @@ ChkBtnPeriBlockInnWheel = tk.Checkbutton(
 )
 ChkBtnPeriBlockInnWheel.place(x=535, y=130, width=250, height=20)
 
-
 ButtonRequestSettingFomMower = tk.Button(tabPerimeter)
 ButtonRequestSettingFomMower.place(x=10, y=350, height=25, width=150)
 ButtonRequestSettingFomMower.configure(command=read_all_setting)
@@ -3992,21 +3937,18 @@ ButtonRequestSettingFomMower.configure(text="Read From Mower")
 
 ButtonSetPerimeterApply = tk.Button(tabPerimeter)
 ButtonSetPerimeterApply.place(x=200, y=350, height=25, width=100)
-ButtonSetPerimeterApply.configure(
-    command=ButtonSetPerimeterApply_click, text="Send To Mower"
-)
-
+ButtonSetPerimeterApply.configure(command=ButtonSetPerimeterApply_click,
+                                  text="Send To Mower")
 
 ButtonStartArea2 = tk.Button(tabPerimeter)
 ButtonStartArea2.place(x=350, y=315, height=25, width=200)
-ButtonStartArea2.configure(command=ButtonStartArea2_click, text="Start Sender Area2")
-
+ButtonStartArea2.configure(command=ButtonStartArea2_click,
+                           text="Start Sender Area2")
 
 ButtonStopArea2 = tk.Button(tabPerimeter)
 ButtonStopArea2.place(x=350, y=350, height=25, width=200)
-ButtonStopArea2.configure(command=ButtonStopArea2_click, text="Stop Sender Area2")
-
-
+ButtonStopArea2.configure(command=ButtonStopArea2_click,
+                          text="Stop Sender Area2")
 """************* Bylane setting *****************************"""
 
 slideryawSet1 = tk.Scale(
@@ -4093,7 +4035,6 @@ slideryawOppositeLane3RollLeft = tk.Scale(
 )
 slideryawOppositeLane3RollLeft.place(x=535, y=110, width=250, height=50)
 
-
 sliderDistBetweenLane = tk.Scale(
     tabByLane,
     orient="horizontal",
@@ -4119,7 +4060,9 @@ def ButtonLaneUseNr_click():
     send_pfo_message("w01", "1", "2", "3", "4", "5", "6")
 
 
-ButtonLaneUseNr = tk.Button(tabByLane, command=ButtonLaneUseNr_click, text="Next Lane")
+ButtonLaneUseNr = tk.Button(tabByLane,
+                            command=ButtonLaneUseNr_click,
+                            text="Next Lane")
 ButtonLaneUseNr.place(x=10, y=200, width=100, height=20)
 
 
@@ -4127,9 +4070,10 @@ def ButtonRollDir_click():
     send_pfo_message("w20", "1", "2", "3", "4", "5", "6")
 
 
-ButtonRollDir = tk.Button(tabByLane, command=ButtonRollDir_click, text="Next Roll Dir")
+ButtonRollDir = tk.Button(tabByLane,
+                          command=ButtonRollDir_click,
+                          text="Next Roll Dir")
 ButtonRollDir.place(x=10, y=230, width=100, height=20)
-
 
 Frame1 = tk.Frame(tabByLane)
 Frame1.place(x=10, y=260, height=90, width=650)
@@ -4141,34 +4085,37 @@ Frame1.configure(
     highlightcolor="black",
 )
 
-
-tk.Label(Frame1, text="tk_laneInUse", fg="green").place(
-    x=100, y=10, width=100, height=20
-)
-tk.Label(Frame1, textvariable=tk_laneInUse, fg="red", font=("Arial", 20)).place(
-    x=100, y=40, width=100, height=20
-)
-tk.Label(Frame1, text="Last Roll Dir", fg="green").place(
-    x=220, y=10, width=100, height=20
-)
-tk.Label(Frame1, textvariable=tk_rollDir, fg="red", font=("Arial", 20)).place(
-    x=220, y=40, width=100, height=20
-)
-tk.Label(Frame1, text="tk_YawActual", fg="green").place(
-    x=330, y=10, width=100, height=20
-)
-tk.Label(Frame1, textvariable=tk_YawActual, fg="red", font=("Arial", 20)).place(
-    x=330, y=40, width=100, height=20
-)
-tk.Label(Frame1, text="tk_YawCible", fg="green").place(
-    x=440, y=10, width=100, height=20
-)
-tk.Label(Frame1, textvariable=tk_YawCible, fg="red", font=("Arial", 20)).place(
-    x=440, y=40, width=100, height=20
-)
-BtnBylaneStartRec = tk.Button(Frame1, command=BtnBylaneStartRec_click, text="Start")
+tk.Label(Frame1, text="tk_laneInUse", fg="green").place(x=100,
+                                                        y=10,
+                                                        width=100,
+                                                        height=20)
+tk.Label(Frame1, textvariable=tk_laneInUse, fg="red",
+         font=("Arial", 20)).place(x=100, y=40, width=100, height=20)
+tk.Label(Frame1, text="Last Roll Dir", fg="green").place(x=220,
+                                                         y=10,
+                                                         width=100,
+                                                         height=20)
+tk.Label(Frame1, textvariable=tk_rollDir, fg="red",
+         font=("Arial", 20)).place(x=220, y=40, width=100, height=20)
+tk.Label(Frame1, text="tk_YawActual", fg="green").place(x=330,
+                                                        y=10,
+                                                        width=100,
+                                                        height=20)
+tk.Label(Frame1, textvariable=tk_YawActual, fg="red",
+         font=("Arial", 20)).place(x=330, y=40, width=100, height=20)
+tk.Label(Frame1, text="tk_YawCible", fg="green").place(x=440,
+                                                       y=10,
+                                                       width=100,
+                                                       height=20)
+tk.Label(Frame1, textvariable=tk_YawCible, fg="red",
+         font=("Arial", 20)).place(x=440, y=40, width=100, height=20)
+BtnBylaneStartRec = tk.Button(Frame1,
+                              command=BtnBylaneStartRec_click,
+                              text="Start")
 BtnBylaneStartRec.place(x=10, y=10, height=25, width=60)
-BtnBylaneStopRec = tk.Button(Frame1, command=BtnBylaneStopRec_click, text="Stop")
+BtnBylaneStopRec = tk.Button(Frame1,
+                             command=BtnBylaneStopRec_click,
+                             text="Stop")
 BtnBylaneStopRec.place(x=10, y=40, height=25, width=60)
 
 ButtonRequestSettingFomMower = tk.Button(tabByLane)
@@ -4176,14 +4123,10 @@ ButtonRequestSettingFomMower.place(x=10, y=350, height=25, width=150)
 ButtonRequestSettingFomMower.configure(command=read_all_setting)
 ButtonRequestSettingFomMower.configure(text="Read All From Mower")
 
-
 ButtonSetByLaneApply = tk.Button(tabByLane)
 ButtonSetByLaneApply.place(x=300, y=350, height=25, width=150)
-ButtonSetByLaneApply.configure(
-    command=ButtonSendSettingByLaneToDue_click, text="Send By Lane To Mower"
-)
-
-
+ButtonSetByLaneApply.configure(command=ButtonSendSettingByLaneToDue_click,
+                               text="Send By Lane To Mower")
 """************* Rain/Temp setting *****************************"""
 
 sliderrainReadDelay = tk.Scale(
@@ -4199,15 +4142,21 @@ sliderrainReadDelay.place(x=10, y=70, width=360, height=50)
 wsFrame = tk.Frame(tabRainTemp)
 wsFrame.place(x=10, y=130, height=150, width=130)
 tk.Label(wsFrame, text="WS Rain data", fg="green").pack(side="top", anchor="w")
-RdBtn_ws1 = tk.Radiobutton(
-    wsFrame, text="Last 15 min.", variable=tk_wsRainData, value=1, highlightthickness=0
-).pack(side="top", anchor="w")
-RdBtn_ws2 = tk.Radiobutton(
-    wsFrame, text="Last 60 min.", variable=tk_wsRainData, value=2, highlightthickness=0
-).pack(side="top", anchor="w")
-RdBtn_ws3 = tk.Radiobutton(
-    wsFrame, text="Actual hour", variable=tk_wsRainData, value=3, highlightthickness=0
-).pack(side="top", anchor="w")
+RdBtn_ws1 = tk.Radiobutton(wsFrame,
+                           text="Last 15 min.",
+                           variable=tk_wsRainData,
+                           value=1,
+                           highlightthickness=0).pack(side="top", anchor="w")
+RdBtn_ws2 = tk.Radiobutton(wsFrame,
+                           text="Last 60 min.",
+                           variable=tk_wsRainData,
+                           value=2,
+                           highlightthickness=0).pack(side="top", anchor="w")
+RdBtn_ws3 = tk.Radiobutton(wsFrame,
+                           text="Actual hour",
+                           variable=tk_wsRainData,
+                           value=3,
+                           highlightthickness=0).pack(side="top", anchor="w")
 
 slidermaxTemperature = tk.Scale(
     tabRainTemp,
@@ -4229,10 +4178,12 @@ temperatureDHTFrame.configure(
     highlightcolor="black",
 )
 
-tk.Label(temperatureDHTFrame, text="DHT temp:", fg="black").pack(side="top", anchor="n")
-tk.Label(
-    temperatureDHTFrame, textvariable=tk_Dht22Temp, fg="red", font=("Arial", 16)
-).pack(side="bottom", anchor="n")
+tk.Label(temperatureDHTFrame, text="DHT temp:", fg="black").pack(side="top",
+                                                                 anchor="n")
+tk.Label(temperatureDHTFrame,
+         textvariable=tk_Dht22Temp,
+         fg="red",
+         font=("Arial", 16)).pack(side="bottom", anchor="n")
 
 slidermaxRaspberryTemp = tk.Scale(
     tabRainTemp,
@@ -4254,12 +4205,12 @@ temperatureRPiFrame.configure(
     highlightcolor="black",
 )
 
-tk.Label(temperatureRPiFrame, text="RasPi temp:", fg="black").pack(
-    side="top", anchor="n"
-)
-tk.Label(
-    temperatureRPiFrame, textvariable=tk_raspiTemp, fg="red", font=("Arial", 16)
-).pack(side="bottom", anchor="n")
+tk.Label(temperatureRPiFrame, text="RasPi temp:", fg="black").pack(side="top",
+                                                                   anchor="n")
+tk.Label(temperatureRPiFrame,
+         textvariable=tk_raspiTemp,
+         fg="red",
+         font=("Arial", 16)).pack(side="bottom", anchor="n")
 
 ButtonRequestMainSettingFomMower = tk.Button(tabRainTemp)
 ButtonRequestMainSettingFomMower.place(x=10, y=350, height=25, width=150)
@@ -4268,9 +4219,8 @@ ButtonRequestMainSettingFomMower.configure(text="Read All From Mower")
 
 ButtonSetMainApply = tk.Button(tabRainTemp)
 ButtonSetMainApply.place(x=300, y=350, height=25, width=100)
-ButtonSetMainApply.configure(command=ButtonSetRainTempApply_click, text="Send To Mower")
-
-
+ButtonSetMainApply.configure(command=ButtonSetRainTempApply_click,
+                             text="Send To Mower")
 """ THE AUTO PAGE ***************************************************"""
 
 
@@ -4288,9 +4238,8 @@ def button_home_click():
         "0",
         "0",
     )
-    send_var_message(
-        "w", "statusCurr", "3", "0", "0", "0", "0", "0", "0", "0"
-    )  # set the status to back to station
+    send_var_message("w", "statusCurr", "3", "0", "0", "0", "0", "0", "0",
+                     "0")  # set the status to back to station
     send_pfo_message("rh", "1", "2", "3", "4", "5", "6")
 
 
@@ -4328,9 +4277,10 @@ batteryFrame.configure(
 )
 
 tk.Label(batteryFrame, text="BATTERY", fg="green").pack(side="top", anchor="n")
-tk.Label(batteryFrame, textvariable=tk_batVoltage, fg="red", font=("Arial", 20)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(batteryFrame,
+         textvariable=tk_batVoltage,
+         fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 temperatureDHTFrame = tk.Frame(AutoPage)
 temperatureDHTFrame.place(x=130, y=180, height=60, width=100)
@@ -4342,10 +4292,12 @@ temperatureDHTFrame.configure(
     highlightcolor="black",
 )
 
-tk.Label(temperatureDHTFrame, text="DHT temp", fg="green").pack(side="top", anchor="n")
-tk.Label(
-    temperatureDHTFrame, textvariable=tk_Dht22Temp, fg="red", font=("Arial", 20)
-).pack(side="bottom", anchor="n")
+tk.Label(temperatureDHTFrame, text="DHT temp", fg="green").pack(side="top",
+                                                                anchor="n")
+tk.Label(temperatureDHTFrame,
+         textvariable=tk_Dht22Temp,
+         fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 temperatureRPiFrame = tk.Frame(AutoPage)
 temperatureRPiFrame.place(x=250, y=180, height=60, width=100)
@@ -4357,12 +4309,12 @@ temperatureRPiFrame.configure(
     highlightcolor="black",
 )
 
-tk.Label(temperatureRPiFrame, text="RasPi temp", fg="green").pack(
-    side="top", anchor="n"
-)
-tk.Label(
-    temperatureRPiFrame, textvariable=tk_raspiTemp, fg="red", font=("Arial", 20)
-).pack(side="bottom", anchor="n")
+tk.Label(temperatureRPiFrame, text="RasPi temp", fg="green").pack(side="top",
+                                                                  anchor="n")
+tk.Label(temperatureRPiFrame,
+         textvariable=tk_raspiTemp,
+         fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 loopsFrame = tk.Frame(AutoPage)
 loopsFrame.place(x=370, y=180, height=60, width=100)
@@ -4375,9 +4327,10 @@ loopsFrame.configure(
 )
 
 tk.Label(loopsFrame, text="LOOP/SEC", fg="green").pack(side="top", anchor="n")
-tk.Label(loopsFrame, textvariable=tk_loopsPerSecond, fg="red", font=("Arial", 20)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(loopsFrame,
+         textvariable=tk_loopsPerSecond,
+         fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 yawFrame = tk.Frame(AutoPage)
 yawFrame.place(x=490, y=180, height=60, width=80)
@@ -4389,9 +4342,8 @@ yawFrame.configure(
     highlightcolor="black",
 )
 tk.Label(yawFrame, text="YAW", fg="green").pack(side="top", anchor="n")
-tk.Label(yawFrame, textvariable=tk_ImuYaw, fg="red", font=("Arial", 20)).pack(
-    side="bottom", anchor="n"
-)
+tk.Label(yawFrame, textvariable=tk_ImuYaw, fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 pitchFrame = tk.Frame(AutoPage)
 pitchFrame.place(x=590, y=180, height=60, width=80)
@@ -4403,10 +4355,8 @@ pitchFrame.configure(
     highlightcolor="black",
 )
 tk.Label(pitchFrame, text="PITCH", fg="green").pack(side="top", anchor="n")
-tk.Label(pitchFrame, textvariable=tk_ImuPitch, fg="red", font=("Arial", 20)).pack(
-    side="bottom", anchor="n"
-)
-
+tk.Label(pitchFrame, textvariable=tk_ImuPitch, fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 rollFrame = tk.Frame(AutoPage)
 rollFrame.place(x=690, y=180, height=60, width=80)
@@ -4418,36 +4368,41 @@ rollFrame.configure(
     highlightcolor="black",
 )
 tk.Label(rollFrame, text="ROLL", fg="green").pack(side="top", anchor="n")
-tk.Label(rollFrame, textvariable=tk_ImuRoll, fg="red", font=("Arial", 20)).pack(
-    side="bottom", anchor="n"
-)
-
+tk.Label(rollFrame, textvariable=tk_ImuRoll, fg="red",
+         font=("Arial", 20)).pack(side="bottom", anchor="n")
 
 Frame1 = tk.Frame(AutoPage)
 Frame1.place(x=10, y=20, height=150, width=130)
 tk.Label(Frame1, text="MOW PATTERN", fg="green").pack(side="top", anchor="w")
-RdBtn_Random = tk.Radiobutton(
-    Frame1, text="Random", variable=tk_mowingPattern, value=0
-).pack(side="top", anchor="w")
-RdBtn_ByLane = tk.Radiobutton(
-    Frame1, text="By Lane", variable=tk_mowingPattern, value=1
-).pack(side="top", anchor="w")
-RdBtn_Perimeter = tk.Radiobutton(
-    Frame1, text="Perimeter", variable=tk_mowingPattern, value=2
-).pack(side="top", anchor="w")
-ButtonStartMow = tk.Button(AutoPage, image=imgstartMow, command=ButtonStartMow_click)
+RdBtn_Random = tk.Radiobutton(Frame1,
+                              text="Random",
+                              variable=tk_mowingPattern,
+                              value=0).pack(side="top", anchor="w")
+RdBtn_ByLane = tk.Radiobutton(Frame1,
+                              text="By Lane",
+                              variable=tk_mowingPattern,
+                              value=1).pack(side="top", anchor="w")
+RdBtn_Perimeter = tk.Radiobutton(Frame1,
+                                 text="Perimeter",
+                                 variable=tk_mowingPattern,
+                                 value=2).pack(side="top", anchor="w")
+ButtonStartMow = tk.Button(AutoPage,
+                           image=imgstartMow,
+                           command=ButtonStartMow_click)
 ButtonStartMow.place(x=130, y=0, width=100, height=130)
 Buttonhome = tk.Button(AutoPage, image=imgHome, command=button_home_click)
 Buttonhome.place(x=250, y=0, width=100, height=130)
 Buttontrack = tk.Button(AutoPage, image=imgTrack, command=button_track_click)
 Buttontrack.place(x=380, y=0, width=100, height=130)
-ButtonStopAllAuto = tk.Button(AutoPage, image=imgStopAll, command=button_stop_all_click)
+ButtonStopAllAuto = tk.Button(AutoPage,
+                              image=imgStopAll,
+                              command=button_stop_all_click)
 ButtonStopAllAuto.place(x=500, y=0, width=100, height=130)
 
-ButtonBackHome = tk.Button(AutoPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(AutoPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """**************************THE MANUAL PAGE  **********************************************"""
 
 
@@ -4455,8 +4410,7 @@ def ButtonJoystickON_click():
     subprocess.call(["rfkill", "unblock", "bluetooth"])
     print("BlueTooth Start")
     returnval = messagebox.askyesno(
-        "Info", "Power ON the joystick now and wait until the led is fix"
-    )
+        "Info", "Power ON the joystick now and wait until the led is fix")
     if returnval:
         try:
             # if not pygame.joystick.get_init():
@@ -4533,8 +4487,9 @@ ManualPage.place(x=0, y=0, height=400, width=800)
 Frame1 = tk.Frame(ManualPage)
 Frame1.place(x=0, y=0, height=300, width=300)
 
-
-ButtonForward = tk.Button(Frame1, image=imgForward, command=ButtonForward_click)
+ButtonForward = tk.Button(Frame1,
+                          image=imgForward,
+                          command=ButtonForward_click)
 ButtonForward.place(x=100, y=0, height=100, width=100)
 
 ButtonStop = tk.Button(Frame1, image=imgStop, command=ButtonStop_click)
@@ -4546,53 +4501,52 @@ ButtonRight.place(x=200, y=100, height=100, width=100)
 ButtonLeft = tk.Button(Frame1, image=imgLeft, command=ButtonLeft_click)
 ButtonLeft.place(x=0, y=100, height=100, width=100)
 
-ButtonReverse = tk.Button(Frame1, image=imgReverse, command=ButtonReverse_click)
+ButtonReverse = tk.Button(Frame1,
+                          image=imgReverse,
+                          command=ButtonReverse_click)
 ButtonReverse.place(x=100, y=200, height=100, width=100)
 
-ButtonBladeStart = tk.Button(
-    ManualPage, image=imgBladeStart, command=buttonBlade_start_click
-)
+ButtonBladeStart = tk.Button(ManualPage,
+                             image=imgBladeStart,
+                             command=buttonBlade_start_click)
 ButtonBladeStart.place(x=680, y=5, width=100, height=50)
-ButtonBladeStop = tk.Button(
-    ManualPage, image=imgBladeStop, command=buttonBlade_stop_click
-)
+ButtonBladeStop = tk.Button(ManualPage,
+                            image=imgBladeStop,
+                            command=buttonBlade_stop_click)
 ButtonBladeStop.place(x=680, y=55, width=100, height=80)
 
-
-ButtonStopAllManual = tk.Button(
-    ManualPage, image=imgStopAll, command=button_stop_all_click
-)
+ButtonStopAllManual = tk.Button(ManualPage,
+                                image=imgStopAll,
+                                command=button_stop_all_click)
 ButtonStopAllManual.place(x=400, y=200, width=100, height=130)
 
 tk.Label(ManualPage, image=imgJoystick).place(x=400, y=5)
-ButtonJoystickON = tk.Button(
-    ManualPage, image=imgJoystickON, command=ButtonJoystickON_click
-)
+ButtonJoystickON = tk.Button(ManualPage,
+                             image=imgJoystickON,
+                             command=ButtonJoystickON_click)
 ButtonJoystickON.place(x=450, y=80, width=50, height=50)
-ButtonJoystickOFF = tk.Button(
-    ManualPage, image=imgJoystickOFF, command=ButtonJoystickOFF_click
-)
+ButtonJoystickOFF = tk.Button(ManualPage,
+                              image=imgJoystickOFF,
+                              command=ButtonJoystickOFF_click)
 ButtonJoystickOFF.place(x=400, y=80, width=50, height=50)
 
-RdBtn_keyboard = tk.Checkbutton(
-    ManualPage, text="Use Keyboard to drive the mower", variable=ManualKeyboardUse
-).place(x=0, y=365)
-
+RdBtn_keyboard = tk.Checkbutton(ManualPage,
+                                text="Use Keyboard to drive the mower",
+                                variable=ManualKeyboardUse).place(x=0, y=365)
 
 manualSpeedSlider = tk.Scale(ManualPage, orient="horizontal", from_=0, to=255)
 manualSpeedSlider.place(x=0, y=300, width=300, height=60)
 tk.Label(ManualPage, text="SPEED", fg="green").place(x=0, y=300)
-
 """
 slider1 = tk.Scale(orient='horizontal', from_=0, to=350)
 slider1.place(x=50,y=50,anchor='nw',width=300, height=50)
 slider2 = tk.Scale(orient='horizontal', from_=0, to=100)
 slider2.place(x=50,y=100,anchor='nw',width=300, height=50)
 """
-ButtonBackHome = tk.Button(ManualPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(ManualPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """ The Console page  ************************************"""
 
 
@@ -4611,7 +4565,6 @@ def ButtonClearConsole_click():
 
 ConsolePage = tk.Frame(fen1)
 ConsolePage.place(x=0, y=0, height=400, width=800)
-
 
 txtRecu = tk.Text(ConsolePage)
 ScrollTxtRecu = tk.Scrollbar(txtRecu)
@@ -4641,22 +4594,24 @@ ButtonConsoleMode = tk.Button(ConsolePage)
 ButtonConsoleMode.place(x=660, y=15, height=25, width=120)
 ButtonConsoleMode.configure(command=ButtonConsoleMode_click, text="Mode")
 
-
 ButtonListVar = tk.Button(ConsolePage)
 ButtonListVar.place(x=660, y=45, height=25, width=120)
 ButtonListVar.configure(command=ButtonListVar_click, text="List Var")
 
 ButtonClearConsole = tk.Button(ConsolePage)
 ButtonClearConsole.place(x=660, y=75, height=35, width=120)
-ButtonClearConsole.configure(command=ButtonClearConsole_click, text="Clear Console")
+ButtonClearConsole.configure(command=ButtonClearConsole_click,
+                             text="Clear Console")
 
 ButtonSaveReceived = tk.Button(ConsolePage)
 ButtonSaveReceived.place(x=660, y=120, height=35, width=120)
-ButtonSaveReceived.configure(command=ButtonSaveReceived_click, text="Save To File")
+ButtonSaveReceived.configure(command=ButtonSaveReceived_click,
+                             text="Save To File")
 
-ButtonBackHome = tk.Button(ConsolePage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(ConsolePage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=660, y=160, height=120, width=120)
-
 """ THE PLOT PAGE ***************************************************"""
 
 TabPlot = ttk.Notebook(fen1)
@@ -4678,9 +4633,9 @@ TabPlot.place(x=0, y=0, height=400, width=800)
 Frame11 = tk.Frame(tabPlotMain, relief=tk.GROOVE, borderwidth="3")
 Frame11.place(x=10, y=20, height=80, width=680)
 
-BtnMotPlotStopAll = tk.Button(
-    Frame11, command=BtnMotPlotStopAll_click, text="Stop ALL the Data send by DUE"
-)
+BtnMotPlotStopAll = tk.Button(Frame11,
+                              command=BtnMotPlotStopAll_click,
+                              text="Stop ALL the Data send by DUE")
 BtnMotPlotStopAll.place(x=10, y=10, height=25, width=250)
 
 # 'Wheel Motor
@@ -4688,9 +4643,13 @@ tk.Label(tabPlotWheelMotor, text="Mower Millis : ").place(x=300, y=0)
 tk.Label(tabPlotWheelMotor, textvariable=tk_millis).place(x=400, y=0)
 Frame12 = tk.Frame(tabPlotWheelMotor, relief=tk.GROOVE, borderwidth="3")
 Frame12.place(x=10, y=20, height=80, width=680)
-BtnMotPlotStartRec = tk.Button(Frame12, command=BtnMotPlotStartRec_click, text="Start")
+BtnMotPlotStartRec = tk.Button(Frame12,
+                               command=BtnMotPlotStartRec_click,
+                               text="Start")
 BtnMotPlotStartRec.place(x=0, y=0, height=25, width=60)
-BtnMotPlotStopRec = tk.Button(Frame12, command=BtnMotPlotStopRec_click, text="Stop")
+BtnMotPlotStopRec = tk.Button(Frame12,
+                              command=BtnMotPlotStopRec_click,
+                              text="Stop")
 BtnMotPlotStopRec.place(x=0, y=25, height=25, width=60)
 SldMainWheelRefresh = tk.Scale(
     Frame12,
@@ -4701,7 +4660,6 @@ SldMainWheelRefresh = tk.Scale(
     orient="horizontal",
 )
 SldMainWheelRefresh.place(x=70, y=0, width=250, height=50)
-
 
 tk.Label(Frame12, text="Sence", fg="green").place(x=400, y=0)
 tk.Label(Frame12, text="Left", fg="green").place(x=350, y=15)
@@ -4717,9 +4675,13 @@ tk.Label(tabPlotMowMotor, text="Mower Millis : ").place(x=300, y=0)
 tk.Label(tabPlotMowMotor, textvariable=tk_millis).place(x=400, y=0)
 Frame13 = tk.Frame(tabPlotMowMotor, relief=tk.GROOVE, borderwidth="3")
 Frame13.place(x=10, y=20, height=80, width=680)
-BtnMowPlotStartRec = tk.Button(Frame13, command=BtnMowPlotStartRec_click, text="Start")
+BtnMowPlotStartRec = tk.Button(Frame13,
+                               command=BtnMowPlotStartRec_click,
+                               text="Start")
 BtnMowPlotStartRec.place(x=0, y=0, height=25, width=60)
-BtnMowPlotStopRec = tk.Button(Frame13, command=BtnMowPlotStopRec_click, text="Stop")
+BtnMowPlotStopRec = tk.Button(Frame13,
+                              command=BtnMowPlotStopRec_click,
+                              text="Stop")
 BtnMowPlotStopRec.place(x=0, y=25, height=25, width=60)
 SldMainMowRefresh = tk.Scale(
     Frame13,
@@ -4741,9 +4703,13 @@ tk.Label(tabPlotBattery, text="Mower Millis : ").place(x=300, y=0)
 tk.Label(tabPlotBattery, textvariable=tk_millis).place(x=400, y=0)
 Frame14 = tk.Frame(tabPlotBattery, relief=tk.GROOVE, borderwidth="3")
 Frame14.place(x=10, y=20, height=80, width=680)
-BtnBatPlotStartRec = tk.Button(Frame14, command=BtnBatPlotStartRec_click, text="Start")
+BtnBatPlotStartRec = tk.Button(Frame14,
+                               command=BtnBatPlotStartRec_click,
+                               text="Start")
 BtnBatPlotStartRec.place(x=0, y=0, height=25, width=60)
-BtnBatPlotStopRec = tk.Button(Frame14, command=BtnBatPlotStopRec_click, text="Stop")
+BtnBatPlotStopRec = tk.Button(Frame14,
+                              command=BtnBatPlotStopRec_click,
+                              text="Stop")
 BtnBatPlotStopRec.place(x=0, y=25, height=25, width=60)
 SldMainBatRefresh = tk.Scale(
     Frame14,
@@ -4763,17 +4729,18 @@ tk.Label(Frame14, text="Voltage", fg="green").place(x=550, y=0)
 tk.Label(Frame14, textvariable=tk_chgVoltage).place(x=550, y=15)
 tk.Label(Frame14, textvariable=tk_batVoltage).place(x=550, y=35)
 
-
 # 'Perimeter'
 tk.Label(tabPlotPerimeter, text="Mower Millis : ").place(x=300, y=0)
 tk.Label(tabPlotPerimeter, textvariable=tk_millis).place(x=400, y=0)
 Frame15 = tk.Frame(tabPlotPerimeter, relief=tk.GROOVE, borderwidth="3")
 Frame15.place(x=10, y=20, height=80, width=680)
-BtnPeriPlotStartRec = tk.Button(
-    Frame15, command=BtnPeriPlotStartRec_click, text="Start"
-)
+BtnPeriPlotStartRec = tk.Button(Frame15,
+                                command=BtnPeriPlotStartRec_click,
+                                text="Start")
 BtnPeriPlotStartRec.place(x=0, y=0, height=25, width=60)
-BtnPeriPlotStopRec = tk.Button(Frame15, command=BtnPeriPlotStopRec_click, text="Stop")
+BtnPeriPlotStopRec = tk.Button(Frame15,
+                               command=BtnPeriPlotStopRec_click,
+                               text="Stop")
 BtnPeriPlotStopRec.place(x=0, y=25, height=25, width=60)
 SldMainPeriRefresh = tk.Scale(
     Frame15,
@@ -4791,10 +4758,10 @@ tk.Label(Frame15, textvariable=tk_perimeterMag).place(x=400, y=15)
 tk.Label(Frame15, text="Right", fg="green").place(x=350, y=35)
 tk.Label(Frame15, textvariable=tk_perimeterMagRight).place(x=400, y=35)
 
-ButtonBackHome = tk.Button(TabPlot, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(TabPlot,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """
  THE INFO PAGE ***************************************************
 """
@@ -4815,7 +4782,9 @@ LabInfoline.place(x=10, y=100, height=25, width=300)
 Infoline5 = tk.IntVar()
 LabInfoline = tk.Label(InfoPage, textvariable=Infoline5)
 LabInfoline.place(x=10, y=130, height=25, width=300)
-ButtonBackHome = tk.Button(InfoPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(InfoPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
 
 # myWindows.loadPageInfo()
@@ -4825,8 +4794,8 @@ ButtonBackHome.place(x=680, y=280, height=120, width=120)
 def degrees_to_decimal(data, hemisphere):
     try:
         decimalPointPosition = data.index(".")
-        degrees = float(data[: decimalPointPosition - 2])
-        minutes = float(data[decimalPointPosition - 2 :]) / 60
+        degrees = float(data[:decimalPointPosition - 2])
+        minutes = float(data[decimalPointPosition - 2:]) / 60
         output = degrees + minutes
         if hemisphere is "N" or hemisphere is "E":
             return output
@@ -4852,12 +4821,10 @@ def parse_GPRMC(data):
         "variation_e_w": data[11],
         "checksum": data[12],
     }
-    dict["decimal_latitude"] = degrees_to_decimal(
-        dict["latitude"], dict["latitude_hemisphere"]
-    )
+    dict["decimal_latitude"] = degrees_to_decimal(dict["latitude"],
+                                                  dict["latitude_hemisphere"])
     dict["decimal_longitude"] = degrees_to_decimal(
-        dict["longitude"], dict["longitude_hemisphere"]
-    )
+        dict["longitude"], dict["longitude_hemisphere"])
     return dict
 
 
@@ -4884,7 +4851,6 @@ GpsPage.place(x=0, y=0, height=400, width=800)
 
 # tk.Label(GpsPage, text='The gps run as service and write into directory /gpsdata/').place(x=10,y=15)
 
-
 txtGpsRecu = tk.Text(GpsPage)
 ScrolltxtGpsRecu = tk.Scrollbar(txtGpsRecu)
 ScrolltxtGpsRecu.pack(side=tk.RIGHT, fill=tk.Y)
@@ -4893,22 +4859,23 @@ ScrolltxtGpsRecu.config(command=txtGpsRecu.yview)
 txtGpsRecu.config(yscrollcommand=ScrolltxtGpsRecu.set)
 txtGpsRecu.place(x=5, y=35, anchor="nw", width=600, height=300)
 
-
-BtnGpsRecordStart = tk.Button(GpsPage, command=BtnGpsRecordStart_click, text="Start")
+BtnGpsRecordStart = tk.Button(GpsPage,
+                              command=BtnGpsRecordStart_click,
+                              text="Start")
 BtnGpsRecordStart.place(x=5, y=5, height=25, width=60)
-BtnGpsRecordStop = tk.Button(GpsPage, command=BtnGpsRecordStop_click, text="Stop")
+BtnGpsRecordStop = tk.Button(GpsPage,
+                             command=BtnGpsRecordStop_click,
+                             text="Stop")
 BtnGpsRecordStop.place(x=150, y=5, height=25, width=60)
 
-ButtonBackHome = tk.Button(GpsPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(GpsPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """ THE RFID PAGE ***************************************************"""
 
 RfidPage = tk.Frame(fen1)
 RfidPage.place(x=0, y=0, height=400, width=800)
-
-
 """************* Rfid setting *****************************"""
 # exemple of rfid_list=[['01254456700','FR0',60,0,0],['01254456711','FR1',61,1,1],['01254456722','FR2',62,2,2],['01254456733','FR3',63,3,3]]
 
@@ -4918,8 +4885,6 @@ with open("/home/pi/Documents/PiArdumower/tag_list.bin", "rb") as fp:
     rfid_list = pickle.load(fp)
     print("RFID file loaded OK")
     # print(rfid_list)
-
-
 """
         
 def handler(event):
@@ -4985,7 +4950,6 @@ tree.heading("5", text="Dist 1")
 tree.heading("6", text="Ang 2")
 tree.heading("7", text="Dist 2")
 
-
 tree.bind("<ButtonRelease-1>", OnClick)
 tree.place(x=0, y=0, height=300, width=520)
 
@@ -5028,9 +4992,8 @@ def del_rfid_tag():
     search_status = txtTagMowerState.get("1.0", "end-1c")
 
     for i in range(0, len(rfid_list)):
-        if (str(rfid_list[i][0]) == str(search_code)) & (
-            str(rfid_list[i][1]) == str(search_status)
-        ):
+        if (str(rfid_list[i][0]) == str(search_code)) & (str(
+                rfid_list[i][1]) == str(search_status)):
             for value in rfid_list[:]:
                 if (value[0] == search_code) & (value[1] == search_status):
                     rfid_list.remove(value)
@@ -5066,39 +5029,29 @@ def test1():
     mymower.newtagToDo = "Null"
     for i in range(0, len(rfid_list)):
         # if (str("b'"+rfid_list[i][0]+"'")== str(search_code)) :
-        if (str("b'" + rfid_list[i][0] + "'") == str(search_code)) & (
-            str(rfid_list[i][1]) == str(search_status)
-        ):
+        if (str("b'" + rfid_list[i][0] + "'") == str(search_code)) & (str(
+                rfid_list[i][1]) == str(search_status)):
 
             print("trouv")
             print(rfid_list[i])
 
 
-tk.Label(RfidPage, text="TAG Nr:", font=("Arial", 10), fg="green").place(
-    x=530, y=5, height=20, width=80
-)
-tk.Label(RfidPage, text="Status:", font=("Arial", 10), fg="green").place(
-    x=530, y=25, height=20, width=80
-)
-tk.Label(RfidPage, text="What to Do:", font=("Arial", 10), fg="green").place(
-    x=530, y=45, height=20, width=80
-)
-tk.Label(RfidPage, text="Speed:", font=("Arial", 10), fg="green").place(
-    x=530, y=65, height=20, width=80
-)
-tk.Label(RfidPage, text="Angle 1:", font=("Arial", 10), fg="green").place(
-    x=530, y=85, height=20, width=80
-)
-tk.Label(RfidPage, text="Dist 1:", font=("Arial", 10), fg="green").place(
-    x=530, y=105, height=20, width=80
-)
-tk.Label(RfidPage, text="Angle 2:", font=("Arial", 10), fg="green").place(
-    x=530, y=125, height=20, width=80
-)
-tk.Label(RfidPage, text="Dist 2:", font=("Arial", 10), fg="green").place(
-    x=530, y=145, height=20, width=80
-)
-
+tk.Label(RfidPage, text="TAG Nr:", font=("Arial", 10),
+         fg="green").place(x=530, y=5, height=20, width=80)
+tk.Label(RfidPage, text="Status:", font=("Arial", 10),
+         fg="green").place(x=530, y=25, height=20, width=80)
+tk.Label(RfidPage, text="What to Do:", font=("Arial", 10),
+         fg="green").place(x=530, y=45, height=20, width=80)
+tk.Label(RfidPage, text="Speed:", font=("Arial", 10),
+         fg="green").place(x=530, y=65, height=20, width=80)
+tk.Label(RfidPage, text="Angle 1:", font=("Arial", 10),
+         fg="green").place(x=530, y=85, height=20, width=80)
+tk.Label(RfidPage, text="Dist 1:", font=("Arial", 10),
+         fg="green").place(x=530, y=105, height=20, width=80)
+tk.Label(RfidPage, text="Angle 2:", font=("Arial", 10),
+         fg="green").place(x=530, y=125, height=20, width=80)
+tk.Label(RfidPage, text="Dist 2:", font=("Arial", 10),
+         fg="green").place(x=530, y=145, height=20, width=80)
 
 txtTagNr = tk.Text(RfidPage)
 txtTagNr.place(x=630, y=5, width=120, height=20)
@@ -5133,7 +5086,6 @@ txtTagDist2.place(x=630, y=145, width=120, height=20)
 txtTagDist2.delete("1.0", "end")
 txtTagDist2.insert("1.0", rfid_list[0][7])
 
-
 ButtonAdd = tk.Button(RfidPage, text="Add This Tag", command=add_rfid_tag)
 ButtonAdd.place(x=530, y=170, height=30, width=110)
 
@@ -5148,11 +5100,10 @@ ButtonSave.place(x=530, y=210, height=60, width=140)
 
 rebuild_treeview()
 
-
-ButtonBackHome = tk.Button(RfidPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(RfidPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """ THE TEST PAGE ***************************************************"""
 
 
@@ -5191,7 +5142,6 @@ def ButtonOdoRotNonStop_click():
 # def ButtonGoTOArea2_click():
 #    mymower.status=4
 #    send_pfo_message('ru','1','2','3','4','5','6',)
-
 
 TestPage = tk.Frame(fen1)
 TestPage.place(x=0, y=0, height=400, width=800)
@@ -5236,7 +5186,6 @@ ButtonOdoRotNonStop.place(x=300, y=165, height=25, width=200)
 ButtonOdoRotNonStop.configure(command=ButtonOdoRotNonStop_click)
 ButtonOdoRotNonStop.configure(text="Rotate Non Stop 100 Turns")
 
-
 # ButtonGoTOArea2= tk.Button(TestPage)
 # ButtonGoTOArea2.place(x=30,y=215, height=25, width=200)
 # ButtonGoTOArea2.configure(command = ButtonGoTOArea2_click)
@@ -5245,14 +5194,15 @@ ButtonOdoRotNonStop.configure(text="Rotate Non Stop 100 Turns")
 # ButtonTest = tk.Button(RfidPage, text="seek test",command = test1)
 # ButtonTest.place(x=530, y=260, height=60, width=140)
 
-ButtonTestEmail = tk.Button(TestPage, text="Send EMail Alert", command=sendEmail)
+ButtonTestEmail = tk.Button(TestPage,
+                            text="Send EMail Alert",
+                            command=sendEmail)
 ButtonTestEmail.place(x=30, y=215, height=25, width=200)
 
-
-ButtonBackHome = tk.Button(TestPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(TestPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=280, height=120, width=120)
-
-
 """ THE ERROR PAGE ***************************************************"""
 
 
@@ -5293,7 +5243,6 @@ errorwidth = 165
 errortextfg = "black"
 errorvarfg = "red"
 
-
 # Charger
 errorFrame = tk.Frame(ErrorPage)
 errorFrame.place(x=20, y=10, height=errorheight, width=errorwidth)
@@ -5304,12 +5253,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Charger", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrCharger, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Charger", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrCharger,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Battery
 errorFrame = tk.Frame(ErrorPage)
@@ -5321,12 +5270,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Battery", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrBattery, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Battery", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrBattery,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Motor left
 errorFrame = tk.Frame(ErrorPage)
@@ -5338,12 +5287,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Motor Left", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrMotorLeft, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Motor Left", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrMotorLeft,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Motor right
 errorFrame = tk.Frame(ErrorPage)
@@ -5355,12 +5304,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Motor Right", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrMotorRight, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Motor Right", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrMotorRight,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Motor mow
 errorFrame = tk.Frame(ErrorPage)
@@ -5372,12 +5321,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Motor Mow", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrMotorMow, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Motor Mow", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrMotorMow,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Mow sense
 errorFrame = tk.Frame(ErrorPage)
@@ -5389,12 +5338,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Mow Sense", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrMowSense, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Mow Sense", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrMowSense,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Odometry left
 errorFrame = tk.Frame(ErrorPage)
@@ -5406,12 +5355,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Odometry Left", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrOdoLeft, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Odometry Left", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrOdoLeft,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Odometry right
 errorFrame = tk.Frame(ErrorPage)
@@ -5423,12 +5372,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Odometry Right", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrOdoRight, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Odometry Right", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrOdoRight,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Perimeter timeout
 errorFrame = tk.Frame(ErrorPage)
@@ -5440,12 +5389,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Perim. Timeout", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrPeriTout, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Perim. Timeout", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrPeriTout,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Perimeter tracking
 errorFrame = tk.Frame(ErrorPage)
@@ -5457,12 +5406,14 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Perim. Tracking", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrTracking, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame,
+         text="Perim. Tracking",
+         fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrTracking,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # IMU communication
 errorFrame = tk.Frame(ErrorPage)
@@ -5474,12 +5425,12 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="IMU Comm.", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrImuComm, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="IMU Comm.", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrImuComm,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # IMU calibration
 errorFrame = tk.Frame(ErrorPage)
@@ -5491,12 +5442,14 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="IMU Calibration", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrImuCalib, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame,
+         text="IMU Calibration",
+         fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrImuCalib,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # IMU tilt
 errorFrame = tk.Frame(ErrorPage)
@@ -5508,16 +5461,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="IMU Tilt", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrImuTilt, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="IMU Tilt", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrImuTilt,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # RTC commucication
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=100, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=100,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5525,16 +5481,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="RTC Comm.", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrRtcComm, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="RTC Comm.", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrRtcComm,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # RTC data
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=130, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=130,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5542,16 +5501,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="RTC Data", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrRtcData, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="RTC Data", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrRtcData,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # GPS Communication
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=160, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=160,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5559,16 +5521,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="GPS Comm.", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrGpsComm, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="GPS Comm.", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrGpsComm,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # GPS data
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=190, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=190,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5576,16 +5541,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="GPS Data", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrGpsData, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="GPS Data", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrGpsData,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Robot stuck
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=220, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=220,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5593,16 +5561,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Robot Stuck", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(errorFrame, textvariable=tk_ErrStuck, fg=errorvarfg, font=("Arial", 18)).pack(
-    side="right", anchor="n"
-)
+tk.Label(errorFrame, text="Robot Stuck", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrStuck,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # EEPROM data
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=250, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=250,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5610,16 +5581,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="EEPROM Data", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrEepromData, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="EEPROM Data", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrEepromData,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Temp high
 errorFrame = tk.Frame(ErrorPage)
-errorFrame.place(x=20 + errorwidth, y=280, height=errorheight, width=errorwidth)
+errorFrame.place(x=20 + errorwidth,
+                 y=280,
+                 height=errorheight,
+                 width=errorwidth)
 errorFrame.configure(
     borderwidth="3",
     relief=tk.GROOVE,
@@ -5627,16 +5601,19 @@ errorFrame.configure(
     highlightbackground="#d9d9d9",
     highlightcolor="black",
 )
-tk.Label(errorFrame, text="Temp High", fg=errortextfg, font=("Arial", 12)).pack(
-    side="left", anchor="n"
-)
-tk.Label(
-    errorFrame, textvariable=tk_ErrTempHigh, fg=errorvarfg, font=("Arial", 18)
-).pack(side="right", anchor="n")
+tk.Label(errorFrame, text="Temp High", fg=errortextfg,
+         font=("Arial", 12)).pack(side="left", anchor="n")
+tk.Label(errorFrame,
+         textvariable=tk_ErrTempHigh,
+         fg=errorvarfg,
+         font=("Arial", 18)).pack(side="right", anchor="n")
 
 # Reset button
 ButtonResetCounters = tk.Button(ErrorPage)
-ButtonResetCounters.place(x=errorwidth / 2 + 20, y=330, height=50, width=errorwidth)
+ButtonResetCounters.place(x=errorwidth / 2 + 20,
+                          y=330,
+                          height=50,
+                          width=errorwidth)
 ButtonResetCounters.configure(command=ButtonResetCounters_click)
 ButtonResetCounters.configure(text="Reset All", fg="red", font=("Arial", 20))
 
@@ -5656,10 +5633,10 @@ txtConsoleErr.place(
 )
 
 # Back home button
-ButtonBackHome = tk.Button(ErrorPage, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(ErrorPage,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=660, y=280, height=120, width=120)
-
-
 """ THE TIMER PAGE ***************************************************"""
 
 
@@ -5672,7 +5649,6 @@ SheetTimer = [None] * 5
 for i in range(5):
     SheetTimer[i] = tk.Frame(TabTimer, width=800, height=380)
     TabTimer.add(SheetTimer[i], text="Timer " + str(i))
-
 
 TabTimer.place(x=0, y=0, height=430, width=800)
 
@@ -5707,7 +5683,6 @@ for i in range(5):
     tk_timerStartLaneMaxlengh.append(tk.IntVar())
     tk_timerStartDistance.append(tk.IntVar())
 
-
 tk_timerDayVar = [[None] * 7 for i in range(5)]
 
 ChkBtnDayGroup = [[None] * 7 for i in range(5)]
@@ -5731,7 +5706,6 @@ RdBtn_Random = [None] * 5
 RdBtn_ByLane = [None] * 5
 RdBtn_Perimeter = [None] * 5
 
-
 for i in range(5):
     ChkBtnEnableGroup[i] = tk.Checkbutton(
         SheetTimer[i],
@@ -5743,17 +5717,16 @@ for i in range(5):
     )
     ChkBtnEnableGroup[i].place(x=20, y=0, height=25, width=380)
 
-    FrameStartGroup[i] = tk.Frame(SheetTimer[i], borderwidth="1", relief=tk.SUNKEN)
+    FrameStartGroup[i] = tk.Frame(SheetTimer[i],
+                                  borderwidth="1",
+                                  relief=tk.SUNKEN)
     FrameStartGroup[i].place(x=20, y=30, height=115, width=350)
-    startText = (
-        "Mower START at "
-        + str(tk_timerStartTimehour[i].get())
-        + ":"
-        + str(tk_timerStartTimeMinute[i].get())
-    )
-    tk.Label(FrameStartGroup[i], text=startText, font=("Arial", 12), fg="green").place(
-        x=0, y=10, height=15, width=300
-    )
+    startText = ("Mower START at " + str(tk_timerStartTimehour[i].get()) +
+                 ":" + str(tk_timerStartTimeMinute[i].get()))
+    tk.Label(FrameStartGroup[i],
+             text=startText,
+             font=("Arial", 12),
+             fg="green").place(x=0, y=10, height=15, width=300)
     SliderHourStartGroup[i] = tk.Scale(
         FrameStartGroup[i],
         command=SliderHourStartGroup_click(i),
@@ -5773,24 +5746,21 @@ for i in range(5):
         orient="horizontal",
     )
     SliderMinuteStartGroup[i].place(x=80, y=70, height=40, width=265)
-    tk.Label(FrameStartGroup[i], text="Hour :", font=("Arial", 14), fg="green").place(
-        x=10, y=30, height=40, width=70
-    )
-    tk.Label(FrameStartGroup[i], text="Minute :", font=("Arial", 14), fg="green").place(
-        x=10, y=70, height=40, width=70
-    )
+    tk.Label(FrameStartGroup[i], text="Hour :", font=("Arial", 14),
+             fg="green").place(x=10, y=30, height=40, width=70)
+    tk.Label(FrameStartGroup[i],
+             text="Minute :",
+             font=("Arial", 14),
+             fg="green").place(x=10, y=70, height=40, width=70)
 
-    FrameStopGroup[i] = tk.Frame(SheetTimer[i], borderwidth="1", relief=tk.SUNKEN)
+    FrameStopGroup[i] = tk.Frame(SheetTimer[i],
+                                 borderwidth="1",
+                                 relief=tk.SUNKEN)
     FrameStopGroup[i].place(x=380, y=30, height=115, width=350)
-    stopText = (
-        "Mower STOP at "
-        + str(tk_timerStopTimehour[i].get())
-        + ":"
-        + str(tk_timerStopTimeMinute[i].get())
-    )
-    tk.Label(FrameStopGroup[i], text=stopText, font=("Arial", 12), fg="green").place(
-        x=0, y=10, height=15, width=300
-    )
+    stopText = ("Mower STOP at " + str(tk_timerStopTimehour[i].get()) + ":" +
+                str(tk_timerStopTimeMinute[i].get()))
+    tk.Label(FrameStopGroup[i], text=stopText, font=("Arial", 12),
+             fg="green").place(x=0, y=10, height=15, width=300)
     SliderHourStopGroup[i] = tk.Scale(
         FrameStopGroup[i],
         from_=0,
@@ -5809,16 +5779,16 @@ for i in range(5):
         orient="horizontal",
     )
     SliderMinuteStopGroup[i].place(x=80, y=70, height=40, width=265)
-    tk.Label(FrameStopGroup[i], text="Hour :", font=("Arial", 14), fg="green").place(
-        x=10, y=30, height=40, width=70
-    )
-    tk.Label(FrameStopGroup[i], text="Minute :", font=("Arial", 14), fg="green").place(
-        x=10, y=70, height=40, width=70
-    )
+    tk.Label(FrameStopGroup[i], text="Hour :", font=("Arial", 14),
+             fg="green").place(x=10, y=30, height=40, width=70)
+    tk.Label(FrameStopGroup[i],
+             text="Minute :",
+             font=("Arial", 14),
+             fg="green").place(x=10, y=70, height=40, width=70)
 
-    tk.Label(SheetTimer[i], text="Where to start on the Perimeter :", fg="green").place(
-        x=10, y=180, height=20, width=780
-    )
+    tk.Label(SheetTimer[i],
+             text="Where to start on the Perimeter :",
+             fg="green").place(x=10, y=180, height=20, width=780)
     SliderStartDistanceGroup[i] = tk.Scale(
         SheetTimer[i],
         from_=0,
@@ -5830,17 +5800,20 @@ for i in range(5):
     )
     SliderStartDistanceGroup[i].place(x=10, y=200, height=35, width=780)
 
-    FrameMowPattern[i] = tk.Frame(SheetTimer[i], borderwidth="1", relief=tk.SUNKEN)
+    FrameMowPattern[i] = tk.Frame(SheetTimer[i],
+                                  borderwidth="1",
+                                  relief=tk.SUNKEN)
     FrameMowPattern[i].place(x=410, y=240, height=120, width=180)
-    tk.Label(FrameMowPattern[i], text="MOW PATTERN :", fg="green").pack(
-        side="top", anchor="w"
-    )
-    RdBtn_Random[i] = tk.Radiobutton(
-        FrameMowPattern[i], text="Random", variable=tk_timerStartMowPattern[i], value=0
-    ).pack(side="top", anchor="w")
-    RdBtn_ByLane[i] = tk.Radiobutton(
-        FrameMowPattern[i], text="By Lane", variable=tk_timerStartMowPattern[i], value=1
-    ).pack(side="top", anchor="w")
+    tk.Label(FrameMowPattern[i], text="MOW PATTERN :",
+             fg="green").pack(side="top", anchor="w")
+    RdBtn_Random[i] = tk.Radiobutton(FrameMowPattern[i],
+                                     text="Random",
+                                     variable=tk_timerStartMowPattern[i],
+                                     value=0).pack(side="top", anchor="w")
+    RdBtn_ByLane[i] = tk.Radiobutton(FrameMowPattern[i],
+                                     text="By Lane",
+                                     variable=tk_timerStartMowPattern[i],
+                                     value=1).pack(side="top", anchor="w")
     RdBtn_Perimeter[i] = tk.Radiobutton(
         FrameMowPattern[i],
         text="Perimeter",
@@ -5848,11 +5821,12 @@ for i in range(5):
         value=2,
     ).pack(side="top", anchor="w")
 
-    FrameLaneParameter[i] = tk.Frame(SheetTimer[i], borderwidth="1", relief=tk.SUNKEN)
+    FrameLaneParameter[i] = tk.Frame(SheetTimer[i],
+                                     borderwidth="1",
+                                     relief=tk.SUNKEN)
     FrameLaneParameter[i].place(x=20, y=240, height=120, width=380)
-    tk.Label(FrameLaneParameter[i], text="Maximum Lane Lenght :", fg="green").place(
-        x=10, y=0, height=20, width=360
-    )
+    tk.Label(FrameLaneParameter[i], text="Maximum Lane Lenght :",
+             fg="green").place(x=10, y=0, height=20, width=360)
     SliderStartLaneMaxlenghGroup[i] = tk.Scale(
         FrameLaneParameter[i],
         from_=1,
@@ -5864,19 +5838,26 @@ for i in range(5):
     )
     SliderStartLaneMaxlenghGroup[i].place(x=10, y=20, height=35, width=360)
 
-    tk.Label(
-        FrameLaneParameter[i], text="Roll Dir", font=("Arial", 12), fg="green"
-    ).place(x=10, y=60, height=15, width=80)
-    RdBtn_Right = tk.Radiobutton(
-        FrameLaneParameter[i], text="Right", variable=tk_timerStartRollDir[i], value=0
-    ).place(x=10, y=75, height=20, width=80)
-    RdBtn_Left = tk.Radiobutton(
-        FrameLaneParameter[i], text="Left ", variable=tk_timerStartRollDir[i], value=1
-    ).place(x=10, y=95, height=20, width=80)
+    tk.Label(FrameLaneParameter[i],
+             text="Roll Dir",
+             font=("Arial", 12),
+             fg="green").place(x=10, y=60, height=15, width=80)
+    RdBtn_Right = tk.Radiobutton(FrameLaneParameter[i],
+                                 text="Right",
+                                 variable=tk_timerStartRollDir[i],
+                                 value=0).place(x=10,
+                                                y=75,
+                                                height=20,
+                                                width=80)
+    RdBtn_Left = tk.Radiobutton(FrameLaneParameter[i],
+                                text="Left ",
+                                variable=tk_timerStartRollDir[i],
+                                value=1).place(x=10, y=95, height=20, width=80)
 
-    tk.Label(
-        FrameLaneParameter[i], text="START Lane", font=("Arial", 12), fg="green"
-    ).place(x=150, y=60, height=15, width=90)
+    tk.Label(FrameLaneParameter[i],
+             text="START Lane",
+             font=("Arial", 12),
+             fg="green").place(x=150, y=60, height=15, width=90)
     SliderStartNrLaneGroup[i] = tk.Scale(
         FrameLaneParameter[i],
         from_=1,
@@ -5886,9 +5867,10 @@ for i in range(5):
         orient="horizontal",
     ).place(x=160, y=75, height=40, width=70)
 
-    tk.Label(
-        FrameLaneParameter[i], text="START Area", font=("Arial", 12), fg="green"
-    ).place(x=260, y=60, height=15, width=90)
+    tk.Label(FrameLaneParameter[i],
+             text="START Area",
+             font=("Arial", 12),
+             fg="green").place(x=260, y=60, height=15, width=90)
     SliderStartArea[i] = tk.Scale(
         FrameLaneParameter[i],
         from_=1,
@@ -5925,15 +5907,13 @@ def ButtonSendTimerToDue_click():
         myRobot.TimerstartRollDir[i] = tk_timerStartRollDir[i].get()
         myRobot.TimerstartLaneMaxlengh[i] = tk_timerStartLaneMaxlengh[i].get()
         # the 7 days of the week as byte
-        myRobot.TimerdaysOfWeek[i] = (
-            1 * int(tk_timerDayVar[i][0].get())
-            + 2 * int(tk_timerDayVar[i][1].get())
-            + 4 * int(tk_timerDayVar[i][2].get())
-            + 8 * int(tk_timerDayVar[i][3].get())
-            + 16 * int(tk_timerDayVar[i][4].get())
-            + 32 * int(tk_timerDayVar[i][5].get())
-            + 64 * int(tk_timerDayVar[i][6].get())
-        )
+        myRobot.TimerdaysOfWeek[i] = (1 * int(tk_timerDayVar[i][0].get()) +
+                                      2 * int(tk_timerDayVar[i][1].get()) +
+                                      4 * int(tk_timerDayVar[i][2].get()) +
+                                      8 * int(tk_timerDayVar[i][3].get()) +
+                                      16 * int(tk_timerDayVar[i][4].get()) +
+                                      32 * int(tk_timerDayVar[i][5].get()) +
+                                      64 * int(tk_timerDayVar[i][6].get()))
 
         Send_reqSetting_message(
             "Timer",
@@ -5971,9 +5951,8 @@ def ButtonSendTimerToDue_click():
 
 
 def ButtonReadTimerFromDue_click():
-    Send_reqSetting_message(
-        "Timer", "r", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
-    )
+    Send_reqSetting_message("Timer", "r", "0", "0", "0", "0", "0", "0", "0",
+                            "0", "0", "0", "0")
 
 
 ButtonRequestTimerFomMower = tk.Button(TabTimer)
@@ -5981,24 +5960,21 @@ ButtonRequestTimerFomMower.place(x=10, y=400, height=25, width=150)
 ButtonRequestTimerFomMower.configure(command=ButtonReadTimerFromDue_click)
 ButtonRequestTimerFomMower.configure(text="Read Timer From Mower")
 
-
 ButtonSetTimerApply = tk.Button(TabTimer)
 ButtonSetTimerApply.place(x=300, y=400, height=25, width=150)
-ButtonSetTimerApply.configure(
-    command=ButtonSendTimerToDue_click, text="Send Timer To Mower"
-)
+ButtonSetTimerApply.configure(command=ButtonSendTimerToDue_click,
+                              text="Send Timer To Mower")
 
-ButtonBackHome = tk.Button(TabTimer, image=imgBack, command=ButtonBackToMain_click)
+ButtonBackHome = tk.Button(TabTimer,
+                           image=imgBack,
+                           command=ButtonBackToMain_click)
 ButtonBackHome.place(x=680, y=310, height=120, width=120)
-
-
 """ THE MAIN PAGE ***************************************************"""
 
 
 def ButtonPowerOff_click():
     returnval = messagebox.askyesno(
-        "Info", "Are you sure you want to shutdown all the PCB ?"
-    )
+        "Info", "Are you sure you want to shutdown all the PCB ?")
     if returnval:
         button_stop_all_click()
         send_pfo_message("rt", "1", "2", "3", "4", "5", "6")
@@ -6029,7 +6005,9 @@ ButtonTest.configure(command=ButtonTest_click)
 ButtonPlot = tk.Button(MainPage, image=imgPlot, command=ButtonPlot_click)
 ButtonPlot.place(x=10, y=145, width=100, height=130)
 
-ButtonSchedule = tk.Button(MainPage, image=imgSchedule, command=ButtonSchedule_click)
+ButtonSchedule = tk.Button(MainPage,
+                           image=imgSchedule,
+                           command=ButtonSchedule_click)
 ButtonSchedule.place(x=145, y=145, width=100, height=130)
 
 ButtonError = tk.Button(MainPage, image=imgError, command=ButtonError_click)
@@ -6041,20 +6019,27 @@ ButtonGps.place(x=415, y=145, width=100, height=130)
 ButtonRfid = tk.Button(MainPage, image=imgRfid, command=ButtonRfid_click)
 ButtonRfid.place(x=550, y=145, width=100, height=130)
 
-
-ButtonPowerOff = tk.Button(MainPage, image=imgPowerOff, command=ButtonPowerOff_click)
+ButtonPowerOff = tk.Button(MainPage,
+                           image=imgPowerOff,
+                           command=ButtonPowerOff_click)
 ButtonPowerOff.place(x=685, y=280, width=100, height=120)
 
-Buttonimgardu = tk.Button(MainPage, image=imgArdumower, command=ButtonInfo_click)
+Buttonimgardu = tk.Button(MainPage,
+                          image=imgArdumower,
+                          command=ButtonInfo_click)
 Buttonimgardu.place(x=10, y=280, height=120, width=650)
 
-Datetext = tk.Label(
-    MainPage, text="", textvariable=tk_date_Now, font=("Arial", 20), fg="red"
-)
+Datetext = tk.Label(MainPage,
+                    text="",
+                    textvariable=tk_date_Now,
+                    font=("Arial", 20),
+                    fg="red")
 Datetext.place(x=10, y=400, height=25, width=240)
-Statustext = tk.Label(
-    MainPage, text="", textvariable=tk_MainStatusLine, font=("Arial", 20), fg="red"
-)
+Statustext = tk.Label(MainPage,
+                      text="",
+                      textvariable=tk_MainStatusLine,
+                      font=("Arial", 20),
+                      fg="red")
 Statustext.place(x=240, y=400, height=25, width=400)
 
 # DESACTIVATE THE BT TO SAVE BATTERY
@@ -6070,7 +6055,8 @@ subprocess.Popen("sudo rfkill block bluetooth", shell=True)
 
 
 def check_keyboard(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         if e.char == "m":
             buttonBlade_start_click()
         if e.char == "q":
@@ -6078,22 +6064,26 @@ def check_keyboard(e):
 
 
 def kbd_spaceKey(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         button_stop_all_click()
 
 
 def kbd_leftKey(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         ButtonLeft_click()
 
 
 def kbd_rightKey(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         ButtonRight_click()
 
 
 def kbd_upKey(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         send_var_message(
             "w",
             "motorSpeedMaxPwm",
@@ -6110,7 +6100,8 @@ def kbd_upKey(e):
 
 
 def kbd_downKey(e):
-    if (page_list[mymower.focusOnPage] == "MANUAL") & (ManualKeyboardUse.get() == 1):
+    if (page_list[mymower.focusOnPage] == "MANUAL") & (
+            ManualKeyboardUse.get() == 1):
         ButtonStop_click()
 
 
@@ -6121,12 +6112,10 @@ fen1.bind("<Up>", kbd_upKey)
 fen1.bind("<Down>", kbd_downKey)
 fen1.bind("<space>", kbd_spaceKey)
 
-
 checkSerial()
 read_all_setting()
 read_time_setting()
 send_req_message("PERI", "1000", "1", "1", "0", "0", "0")
 BtnGpsRecordStop_click()
-
 
 fen1.mainloop()

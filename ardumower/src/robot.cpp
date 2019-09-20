@@ -972,7 +972,11 @@ void Robot::checkErrorCounter()
     {
       // set to fatal error if any temporary error counter reaches 10
       if (errorCounter[i] > 10)
+      {
+        Console.print("Error Counter > 10 for counter num ");
+        Console.println(i);
         setNextState(STATE_ERROR, 0);
+      }
     }
   }
 }
@@ -2789,7 +2793,7 @@ void Robot::readSensors()
       { // all the other state are distance limited
         //need to find a way in tracking mode maybe timeout error if the tracking is perfect, the mower is so near the wire than the mag is near 0 (adjust the timedOutIfBelowSmag)
         //if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
-        Console.println("Error: Timeout , perimeter too far away");
+        Console.println("Error: perimeter too far away");
         addErrorCounter(ERR_PERIMETER_TIMEOUT);
         setNextState(STATE_ERROR, 0);
         return;
@@ -3097,6 +3101,7 @@ void Robot::setNextState(byte stateNew, byte dir)
       Console.print("Total duration ");
       Console.print(int(millis() - stateStartTime) / 1000);
       Console.println(" secondes ");
+      nextTimeTimer = millis() + 1200000; // only check again the timer after 20 minutes to avoid repetition
     }
     delayToReadVoltageStation = millis() + 1500; // changed from 2500
     //bber14 no accel here ?????
@@ -4971,7 +4976,7 @@ void Robot::readDHT22()
   // unsigned long timeStart = millis();
   if ((DHT22Use) && (millis() > nextTimeReadDHT22))
   {
-    nextTimeReadDHT22 = nextTimeReadDHT22 + 30000; // read only each 30 Secondes
+    nextTimeReadDHT22 = nextTimeReadDHT22 + 60000; // read only each 30 Secondes
     humidityDht = dht.readHumidity();
     temperatureDht = dht.readTemperature();
     if (temperatureDht >= maxTemperature)
@@ -5818,7 +5823,7 @@ void Robot::loop()
       if (millis() - stateStartTime > 10000)
         checkTimer(); //only check timer after 10 second to avoid restart before charging
     }
-
+    readDHT22();
     break;
 
   case STATE_STATION_CHARGING:

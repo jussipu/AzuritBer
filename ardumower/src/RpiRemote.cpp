@@ -855,8 +855,6 @@ void RpiRemote::RaspberryPISendStat()
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->temperatureDht;
   lineToSend = lineToSend + ",";
-  lineToSend = lineToSend + robot->raspiTemp;
-  lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->loopsPerSec;
   lineToSend = lineToSend + ",";
 
@@ -1318,6 +1316,8 @@ void RpiRemote::readWrite_var()
         else
           robot->gpsUse = true;
       }
+      if (strncmp(variable_name[i], "raspiTemp", 20) == 0)
+        robot->raspiTemp = atoi(received_value[i]); // raspiTemp
     }
   }
   if (readOrWrite == 'r')

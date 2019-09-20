@@ -902,24 +902,26 @@ void RemoteControl::sendRainMenu(bool update)
   sendYesNo(robot->rainUse);
   serialPort->print(F("|m01~Counter "));
   serialPort->print(robot->rainCounter);
-  serialPort->println(F("|m02~Value"));
+  serialPort->print(F(" / Value"));
   serialPort->print(robot->rain);
-  sendSlider("m07", F("WS rain: 1=15 min, 2=60 min, 3=Actual hr"), robot->wsRainData, "", 1, 3, 1);
+  sendSlider("m07", F("WS src: 1=15m, 2=60m, 3=Act. hr, NOW:"), robot->wsRainData, "", 1, 3, 1);
   sendSlider("m08", F("Rain read delay, seconds"), robot->rainReadDelay, "", 1, 3600, 1);
 
-  serialPort->println(F("|m03~DHT22 Use "));
+  serialPort->print(F("|m03~DHT22 Use: "));
   sendYesNo(robot->DHT22Use);
-  serialPort->println(F("|m04~DHT temp "));
+  serialPort->print(F("|m04~DHT "));
   serialPort->print(robot->temperatureDht);
-  serialPort->println(F("|m05~Humidity "));
+  serialPort->print(F(" C / "));
   serialPort->print(robot->humidityDht);
-  sendSlider("m06", F("DHT max temp"), robot->maxTemperature, "", 1, 80, 20);
+  serialPort->print(F(" %"));
+  sendSlider("m06", F("DHT max temp"), robot->maxTemperature, "", 1, 80, 40);
 
-  serialPort->println(F("|m09~Raspberry temp Use "));
+  serialPort->print(F("|m09~RaspPi temp Use: "));
   sendYesNo(robot->raspiTempUse);
-  serialPort->println(F("|m10~Raspberry temp "));
+  serialPort->print(F("|m10~RasPi CPU "));
   serialPort->print(robot->raspiTemp);
-  sendSlider("m11", F("Raspberry max temp"), robot->raspiTempMax, "", 1, 100, 40);
+  serialPort->print(F(" C"));
+  sendSlider("m11", F("RasPi max temp"), robot->raspiTempMax, "", 1, 100, 50);
 
   serialPort->println("}");
 }
