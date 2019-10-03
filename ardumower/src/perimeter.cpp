@@ -304,14 +304,14 @@ float PerimeterClass::getFilterQuality(byte idx)
   return filterQuality[idx];
 }
 
-boolean PerimeterClass::isInside()
+bool PerimeterClass::isInside()
 {
 
   return (isInside(IDX_LEFT));
   //return (isInside(IDX_LEFT) && isInside(IDX_RIGHT));
 }
 
-boolean PerimeterClass::isInside(byte idx)
+bool PerimeterClass::isInside(byte idx)
 {
   if (abs(mag[idx]) > 600)
   {
@@ -332,7 +332,7 @@ bool PerimeterClass::signalTimedOut()
   return (signalTimedOut(IDX_LEFT) && signalTimedOut(IDX_RIGHT));
 }
 
-boolean PerimeterClass::signalTimedOut(byte idx)
+bool PerimeterClass::signalTimedOut(byte idx)
 {
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag)
     return true;

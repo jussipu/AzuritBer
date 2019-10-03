@@ -34,7 +34,7 @@ void DHT::begin(void)
   DEBUG_PRINTLN(_maxcycles, DEC);
 }
 
-//boolean S == Scale.  True == Fahrenheit; False == Celcius
+//bool S == Scale.  True == Fahrenheit; False == Celcius
 float DHT::readTemperature(bool S, bool force)
 {
   float f = NAN;
@@ -102,7 +102,7 @@ float DHT::readHumidity(bool force)
   return f;
 }
 
-//boolean isFahrenheit: True == Fahrenheit; False == Celcius
+//bool isFahrenheit: True == Fahrenheit; False == Celcius
 float DHT::computeHeatIndex(float temperature, float percentHumidity, bool isFahrenheit)
 {
   // Using both Rothfusz and Steadman's equations
@@ -136,7 +136,7 @@ float DHT::computeHeatIndex(float temperature, float percentHumidity, bool isFah
   return isFahrenheit ? hi : convertFtoC(hi);
 }
 
-boolean DHT::read(bool force)
+bool DHT::read(bool force)
 {
   // Check if sensor was read less than two seconds ago and return early
   // to use last reading.

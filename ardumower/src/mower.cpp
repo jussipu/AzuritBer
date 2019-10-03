@@ -195,6 +195,8 @@ Mower::Mower()
   maxLenghtByLane = 9;
   justChangeLaneDir = true;
   mowPatternCurr = MOW_RANDOM; // was MOW_LANES
+  compassRollSpeedCoeff = 40;  //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
+
   // ------ model R/C ------------------------------------
   remoteUse = 1; // use model remote control (R/C)?
   // ------ battery -------------------------------------

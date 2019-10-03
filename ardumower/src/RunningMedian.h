@@ -67,7 +67,7 @@ class RunningMedian
 #endif
 
   protected:
-    boolean _sorted;
+    bool _sorted;
     uint8_t _size;
     uint8_t _cnt;
     uint8_t _idx;

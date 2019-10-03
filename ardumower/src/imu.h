@@ -109,7 +109,7 @@ class IMUClass {
     float gyroAccYaw;
     float ecartYprCompass;
     float nextTimeAdjustYaw;
-    boolean calibrationAvail;
+    bool calibrationAvail;
     // --------- compass state --------------------------
 
     point_float_t comLast;
@@ -119,11 +119,11 @@ class IMUClass {
     point_float_t comOfs;
     point_float_t comScale;
     float comYaw;         // compass heading (radiant, raw)
-    boolean useComCalibration;
+    bool useComCalibration;
     // calibrate compass sensor
     void calibComStartStop();
     void calibComUpdate();
-    boolean newMinMaxFound();
+    bool newMinMaxFound();
     void calibGyro();
     // ----------------------
     /*  // ---- compass ------
@@ -191,11 +191,11 @@ class IMUClass {
     unsigned long gyroCalStopTime;
     unsigned long comMinMaxTimeout;
 
-    boolean foundNewMinMax;
+    bool foundNewMinMax;
     bool calibrateGyro();
 
     void printPt(point_float_t p);
-    void loadSaveCalib(boolean readflag);
+    void loadSaveCalib(bool readflag);
     void initSensors();
     //void readCompassMPU9150();
     void readCompassHMC5883();

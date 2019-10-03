@@ -6,12 +6,12 @@
 class FlashClass
 {
 public:
-  boolean verboseOutput;
+  bool verboseOutput;
   FlashClass();
   byte read(uint32_t address);
   byte *readAddress(uint32_t address);
-  boolean write(uint32_t address, byte value);
-  boolean write(uint32_t address, byte *data, uint32_t dataLength);
+  bool write(uint32_t address, byte value);
+  bool write(uint32_t address, byte *data, uint32_t dataLength);
   void dump();
   void test();
 };
@@ -41,7 +41,7 @@ int eeread(int &ee, T &value)
 }
 
 template <class T>
-int eereadwrite(boolean readflag, int &ee, T &value)
+int eereadwrite(bool readflag, int &ee, T &value)
 {
   byte *p = (byte *)(void *)&value;
   unsigned int i;
@@ -56,6 +56,6 @@ int eereadwrite(boolean readflag, int &ee, T &value)
   return i;
 }
 
-int eereadwriteString(boolean readflag, int &ee, String &value);
+int eereadwriteString(bool readflag, int &ee, String &value);
 
 #endif

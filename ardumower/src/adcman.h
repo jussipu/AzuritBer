@@ -93,8 +93,8 @@ private:
   virtual void init(byte ch);
   virtual void postProcess(byte ch);
   ADCStruct channels[ADC_CHANNEL_COUNT_MAX];
-  boolean loadCalib();
-  void loadSaveCalib(boolean readflag);
+  bool loadCalib();
+  void loadSaveCalib(bool readflag);
   void saveCalib();
   void printCalib();
 };

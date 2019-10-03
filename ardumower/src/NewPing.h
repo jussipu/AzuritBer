@@ -214,18 +214,18 @@ class NewPing {
     static unsigned int convert_in(unsigned int echoTime);
 #if TIMER_ENABLED == true
     void ping_timer(void (*userFunc)(void), unsigned int max_cm_distance = 0);
-    boolean check_timer();
+    bool check_timer();
     unsigned long ping_result;
     static void timer_us(unsigned int frequency, void (*userFunc)(void));
     static void timer_ms(unsigned long frequency, void (*userFunc)(void));
     static void timer_stop();
 #endif
   private:
-    boolean ping_trigger();
+    bool ping_trigger();
     void set_max_distance(unsigned int max_cm_distance);
 #if TIMER_ENABLED == true
-    boolean ping_trigger_timer(unsigned int trigger_delay);
-    boolean ping_wait_timer();
+    bool ping_trigger_timer(unsigned int trigger_delay);
+    bool ping_wait_timer();
     static void timer_setup();
     static void timer_ms_cntdwn();
 #endif

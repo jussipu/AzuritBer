@@ -21,12 +21,12 @@ public:
   int getMagnitude(byte idx);
   int getSmoothMagnitude(byte idx);
   // inside perimeter (true) or outside (false)?
-  boolean isInside();
-  boolean isInside(byte idx);
+  bool isInside();
+  bool isInside(byte idx);
   // perimeter signal timed out? (e.g. due to broken wire)
   bool signalTimedOut();
   void resetTimedOut();
-  boolean signalTimedOut(byte idx);
+  bool signalTimedOut(byte idx);
   int16_t getSignalMin(byte idx);
   int16_t getSignalMax(byte idx);
   int16_t getSignalAvg(byte idx);

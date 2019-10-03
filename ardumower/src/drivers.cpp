@@ -28,7 +28,6 @@
 //#include "ardumower.h"
 #include <Wire.h>
 
-
 char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 // ---- print helpers ------------------------------------------------------------
@@ -39,20 +38,21 @@ void StreamPrint_progmem(Print &out, PGM_P format, ...)
   // so as to avoid too much memory use
   char formatString[128], *ptr;
 
-  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
+  strncpy(formatString, format, sizeof(formatString)); // copy in from program mem
 
   // null terminate - leave char since we might need it in worst case for result's \0
-  formatString[ sizeof(formatString) - 2 ] = '\0';
-  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
+  formatString[sizeof(formatString) - 2] = '\0';
+  ptr = &formatString[strlen(formatString) + 1]; // our result buffer...
   va_list args;
-  va_start (args, format);
-  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
-  va_end (args);
-  formatString[ sizeof(formatString) - 1 ] = '\0';
+  va_start(args, format);
+  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args);
+  va_end(args);
+  formatString[sizeof(formatString) - 1] = '\0';
   out.print(ptr);
 }
 
-String verToString(int v) {
+String verToString(int v)
+{
   char buf[20] = {0};
   int a = v >> 12;
   int b = (v >> 8) & 0xF;
@@ -62,21 +62,27 @@ String verToString(int v) {
   return String(buf);
 }
 
-int freeRam () {
+int freeRam()
+{
   extern int __heap_start, *__brkval;
   int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
 // rescale to -PI..+PI
 double scalePI(double v)
 {
   double d = v;
-  while (d < 0) d += 2 * PI;
-  while (d >= 2 * PI) d -= 2 * PI;
-  if (d >= PI) return (-2 * PI + d);
-  else if (d < -PI) return (2 * PI + d);
-  else return d;
+  while (d < 0)
+    d += 2 * PI;
+  while (d >= 2 * PI)
+    d -= 2 * PI;
+  if (d >= PI)
+    return (-2 * PI + d);
+  else if (d < -PI)
+    return (2 * PI + d);
+  else
+    return d;
 }
 
 // computes minimum distance between x radiant (current-value) and w radiant (set-value)
@@ -89,21 +95,26 @@ double distancePI(double x, double w)
   // w=0   degree, x=190 degree => 170 degree
   // w=190 degree, x=0   degree => -170 degree
   double d = scalePI(w - x);
-  if (d < -PI) d = d + 2 * PI;
-  else if (d > PI) d = d - 2 * PI;
+  if (d < -PI)
+    d = d + 2 * PI;
+  else if (d > PI)
+    d = d - 2 * PI;
   return d;
 }
 
-int time2minutes(timehm_t time) {
+int time2minutes(timehm_t time)
+{
   return (time.hour * 60 + time.minute);
 }
 
-void minutes2time(int minutes, timehm_t &time) {
-  time.hour   = minutes / 60;
+void minutes2time(int minutes, timehm_t &time)
+{
+  time.hour = minutes / 60;
   time.minute = minutes % 60;
 }
 
-String time2str(timehm_t time) {
+String time2str(timehm_t time)
+{
   String s = String(time.hour / 10);
   s += (time.hour % 10);
   s += ":";
@@ -112,7 +123,8 @@ String time2str(timehm_t time) {
   return s;
 }
 
-String date2str(date_t date) {
+String date2str(date_t date)
+{
   String s = dayOfWeek[date.dayOfWeek];
   s += " ";
   s += date.day / 10;
@@ -125,17 +137,20 @@ String date2str(date_t date) {
   return s;
 }
 
-
 // L298N motor driver
 // IN2/C(10)/PinPWM   IN1/D(12)/PinDir
 // H                  L     Forward
 // L                  H     Reverse
-void setL298N(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    digitalWrite(pinDir, HIGH) ;
+void setL298N(int pinDir, int pinPWM, int speed)
+{
+  if (speed < 0)
+  {
+    digitalWrite(pinDir, HIGH);
     PinMan.analogWrite(pinPWM, ((byte)speed));
-  } else {
-    digitalWrite(pinDir, LOW) ;
+  }
+  else
+  {
+    digitalWrite(pinDir, LOW);
     PinMan.analogWrite(pinPWM, ((byte)speed));
   }
 }
@@ -144,12 +159,16 @@ void setL298N(int pinDir, int pinPWM, int speed) {
 // D5/D6 PinPWM       D4/D7 PinDir
 // H                  L     Forward
 // H                  H     Reverse
-void setRomeoMotor(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    digitalWrite(pinDir, HIGH) ;
+void setRomeoMotor(int pinDir, int pinPWM, int speed)
+{
+  if (speed < 0)
+  {
+    digitalWrite(pinDir, HIGH);
     PinMan.analogWrite(pinPWM, abs(speed));
-  } else {
-    digitalWrite(pinDir, LOW) ;
+  }
+  else
+  {
+    digitalWrite(pinDir, LOW);
     PinMan.analogWrite(pinPWM, abs(speed));
   }
 }
@@ -158,12 +177,16 @@ void setRomeoMotor(int pinDir, int pinPWM, int speed) {
 // PinPWM             PinDir
 // H                  H     Forward
 // H                  L     Reverse
-void setL9958(int pinDir, int pinPWM, int speed) {
-  if (speed > 0) {
-    digitalWrite(pinDir, HIGH) ;
+void setL9958(int pinDir, int pinPWM, int speed)
+{
+  if (speed > 0)
+  {
+    digitalWrite(pinDir, HIGH);
     PinMan.analogWrite(pinPWM, abs(speed));
-  } else {
-    digitalWrite(pinDir, LOW) ;
+  }
+  else
+  {
+    digitalWrite(pinDir, LOW);
     PinMan.analogWrite(pinPWM, abs(speed));
   }
 }
@@ -174,12 +197,16 @@ void setL9958(int pinDir, int pinPWM, int speed) {
 // IN1 PinPWM         IN2 PinDir
 // PWM                L     Forward
 // nPWM               H     Reverse
-void setMC33926(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    digitalWrite(pinDir, HIGH) ;
+void setMC33926(int pinDir, int pinPWM, int speed)
+{
+  if (speed < 0)
+  {
+    digitalWrite(pinDir, HIGH);
     PinMan.analogWrite(pinPWM, 255 - ((byte)abs(speed)));
-  } else {
-    digitalWrite(pinDir, LOW) ;
+  }
+  else
+  {
+    digitalWrite(pinDir, LOW);
     PinMan.analogWrite(pinPWM, ((byte)speed));
   }
 }
@@ -187,68 +214,75 @@ void setMC33926(int pinDir, int pinPWM, int speed) {
 // ---- sensor drivers --------------------------------------------------------------
 
 // DS1307 real time driver
-boolean readDS1307(datetime_t &dt) {
+bool readDS1307(datetime_t &dt)
+{
   byte buf[8];
-  if (I2CreadFrom(DS1307_ADDRESS, 0x00, 8, buf, 3) != 8) {
+  if (I2CreadFrom(DS1307_ADDRESS, 0x00, 8, buf, 3) != 8)
+  {
     Console.println("DS1307 comm error");
     //addErrorCounter(ERR_RTC_COMM);
     return false;
   }
-  if (   ((buf[0] >> 7) != 0) || ((buf[1] >> 7) != 0) || ((buf[2] >> 7) != 0) || ((buf[3] >> 3) != 0)
-         || ((buf[4] >> 6) != 0) || ((buf[5] >> 5) != 0) || ((buf[7] & B01101100) != 0) ) {
+  if (((buf[0] >> 7) != 0) || ((buf[1] >> 7) != 0) || ((buf[2] >> 7) != 0) || ((buf[3] >> 3) != 0) || ((buf[4] >> 6) != 0) || ((buf[5] >> 5) != 0) || ((buf[7] & B01101100) != 0))
+  {
     Console.println("DS1307 data1 error");
     //addErrorCounter(ERR_RTC_DATA);
     return false;
   }
   datetime_t r;
-  r.time.minute    = 10 * ((buf[1] >> 4) & B00000111) + (buf[1] & B00001111);
-  r.time.hour      = 10 * ((buf[2] >> 4) & B00000111) + (buf[2] & B00001111);
+  r.time.minute = 10 * ((buf[1] >> 4) & B00000111) + (buf[1] & B00001111);
+  r.time.hour = 10 * ((buf[2] >> 4) & B00000111) + (buf[2] & B00001111);
   r.date.dayOfWeek = (buf[3] & B00000111) - 1;
-  r.date.day       = 10 * ((buf[4] >> 4) & B00000011) + (buf[4] & B00001111);
-  r.date.month     = 10 * ((buf[5] >> 4) & B00000001) + (buf[5] & B00001111);
-  r.date.year      = 10 * ((buf[6] >> 4) & B00001111) + (buf[6] & B00001111);
-  if (    (r.time.minute > 59) || (r.time.hour > 23) || (r.date.dayOfWeek > 6)
-          || (r.date.month > 12)  || (r.date.day > 31)  || (r.date.day < 1)
-          || (r.date.month < 1)   || (r.date.year > 99) ) {
+  r.date.day = 10 * ((buf[4] >> 4) & B00000011) + (buf[4] & B00001111);
+  r.date.month = 10 * ((buf[5] >> 4) & B00000001) + (buf[5] & B00001111);
+  r.date.year = 10 * ((buf[6] >> 4) & B00001111) + (buf[6] & B00001111);
+  if ((r.time.minute > 59) || (r.time.hour > 23) || (r.date.dayOfWeek > 6) || (r.date.month > 12) || (r.date.day > 31) || (r.date.day < 1) || (r.date.month < 1) || (r.date.year > 99))
+  {
     Console.println("DS1307 data2 error");
     //addErrorCounter(ERR_RTC_DATA);
     return false;
   }
-  r.date.year      += 2000;
+  r.date.year += 2000;
   dt = r;
   return true;
 }
 
-boolean setDS1307(datetime_t &dt) {
+bool setDS1307(datetime_t &dt)
+{
   byte buf[7];
-  if (I2CreadFrom(DS1307_ADDRESS, 0x00, 7, buf, 3) != 7) {
+  if (I2CreadFrom(DS1307_ADDRESS, 0x00, 7, buf, 3) != 7)
+  {
     Console.println("DS1307 comm error");
     //addErrorCounter(ERR_RTC_COMM);
     return false;
   }
   buf[0] = buf[0] & B01111111; // enable clock
   buf[1] = ((dt.time.minute / 10) << 4) | (dt.time.minute % 10);
-  buf[2] = ((dt.time.hour   / 10) << 4) | (dt.time.hour   % 10);
+  buf[2] = ((dt.time.hour / 10) << 4) | (dt.time.hour % 10);
   buf[3] = dt.date.dayOfWeek + 1;
-  buf[4] = ((dt.date.day    / 10) << 4) | (dt.date.day    % 10);
-  buf[5] = ((dt.date.month  / 10) << 4) | (dt.date.month  % 10);
-  buf[6] = ((dt.date.year % 100  / 10) << 4) | (dt.date.year % 10);
+  buf[4] = ((dt.date.day / 10) << 4) | (dt.date.day % 10);
+  buf[5] = ((dt.date.month / 10) << 4) | (dt.date.month % 10);
+  buf[6] = ((dt.date.year % 100 / 10) << 4) | (dt.date.year % 10);
   I2CwriteToBuf(DS1307_ADDRESS, 0x00, 7, buf);
   return true;
 }
 
-bool checkAT24C32() {
+bool checkAT24C32()
+{
   byte b = 0;
   int r = 0;
   unsigned int address = 0;
   Wire.beginTransmission(AT24C32_ADDRESS);
-  if (Wire.endTransmission() == 0) {
+  if (Wire.endTransmission() == 0)
+  {
     Wire.beginTransmission(AT24C32_ADDRESS);
     Wire.write(address >> 8);
     Wire.write(address & 0xFF);
-    if (Wire.endTransmission() == 0) {
+    if (Wire.endTransmission() == 0)
+    {
       Wire.requestFrom(AT24C32_ADDRESS, 1);
-      while (Wire.available() > 0 && r < 1) {
+      while (Wire.available() > 0 && r < 1)
+      {
         b = (byte)Wire.read();
         r++;
       }
@@ -258,18 +292,22 @@ bool checkAT24C32() {
 }
 
 //bb
-byte readAT24C32(unsigned int address) {
+byte readAT24C32(unsigned int address)
+{
   byte b = 0;
   int r = 0;
   //unsigned int address = 1021;
   Wire.beginTransmission(AT24C32_ADDRESS);
-  if (Wire.endTransmission() == 0) {
+  if (Wire.endTransmission() == 0)
+  {
     Wire.beginTransmission(AT24C32_ADDRESS);
     Wire.write(address >> 8);
     Wire.write(address & 0xFF);
-    if (Wire.endTransmission() == 0) {
+    if (Wire.endTransmission() == 0)
+    {
       Wire.requestFrom(AT24C32_ADDRESS, 1);
-      while (Wire.available() > 0 && r < 1) {
+      while (Wire.available() > 0 && r < 1)
+      {
         b = (byte)Wire.read();
         r++;
       }
@@ -278,10 +316,12 @@ byte readAT24C32(unsigned int address) {
   return b;
 }
 
-byte writeAT24C32(unsigned int address, byte data) {
+byte writeAT24C32(unsigned int address, byte data)
+{
   //unsigned int address = 1021;
   Wire.beginTransmission(AT24C32_ADDRESS);
-  if (Wire.endTransmission() == 0) {
+  if (Wire.endTransmission() == 0)
+  {
     Wire.beginTransmission(AT24C32_ADDRESS);
     Wire.write(address >> 8);
     Wire.write(address & 0xFF);
@@ -291,18 +331,18 @@ byte writeAT24C32(unsigned int address, byte data) {
   }
 }
 
-
 // measure lawn sensor capacity
-int measureLawnCapacity(int pinSend, int pinReceive) {
+int measureLawnCapacity(int pinSend, int pinReceive)
+{
   int t = 0;
   digitalWrite(pinSend, HIGH);
-  while (digitalRead(pinReceive) == LOW) t++;
+  while (digitalRead(pinReceive) == LOW)
+    t++;
   digitalWrite(pinSend, LOW);
   //t = pulseIn(pinReceive, HIGH);
   //Console.println(t);
   return t;
 }
-
 
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem)
@@ -314,13 +354,6 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
     year = year - 1;
   }
   return (
-           day
-           + (2 * month)
-           + int(6 * (month + 1) / 10)
-           + year
-           + int(year / 4)
-           - int(year / 100)
-           + int(year / 400)
-           + CalendarSystem
-         ) % 7;
+             day + (2 * month) + int(6 * (month + 1) / 10) + year + int(year / 4) - int(year / 100) + int(year / 400) + CalendarSystem) %
+         7;
 }

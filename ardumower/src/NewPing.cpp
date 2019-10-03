@@ -123,7 +123,7 @@ unsigned long NewPing::ping_median(uint8_t it, unsigned int max_cm_distance) {
 // Standard and timer interrupt ping method support functions (not called directly)
 // ---------------------------------------------------------------------------
 
-boolean NewPing::ping_trigger() {
+bool NewPing::ping_trigger() {
 #if DO_BITWISE == true
 #if ONE_PIN_ENABLED == true
   *_triggerMode |= _triggerBit;  // Set trigger pin to output.
@@ -206,7 +206,7 @@ void NewPing::ping_timer(void (*userFunc)(void), unsigned int max_cm_distance) {
 }
 
 
-boolean NewPing::check_timer() {
+bool NewPing::check_timer() {
   if (micros() > _max_time) { // Outside the time-out limit.
     timer_stop();           // Disable timer interrupt
     return false;           // Cancel ping timer.

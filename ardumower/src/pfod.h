@@ -64,7 +64,7 @@ class RemoteControl
   private:
     HardwareSerial* serialPort;
     Robot *robot;
-    boolean pfodCmdComplete;
+    bool pfodCmdComplete;
     String pfodCmd;
     byte pfodState;
     int testmode;
@@ -73,7 +73,7 @@ class RemoteControl
     float value1;
     float value2;
     float value3;
-    boolean dataFromPi;
+    bool dataFromPi;
     int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
     int perimeterCaptureIdx;
     float stringToFloat(String &s);
@@ -101,44 +101,44 @@ class RemoteControl
     void sendTimer(ttimer_t timer);
 
     // main menu
-    void sendMainMenu(boolean update);
-    void sendErrorMenu(boolean update);
-    void sendInfoMenu(boolean update);
-    void sendCommandMenu(boolean update);
+    void sendMainMenu(bool update);
+    void sendErrorMenu(bool update);
+    void sendInfoMenu(bool update);
+    void sendCommandMenu(bool update);
     void processCommandMenu(String pfodCmd);
-    void sendManualMenu(boolean update);
-    void sendCompassMenu(boolean update);
-    void sendTestOdoMenu(boolean update);
+    void sendManualMenu(bool update);
+    void sendCompassMenu(bool update);
+    void sendTestOdoMenu(bool update);
     void processCompassMenu(String pfodCmd);
     void processTestOdoMenu(String pfodCmd);
     void processManualMenu(String pfodCmd);
     void processSettingsMenu(String pfodCmd);
 
     // plotting
-    void sendPlotMenu(boolean update);
+    void sendPlotMenu(bool update);
 
     // settings
-    void sendSettingsMenu(boolean update);
-    void sendMotorMenu(boolean update);
-    void sendMowMenu(boolean update);
-    void sendBumperMenu(boolean update);
-    void sendDropMenu(boolean update);
-    void sendSonarMenu(boolean update);
-    void sendPerimeterMenu(boolean update);
-    void sendLawnSensorMenu(boolean update);
-    void sendImuMenu(boolean update);
-    void sendRemoteMenu(boolean update);
-    void sendBatteryMenu(boolean update);
-    void sendStationMenu(boolean update);
-    void sendOdometryMenu(boolean update);
-    void sendRainMenu(boolean update);
-    void sendGPSMenu(boolean update);
-    void sendRfidMenu(boolean update);
+    void sendSettingsMenu(bool update);
+    void sendMotorMenu(bool update);
+    void sendMowMenu(bool update);
+    void sendBumperMenu(bool update);
+    void sendDropMenu(bool update);
+    void sendSonarMenu(bool update);
+    void sendPerimeterMenu(bool update);
+    void sendLawnSensorMenu(bool update);
+    void sendImuMenu(bool update);
+    void sendRemoteMenu(bool update);
+    void sendBatteryMenu(bool update);
+    void sendStationMenu(bool update);
+    void sendOdometryMenu(bool update);
+    void sendRainMenu(bool update);
+    void sendGPSMenu(bool update);
+    void sendRfidMenu(bool update);
 
-    void sendDateTimeMenu(boolean update);
-    void sendFactorySettingsMenu(boolean update);
+    void sendDateTimeMenu(bool update);
+    void sendFactorySettingsMenu(bool update);
 
-    void sendByLaneMenu(boolean update);
+    void sendByLaneMenu(bool update);
     void processByLaneMenu(String pfodCmd);
 
     void processMotorMenu(String pfodCmd);
@@ -162,9 +162,9 @@ class RemoteControl
     void processInfoMenu(String pfodCmd);
 
     // timer
-    void sendTimerDetailMenu(int timerIdx, boolean update);
+    void sendTimerDetailMenu(int timerIdx, bool update);
     void processTimerDetailMenu(String pfodCmd);
-    void sendTimerMenu(boolean update);
+    void sendTimerMenu(bool update);
     void processTimerMenu(String pfodCmd);
 
 };

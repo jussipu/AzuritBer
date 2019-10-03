@@ -711,13 +711,13 @@ uint16_t I2Cdev::readTimeout = I2CDEV_DEFAULT_READ_TIMEOUT;
   [used by Jeff Rowberg for I2Cdevlib with permission]
 */
 
-boolean Fastwire::waitInt() {
+bool Fastwire::waitInt() {
   int l = 250;
   while (!(TWCR & (1 << TWINT)) && l-- > 0);
   return l > 0;
 }
 
-void Fastwire::setup(int khz, boolean pullup) {
+void Fastwire::setup(int khz, bool pullup) {
   TWCR = 0;
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__)
   // activate internal pull-ups for twi (PORTC bits 4 & 5)

@@ -34,14 +34,16 @@
 
 extern char *dayOfWeek[];
 
-struct timehm_t {
+struct timehm_t
+{
   byte hour;
   byte minute;
 };
 
 typedef struct timehm_t timehm_t;
 
-struct date_t {
+struct date_t
+{
   byte dayOfWeek;
   byte day;
   byte month;
@@ -50,7 +52,8 @@ struct date_t {
 
 typedef struct date_t date_t;
 
-struct datetime_t {
+struct datetime_t
+{
   timehm_t time;
   date_t date;
 };
@@ -58,8 +61,9 @@ struct datetime_t {
 typedef struct datetime_t datetime_t;
 
 // ---------- timers --------------------------------------
-struct ttimer_t {
-  boolean active;
+struct ttimer_t
+{
+  bool active;
   timehm_t startTime;
   timehm_t stopTime;
   byte daysOfWeek;
@@ -67,20 +71,19 @@ struct ttimer_t {
   byte startArea;
   byte startMowPattern;
   byte startNrLane;
-  boolean startRollDir;
+  bool startRollDir;
   byte startLaneMaxlengh;
   int rfidBeacon;
-
 };
 
 typedef struct ttimer_t ttimer_t;
 
-
 // ---- other ----------------------------------
 
-
 // returns sign of variable (-1, 0, +1)
-template <typename T> int sign(T val) {
+template <typename T>
+int sign(T val)
+{
   return (T(0) < val) - (val < T(0));
 }
 
@@ -90,8 +93,8 @@ int freeRam();
 
 // print helpers
 void StreamPrint_progmem(Print &out, PGM_P format, ...);
-#define Serialprint(format, ...) StreamPrint_progmem(Serial,PSTR(format),##__VA_ARGS__)
-#define Streamprint(stream,format, ...) StreamPrint_progmem(stream,PSTR(format),##__VA_ARGS__)
+#define Serialprint(format, ...) StreamPrint_progmem(Serial, PSTR(format), ##__VA_ARGS__)
+#define Streamprint(stream, format, ...) StreamPrint_progmem(stream, PSTR(format), ##__VA_ARGS__)
 String verToString(int v);
 
 // time helpers
@@ -123,8 +126,8 @@ void setMC33926(int pinDir, int pinPWM, int speed);
 int measureLawnCapacity(int pinSend, int pinReceive);
 
 // real time drivers
-boolean readDS1307(datetime_t &dt);
-boolean setDS1307(datetime_t &dt);
+bool readDS1307(datetime_t &dt);
+bool setDS1307(datetime_t &dt);
 bool checkAT24C32();
 byte readAT24C32(unsigned int address);
 byte writeAT24C32(unsigned int address, byte data);

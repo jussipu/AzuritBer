@@ -53,7 +53,7 @@ public:
   float convertFtoC(float);
   float computeHeatIndex(float temperature, float percentHumidity, bool isFahrenheit = true);
   float readHumidity(bool force = false);
-  boolean read(bool force = false);
+  bool read(bool force = false);
 
 private:
   uint8_t data[5];

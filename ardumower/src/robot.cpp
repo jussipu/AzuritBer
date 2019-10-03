@@ -482,9 +482,9 @@ void Robot::loadSaveUserSettings(bool readflag)
   eereadwrite(readflag, addr, rainReadDelay);         // reain sensor reading delay
   eereadwrite(readflag, addr, wsRainData);            // weather station var
   eereadwrite(readflag, addr, dockingSpeed);          // docking speed
-  eereadwrite(readflag, addr, rfidUse);               // rfid use boolean
+  eereadwrite(readflag, addr, rfidUse);               // rfid use bool
   eereadwrite(readflag, addr, motorLeftSpeedDivider); //
-  eereadwrite(readflag, addr, raspiTempUse);          // Raspberry temp boolean
+  eereadwrite(readflag, addr, raspiTempUse);          // Raspberry temp bool
   eereadwrite(readflag, addr, raspiTempMax);          // Raspbery max temp float
   eereadwrite(readflag, addr, foobar);                // last won't work correctly???
   if (readflag)
@@ -750,6 +750,8 @@ void Robot::printSettingSerial()
   Console.println(delayBetweenTwoDmpAutocalib);
   Console.print(F("maxDurationDmpAutocalib                    : "));
   Console.println(maxDurationDmpAutocalib);
+  Console.print(F("compassRollSpeedCoeff                      : "));
+  Console.println(compassRollSpeedCoeff);
   watchdogReset();
   // ------ model R/C -------------------------------------------------------------
   Console.println(F("---------- model R/C -----------------------------------------"));
@@ -3927,7 +3929,7 @@ void Robot::setNextState(byte stateNew, byte dir)
       UseAccelRight = 0;
       UseBrakeRight = 1;
       motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-      motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm;
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
     }
@@ -3938,7 +3940,7 @@ void Robot::setNextState(byte stateNew, byte dir)
       UseAccelRight = 1;
       UseBrakeRight = 0;
       motorRightSpeedRpmSet = motorSpeedMaxRpm;
-      motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
+      motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
       stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
     }
@@ -3953,8 +3955,8 @@ void Robot::setNextState(byte stateNew, byte dir)
     UseBrakeLeft = 1;
     UseAccelRight = 1;
     UseBrakeRight = 1;
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+    motorLeftSpeedRpmSet = motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
+    motorRightSpeedRpmSet = -motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
     stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
     stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm);
     OdoRampCompute();
@@ -4000,8 +4002,8 @@ void Robot::setNextState(byte stateNew, byte dir)
     { //rotate in the nearest direction
       actualRollDirToCalibrate = RIGHT;
       Console.println(" >>> >>> >>> >>> >>> >>> 0");
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-      motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
       stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
     }
@@ -4009,8 +4011,8 @@ void Robot::setNextState(byte stateNew, byte dir)
     {
       actualRollDirToCalibrate = LEFT;
       Console.println(" <<< <<< <<< <<< <<< << 0");
-      motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 2;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorLeftSpeedRpmSet = -motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
       stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
     }

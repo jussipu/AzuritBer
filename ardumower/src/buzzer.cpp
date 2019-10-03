@@ -5,9 +5,10 @@
 #define pinBuzzer 53
 BuzzerClass Buzzer;
 
-static boolean tone_pin_state = false;
+static bool tone_pin_state = false;
 
-void toneHandler() {
+void toneHandler()
+{
   digitalWrite(pinBuzzer, tone_pin_state = !tone_pin_state);
 }
 
@@ -17,14 +18,14 @@ void BuzzerClass::begin()
   digitalWrite(pinBuzzer, LOW);
 }
 
-void BuzzerClass::tone( unsigned int  freq )
+void BuzzerClass::tone(unsigned int freq)
 {
   pinMode(pinBuzzer, OUTPUT);
   Timer1.attachInterrupt(toneHandler).setFrequency(freq).start();
-
 }
 
-void BuzzerClass::noTone() {
+void BuzzerClass::noTone()
+{
   Timer1.stop();
   digitalWrite(pinBuzzer, LOW);
 }

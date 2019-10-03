@@ -143,10 +143,10 @@ class I2Cdev {
 
 class Fastwire {
   private:
-    static boolean waitInt();
+    static bool waitInt();
 
   public:
-    static void setup(int khz, boolean pullup);
+    static void setup(int khz, bool pullup);
     static byte beginTransmission(byte device);
     static byte write(byte value);
     static byte writeBuf(byte device, byte address, byte *data, byte num);
