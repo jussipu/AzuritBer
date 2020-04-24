@@ -1385,7 +1385,7 @@ def decode_message(message):  # decode the nmea message
                 myRobot.odometryTicksPerRevolution = message.val3
                 myRobot.odometryTicksPerCm = message.val4
                 myRobot.odometryWheelBaseCm = message.val5
-                myRobot.odometryLeftSwapDir = message.val6
+                myRobot.autoResetActive = message.val6
                 myRobot.odometryRightSwapDir = message.val7
                 myRobot.twoWayOdometrySensorUse = message.val8
                 myRobot.buttonUse = message.val9
@@ -2382,7 +2382,7 @@ def ButtonSendSettingToDue_click():
         "" + str(myRobot.odometryTicksPerRevolution) + "",
         "" + str(myRobot.odometryTicksPerCm) + "",
         "" + str(myRobot.odometryWheelBaseCm) + "",
-        "" + str(myRobot.odometryLeftSwapDir) + "",
+        "" + str(myRobot.autoResetActive) + "",
         "" + str(myRobot.odometryRightSwapDir) + "",
         "" + str(myRobot.twoWayOdometrySensorUse) + "",
         "" + str(myRobot.buttonUse) + "",

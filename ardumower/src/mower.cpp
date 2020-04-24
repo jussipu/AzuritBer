@@ -223,13 +223,13 @@ Mower::Mower()
   stationCheckDist = 1;  // charge station check distance cm
   UseBumperDock = false; // bumper is pressed when docking or not
   dockingSpeed = 60;     // speed docking is (percent of maxspeed)
+  autoResetActive = 0;   // after charging reboot or not
   // ------ odometry ------------------------------------
   odometryUse = 1;                  // use odometry?
   odometryTicksPerRevolution = 710; // encoder ticks per one full resolution
   odometryTicksPerCm = 10.38;       // encoder ticks per cm
   odometryWheelBaseCm = 46;         // wheel-to-wheel distance (cm)
   odometryRightSwapDir = 0;         // inverse right encoder direction?
-  odometryLeftSwapDir = 0;          // inverse left encoder direction?
 
   // ----- GPS -------------------------------------------
   gpsUse = 1;                 // use GPS?
@@ -562,7 +562,7 @@ int Mower::readSensor(char type)
     return (digitalRead(pinDropLeft));
     break; // Dropsensor - Absturzsensor
 
-    // sonar---------------------------------------------------------------------------------------------------
+  // sonar---------------------------------------------------------------------------------------------------
 
   case SEN_SONAR_CENTER:
     return (NewSonarCenter.ping_cm());

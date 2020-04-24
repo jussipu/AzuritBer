@@ -1262,8 +1262,10 @@ void RemoteControl::sendStationMenu(bool update)
   else
     serialPort->print(F("{.Station`1000"));
 
-  serialPort->println(F("|k05~ Bump pressed on dock "));
+  serialPort->println(F("|k05~ Bumper pressed on dock "));
   sendYesNo(robot->UseBumperDock);
+  serialPort->println(F("|k07~ Reboot after charging "));
+  sendYesNo(robot->autoResetActive);
   sendSlider("k00", F("Reverse Distance (CM)"), robot->stationRevDist, "", 1, 200, 0);
   sendSlider("k01", F("Roll Angle (Deg)"), robot->stationRollAngle, "", 1, 180, 0);
   sendSlider("k02", F("Accel Distance after Roll"), robot->stationForwDist, "", 1, 200, 0);
@@ -1279,6 +1281,8 @@ void RemoteControl::processStationMenu(String pfodCmd)
 
   if (pfodCmd == "k05")
     robot->UseBumperDock = !robot->UseBumperDock;
+  else if (pfodCmd.startsWith("k07"))
+    robot->autoResetActive = !robot->autoResetActive;
   else if (pfodCmd.startsWith("k00"))
     processSlider(pfodCmd, robot->stationRevDist, 1);
   else if (pfodCmd.startsWith("k01"))

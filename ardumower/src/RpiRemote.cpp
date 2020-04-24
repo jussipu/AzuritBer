@@ -460,7 +460,7 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->odometryWheelBaseCm;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->odometryLeftSwapDir;
+    lineToSend = lineToSend + robot->autoResetActive;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->odometryRightSwapDir;
     lineToSend = lineToSend + ",";
@@ -1555,7 +1555,7 @@ void RpiRemote::readWrite_setting()
         robot->odometryTicksPerRevolution = val[2];
         robot->odometryTicksPerCm = val[3];
         robot->odometryWheelBaseCm = val[4];
-        robot->odometryLeftSwapDir = val[5];
+        robot->autoResetActive = val[5];
         robot->odometryRightSwapDir = val[6];
         robot->twoWayOdometrySensorUse = val[7];
         robot->buttonUse = val[8];

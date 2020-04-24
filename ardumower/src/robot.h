@@ -291,7 +291,6 @@ public:
   float odometryTicksPerCm;       // encoder ticks per cm
   float odometryWheelBaseCm;      // wheel-to-wheel distance (cm)
   bool odometryRightSwapDir;      // inverse right encoder direction?
-  bool odometryLeftSwapDir;       // inverse left encoder direction?
   int odometryLeft;               // left wheel counter
   int odometryRight;              // right wheel counter
   bool odometryLeftLastState;
@@ -709,9 +708,10 @@ public:
   byte stationRollAngle;        // charge station roll angle
   int stationForwDist;          // charge station forward distance cm
   byte stationCheckDist;        // charge station check distance cm
-  bool UseBumperDock;           //bumper is pressed when docking or not
-  byte dockingSpeed;            //speed docking is (percent of maxspeed) when sonar detect something while tracking
-  unsigned long totalDistDrive; //use to check when to leave the wire in start timer mode
+  bool UseBumperDock;           // bumper is pressed when docking or not
+  bool autoResetActive;         // at the end of the charging all is reboot to avoid error after 1 or 2 weeks ON
+  byte dockingSpeed;            // speed docking is (percent of maxspeed) when sonar detect something while tracking
+  unsigned long totalDistDrive; // use to check when to leave the wire in start timer mode
   unsigned long nextTimeBattery;
   unsigned long nextTimeCheckBattery;
   unsigned long nextTimeChgRasPISendBat;   // wait before sendbat to raspi
@@ -795,7 +795,7 @@ public:
   virtual void saveUserSettings();
   virtual void deleteRobotStats();
   virtual void newTagFind();
-
+  virtual void autoReboot();
   // other
   // virtual void beep(int numberOfBeeps, bool shortbeep);
   virtual void printInfo(Stream &s);
