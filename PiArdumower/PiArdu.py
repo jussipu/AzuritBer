@@ -30,6 +30,9 @@ autoRecordBatCharge = False
 GpsConnectedOnPi = False
 NanoConnectedOnPi = False
 useDebugConsole = True
+useMqtt = True
+Mqtt_Broker_IP = "192.168.1.5"
+Mqtt_Port = 1883
 
 if myOS == "Linux":
     from Ps4remote import PS4Controller
@@ -37,17 +40,6 @@ if myOS == "Linux":
 
 # add to avoid KST plot error on path
 sys.path.insert(0, "/home/pi/Documents/PiArdumower")
-
-# def ButtonFlashDue_click():
-#     messagebox.showinfo(
-#         "Info",
-#         "Actual program use the USB Serial so it need to be closed. it will restart at the end of the Flashing",
-#     )
-#     Due_Serial.close()
-#     time.sleep(3)
-#     subprocess.call("/home/pi/Documents/PiArdumower/DueFlash.py")
-#     time.sleep(3)
-#     Due_Serial.open()
 
 #################################### GPS MANAGEMENT ###############################################
 
@@ -493,6 +485,66 @@ def sendEmail():
             return False
 
 
+#################################### MQTT MANAGEMENT ###############################################
+
+#bber30 test MQTT see also line 521 for the publish message
+if (useMqtt):
+    import paho.mqtt.client as mqtt_client
+    KEEP_ALIVE = 45  # interval en seconde
+
+    mqtt_client.Client.connected_flag = False  # create flag in class
+
+    def Mqqt_on_log(Mqqt_client, userdata, level, buf):
+        print("log: ", buf)
+
+    def Mqqt_on_connect(Mqqt_client, userdata, flags, rc):
+        if rc == 0:
+            client.connected_flag = True  #set flag
+            consoleInsertText("MQTT connected OK" + '\n')
+        else:
+            consoleInsertText("MQTT Bad connection Returned code=", rc)
+            consoleInsertText('\n')
+
+    def Mqqt_on_message(Mqqt_client, userdata, message):
+        consoleInsertText("Reception message MQTT..." + '\n')
+        consoleInsertText("Topic : %s" % message.topic +
+                          " Data  : %s" % message.payload + '\n')
+        message_txt = str((message.payload), 'utf8')
+        responsetable = message_txt.split(";")
+        #Here the main option to do from COMMAND topic
+        if (str(message.topic) == "Mower/COMMAND/"):
+            if (str(responsetable[0]) == "HOME"):
+                button_home_click()
+            if (str(responsetable[0]) == "STOP"):
+                button_stop_all_click()
+            if (str(responsetable[0]) == "START"):
+                buttonStartMow_click()
+            if (str(responsetable[0]) == "MOWPATTERN"):
+                #Maybe need to stop and restart to mow between change ???
+                tk_mowingPattern.set(int(responsetable[1]))
+                send_var_message('w', 'mowPatternCurr',
+                                 '' + str(tk_mowingPattern.get()) + '', '0',
+                                 '0', '0', '0', '0', '0', '0')
+
+    Mqqt_client = mqtt_client.Client(client_id="TheMower")
+    #Mqqt_client.on_log = Mqqt_on_log
+    Mqqt_client.on_message = Mqqt_on_message
+    Mqqt_client.on_connect = Mqqt_on_connect
+
+    try:
+        Mqqt_client.username_pw_set(username="admin", password="admin")
+        Mqqt_client.connect(host=Mqtt_Broker_IP,
+                            port=Mqtt_Port,
+                            keepalive=KEEP_ALIVE)
+        Mqqt_client.subscribe("Mower/COMMAND/#")
+        Mqqt_client.loop_start()
+        Mqqt_client.connected_flag = True
+    except:
+        Mqqt_client.connected_flag = False
+        print("MQTT connection failed")
+        #consoleInsertText("MQTT connection failed" + '\n')
+        Mqqt_client.loop_stop()  #Stop loop
+
 #################################### VARIABLE INITIALISATION ###############################################
 
 direction_list = ["LEFT", "RIGHT"]
@@ -736,6 +788,11 @@ class mower:
         mower.errorEmailSent = False
         mower.errorResetDone = True
         mower.resetChargeReadings = True
+        # MQTT
+        mower.timeToSendMqttState=time.time()+20
+        mower.timeToSendMqttBattery=time.time()+200
+        mower.timeToSendMqttMowPattern=time.time()+200
+        mower.timeToSendMqttTemp=time.time()+200
 
 
 mymower = mower()
@@ -879,6 +936,32 @@ def checkSerial():  # the main loop is that
         txtSend.delete("5000.0", tk.END)  # keep only  lines
     txtConsoleRecu.delete("2500.0", tk.END)  # keep only  lines
     txtConsoleErr.delete("100.0", tk.END)  # keep lines
+
+    #bber30
+    #need to test if broker not present the Pi freeze ?????????
+    #so send with feedback Qos=0
+    if (useMqtt and Mqqt_client.connected_flag):
+        if (time.time() > mower.timeToSendMqttState):
+
+            r = Mqqt_client.publish(topic="Mower/State",
+                                    payload=myRobot.stateNames[mymower.state],
+                                    qos=0,
+                                    retain=False)
+            r = Mqqt_client.publish(
+                topic="Mower/Status",
+                payload=myRobot.statusNames[mymower.status],
+                qos=0,
+                retain=False)
+            r = Mqqt_client.publish(topic="Mower/Battery",
+                                    payload=mymower.batVoltage,
+                                    qos=0,
+                                    retain=False)
+            r = Mqqt_client.publish(topic="Mower/Temp",
+                                    payload=mymower.Dht22Temp,
+                                    qos=0,
+                                    retain=False)
+            #consoleInsertText("send mower data over Mqtt without feedback" + '\n')
+            mower.timeToSendMqttState = time.time() + 10
 
     # fen1.after(10,checkSerial) #to be sure empty the buffer read again immediatly
     fen1.after(20, checkSerial)  # here is the main loop each 50ms
