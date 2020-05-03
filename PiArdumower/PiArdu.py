@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 14/05/19 new value on console size page
+
 from robot import *
 import sys
 import serial
@@ -17,6 +17,7 @@ from email import encoders
 import os.path
 import os
 from tkinter import ttk
+from threading import Thread
 from tkinter import messagebox
 from tkinter import filedialog
 import tkinter as tk
@@ -489,21 +490,38 @@ def sendEmail():
 
 #bber30 test MQTT see also line 521 for the publish message
 if (useMqtt):
-    import paho.mqtt.client as mqtt_client
-    KEEP_ALIVE = 45  # interval en seconde
 
-    mqtt_client.Client.connected_flag = False  # create flag in class
+    import paho.mqtt.client as mqtt_client
+    KEEP_ALIVE = 65500  # try to never close connection in more than 24H
+    Mqqt_client = mqtt_client.Client(client_id="TheMower")
+    Mqqt_client.connected_flag = False  # create flag in class
 
     def Mqqt_on_log(Mqqt_client, userdata, level, buf):
         print("log: ", buf)
 
     def Mqqt_on_connect(Mqqt_client, userdata, flags, rc):
         if rc == 0:
-            client.connected_flag = True  #set flag
+            Mqqt_client.connected_flag = True  #set flag
             consoleInsertText("MQTT connected OK" + '\n')
         else:
+            Mqqt_client.connected_flag = False
             consoleInsertText("MQTT Bad connection Returned code=", rc)
             consoleInsertText('\n')
+
+    def Mqqt_on_disconnect(Mqqt_client, userdata, flags, rc):
+        Mqqt_client.connected_flag = False
+        consoleInsertText("MQTT Disconnected " + str(rc) + '\n')
+
+    def Mqqt_on_publish(Mqqt_client, userdata, result):
+        if (Mqqt_client.connected_flag):
+            mymower.callback_id = int(result)
+            #consoleInsertText("MQTT Callback message  " + str(mymower.callback_id) + '\n')
+        else:
+            consoleInsertText("MQTT Callback error last message id  " +
+                              mymower.mqtt_message_id + " return " +
+                              str(mymower.callback_id) + '\n')
+            mymower.callback_id = 0
+            #receive a callback from the last message send before disconnect
 
     def Mqqt_on_message(Mqqt_client, userdata, message):
         consoleInsertText("Reception message MQTT..." + '\n')
@@ -512,6 +530,14 @@ if (useMqtt):
         message_txt = str((message.payload), 'utf8')
         responsetable = message_txt.split(";")
         #Here the main option to do from COMMAND topic
+        if (str(message.topic) == "Mower/COMMAND/VIDEO/"):
+            if (message_txt == "ON"):
+                consoleInsertText("Start Video streaming" + '\n')
+                myStreamVideo.start(0)
+            if (message_txt == 'OFF'):
+                consoleInsertText("Stop Video streaming" + '\n')
+                myStreamVideo.stop()
+
         if (str(message.topic) == "Mower/COMMAND/"):
             if (str(responsetable[0]) == "HOME"):
                 button_home_click()
@@ -526,24 +552,60 @@ if (useMqtt):
                                  '' + str(tk_mowingPattern.get()) + '', '0',
                                  '0', '0', '0', '0', '0', '0')
 
-    Mqqt_client = mqtt_client.Client(client_id="TheMower")
     #Mqqt_client.on_log = Mqqt_on_log
     Mqqt_client.on_message = Mqqt_on_message
     Mqqt_client.on_connect = Mqqt_on_connect
+    Mqqt_client.on_disconnect = Mqqt_on_disconnect
+    Mqqt_client.on_publish = Mqqt_on_publish
 
-    try:
-        Mqqt_client.username_pw_set(username="admin", password="admin")
-        Mqqt_client.connect(host=Mqtt_Broker_IP,
-                            port=Mqtt_Port,
-                            keepalive=KEEP_ALIVE)
-        Mqqt_client.subscribe("Mower/COMMAND/#")
-        Mqqt_client.loop_start()
-        Mqqt_client.connected_flag = True
-    except:
-        Mqqt_client.connected_flag = False
-        print("MQTT connection failed")
-        #consoleInsertText("MQTT connection failed" + '\n')
-        Mqqt_client.loop_stop()  #Stop loop
+    def Mqqt_Connection():
+
+        testNet = checkNetwork("https://google.fi")
+        consoleInsertText("CHECK WIFI" + '\n')
+        if (testNet):
+            consoleInsertText("WIFI CONNECTED" + '\n')
+
+            try:
+                Mqqt_client.username_pw_set(username="admin", password="admin")
+                Mqqt_client.connect(host=Mqtt_Broker_IP,
+                                    port=Mqtt_Port,
+                                    keepalive=KEEP_ALIVE)
+                Mqqt_client.subscribe("Mower/COMMAND/#")
+                Mqqt_client.loop_start()
+                Mqqt_client.connected_flag = True
+                consoleInsertText("MQTT Connected" + '\n')
+                mymower.callback_id = 0
+                mymower.mqtt_message_id = 0
+
+            except:
+                Mqqt_client.connected_flag = False
+                consoleInsertText("MQTT connection failed" + '\n')
+                #Mqqt_client.loop_stop()    #Stop loop
+                mymower.callback_id = 0
+                mymower.mqtt_message_id = 0
+        else:
+
+            consoleInsertText("WIFI NOT CONNECTED" + '\n')
+
+    def sendMqtt(var_topic, var_payload):
+
+        if (Mqqt_client.connected_flag):
+            if (mymower.callback_id != mymower.mqtt_message_id):
+                consoleInsertText("FAIL TO send data over Mqtt " + '\n')
+                Mqqt_client.connected_flag = False
+                mymower.callback_id = 0
+                mymower.mqtt_message_id = 0
+
+            else:
+
+                r = Mqqt_client.publish(topic=var_topic,
+                                        payload=var_payload,
+                                        qos=1,
+                                        retain=False)
+                mymower.mqtt_message_id = int(r[1])
+                #consoleInsertText("MQTT send message " + str(mymower.mqtt_message_id) + " " + var_topic + " " + var_payload + '\n')
+
+    #END ADDon For MQTT
 
 #################################### VARIABLE INITIALISATION ###############################################
 
@@ -789,10 +851,12 @@ class mower:
         mower.errorResetDone = True
         mower.resetChargeReadings = True
         # MQTT
-        mower.timeToSendMqttState=time.time()+20
-        mower.timeToSendMqttBattery=time.time()+200
-        mower.timeToSendMqttMowPattern=time.time()+200
-        mower.timeToSendMqttTemp=time.time()+200
+        mower.mqtt_message_id = 0
+        mower.callback_id = 0
+        mower.timeToSendMqttIdle = time.time() + 120
+        mower.timeToReconnectMqtt = time.time() + 120
+        mower.lastMqttBatteryValue = 0
+        #mower.timeToSendMqttMowPattern=time.time()+200
 
 
 mymower = mower()
@@ -939,29 +1003,20 @@ def checkSerial():  # the main loop is that
 
     #bber30
     #need to test if broker not present the Pi freeze ?????????
-    #so send with feedback Qos=0
-    if (useMqtt and Mqqt_client.connected_flag):
-        if (time.time() > mower.timeToSendMqttState):
+    #so send with feedback Qos=1 and check the callback into on_publish
+    if (useMqtt):
+        if (Mqqt_client.connected_flag):
+            if (time.time() > mymower.timeToSendMqttIdle):
+                sendMqtt("Mower/Idle", str(mymower.loopsPerSecond))
+                mymower.timeToSendMqttIdle = time.time() + 5
 
-            r = Mqqt_client.publish(topic="Mower/State",
-                                    payload=myRobot.stateNames[mymower.state],
-                                    qos=0,
-                                    retain=False)
-            r = Mqqt_client.publish(
-                topic="Mower/Status",
-                payload=myRobot.statusNames[mymower.status],
-                qos=0,
-                retain=False)
-            r = Mqqt_client.publish(topic="Mower/Battery",
-                                    payload=mymower.batVoltage,
-                                    qos=0,
-                                    retain=False)
-            r = Mqqt_client.publish(topic="Mower/Temp",
-                                    payload=mymower.Dht22Temp,
-                                    qos=0,
-                                    retain=False)
-            #consoleInsertText("send mower data over Mqtt without feedback" + '\n')
-            mower.timeToSendMqttState = time.time() + 10
+        else:
+
+            if (time.time() > mymower.timeToReconnectMqtt):
+                consoleInsertText("MQTT not connected retry each 2 minutes" +
+                                  '\n')
+                Mqqt_Connection()
+                mymower.timeToReconnectMqtt = time.time() + 120
 
     # fen1.after(10,checkSerial) #to be sure empty the buffer read again immediatly
     fen1.after(20, checkSerial)  # here is the main loop each 50ms
@@ -1193,6 +1248,8 @@ def decode_message(message):  # decode the nmea message
 
     if message.sentence_type == "STU":  # message for status info send on change only
         mymower.status = int(message.status)
+        #bber40
+        sendMqtt("Mower/Status", str(myRobot.statusNames[mymower.status]))
         if myRobot.statusNames[mymower.status] == "TRACK_TO_START":
             mymower.areaInMowing = int(message.val1)
             mymower.areaToGo = int(message.val2)
@@ -1239,15 +1296,27 @@ def decode_message(message):  # decode the nmea message
     if message.sentence_type == "STA":  # permanent message for state info
 
         mymower.millis = int(message.millis)
-        mymower.state = int(message.state)
+        #bber40
+        if (mymower.state != int(message.state)):
+            mymower.state = int(message.state)
+            sendMqtt("Mower/State", str(myRobot.stateNames[mymower.state]))
         mymower.odox = message.odox
         mymower.odoy = message.odoy
         mymower.prevYaw = message.prevYaw
-        mymower.batVoltage = message.batVoltage
+
+        if (mymower.batVoltage != float(message.batVoltage)):
+            mymower.batVoltage = float(message.batVoltage)
+            ecart = mower.lastMqttBatteryValue - float(message.batVoltage)
+            #only send Mqtt if 0.02 volt dif
+            if (abs(ecart) > 0.02):
+                sendMqtt("Mower/Battery", message.batVoltage)
+                mower.lastMqttBatteryValue = float(message.batVoltage)
         mymower.yaw = message.yaw
         mymower.pitch = message.pitch
         mymower.roll = message.roll
-        mymower.Dht22Temp = message.Dht22Temp
+        if (mymower.Dht22Temp != message.Dht22Temp):
+            mymower.Dht22Temp = message.Dht22Temp
+            sendMqtt("Mower/Temp", str(mymower.Dht22Temp))
         mymower.loopsPerSecond = message.loopsPerSecond
         # //bber17
         if autoRecordBatCharge:
@@ -6157,9 +6226,23 @@ fen1.bind("<Down>", kbd_downKey)
 fen1.bind("<space>", kbd_spaceKey)
 
 checkSerial()
+#on startup PI update Date time from Internet
+#subprocess.Popen("sudo systemctl stop ntp.service", shell=True)
+#subprocess.Popen("sudo systemctl disable ntp.service", shell=True)
+#time.sleep(10)
+
+consoleInsertText('Read Setting from PCB1.3' + '\n')
 read_all_setting()
-read_time_setting()
+consoleInsertText('Read Area In Mowing from PCB1.3' + '\n')
 send_req_message("PERI", "1000", "1", "1", "0", "0", "0")
+
+if (useMqtt):
+    consoleInsertText('Wait 2 minutes before start MQTT if needed' + '\n')
+    mymower.timeToReconnectMqtt = time.time() + 120
+else:
+    consoleInsertText('Adjust PI time from PCB1.3' + '\n')
+    read_time_setting()
+
 BtnGpsRecordStop_click()
 
 fen1.mainloop()

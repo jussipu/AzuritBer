@@ -479,7 +479,7 @@ void Robot::loadSaveUserSettings(bool readflag)
   eereadwrite(readflag, addr, maxTemperature);
   eereadwrite(readflag, addr, secondMowMotor);        // second mow motor
   eereadwrite(readflag, addr, motor2MowSenseScale);   // second mow motor scale
-  eereadwrite(readflag, addr, rainReadDelay);         // reain sensor reading delay
+  eereadwrite(readflag, addr, rainReadDelay);         // rain sensor reading delay
   eereadwrite(readflag, addr, wsRainData);            // weather station var
   eereadwrite(readflag, addr, dockingSpeed);          // docking speed
   eereadwrite(readflag, addr, rfidUse);               // rfid use bool
@@ -1987,10 +1987,6 @@ void Robot::motorControl()
 // output: motorMowPWMCurr
 void Robot::motorMowControl()
 {
-  // Mow motor direction change
-  // if (datetime.date.day % 2 == 0) // even numbers = 0
-  //   motorMowSpeedMaxPwm = motorMowSpeedMaxPwm * -1;
-
   if (millis() < nextTimeMotorMowControl)
     return;
   nextTimeMotorMowControl = millis() + 100;
