@@ -6,10 +6,10 @@ from ..seatalk_utils import *
 from collections import namedtuple
 from decimal import Decimal
 
-
 #pylint: disable=missing-docstring
 #pylint: disable=no-init
 #pylint: disable=too-few-public-methods
+
 
 class TOW(TalkerSentence):
     """ message from tower NANO to PI  for laser and rain sensor etc....
@@ -22,7 +22,6 @@ class TOW(TalkerSentence):
         ("Sensor5", "sensor5"),
         ("Sensor6", "sensor6"),
         ("Rain", "rain"),
-
     )
 
 
@@ -46,7 +45,6 @@ class PER(TalkerSentence):
         ("perimeterMag", "perimeterMag"),
         ("perimeterMagRight", "perimeterMagRight"),
         ("AreaInMowing", "areaInMowing"),
-
     )
 
 
@@ -58,7 +56,16 @@ class BAT(TalkerSentence):
         ("batVoltage", "batVoltage"),
         ("chgVoltage", "chgVoltage"),
         ("chgSense", "chgSense"),
+    )
 
+
+class IMU(TalkerSentence):
+    """ non stop message from DUE to PI  for imu plot and visu etc....
+    """
+    fields = (
+        ("Millis", "millis"),
+        ("gyroYaw", "gyroYaw"),
+        ("compassYaw", "compassYaw"),
     )
 
 
@@ -72,8 +79,6 @@ class MOT(TalkerSentence):
         ("motorLeftPWMCurr", "motorLeftPWMCurr"),
         ("motorRightPWMCurr", "motorRightPWMCurr"),
         ("BatVoltage", "batVoltage"),
-
-
     )
 
 
@@ -86,8 +91,6 @@ class MOW(TalkerSentence):
         ("motor2MowSense", "motor2MowSense"),
         ("motorMowPWMCurr", "motorMowPWMCurr"),
         ("BatVoltage", "batVoltage"),
-
-
     )
 
 
@@ -105,9 +108,7 @@ class STA(TalkerSentence):
         ("ActualPitch", "pitch"),
         ("ActualRoll", "roll"),
         ("DHT22Temp", "Dht22Temp"),
-        ("raspiTemp", "raspiTemp"),
         ("loopsPerSecond", "loopsPerSecond"),
-
     )
 
 
@@ -135,8 +136,7 @@ class ERR(TalkerSentence):
         ("ErrGpsData", "errGpsData"),
         ("ErrStuck", "errStuck"),
         ("ErrEepromData", "errEepromData"),
-        ("ErrTempHigh","errTempHigh"),
-
+        ("ErrTempHigh", "errTempHigh"),
     )
 
 
@@ -155,7 +155,24 @@ class STU(TalkerSentence):
         ("Val8", "val8"),
         ("Val9", "val9"),
         ("Val10", "val10"),
+    )
 
+
+class RFI(TalkerSentence):
+    """ message from DUE to PI  for rfid and status send only when tag is detected....
+    """
+    fields = (
+        ("Status", "status"),
+        ("rfidTagFind", "rfidTagFind"),
+        ("Val2", "val2"),
+        ("Val3", "val3"),
+        ("Val4", "val4"),
+        ("Val5", "val5"),
+        ("Val6", "val6"),
+        ("Val7", "val7"),
+        ("Val8", "val8"),
+        ("Val9", "val9"),
+        ("Val10", "val10"),
     )
 
 
@@ -183,7 +200,6 @@ class PFO(TalkerSentence):
         ("Val8", "val8"),
         ("Val9", "val9"),
         ("Val10", "val10"),
-
     )
 
 
@@ -204,7 +220,6 @@ class SET(TalkerSentence):
         ("Val8", "val8"),
         ("Val9", "val9"),
         ("Val10", "val10"),
-
     )
 
 
@@ -220,8 +235,6 @@ class REQ(TalkerSentence):
         ("Val5", "val5"),
         ("Val6", "val6"),
         ("Val7", "val7"),
-
-
     )
 
 
@@ -233,14 +246,14 @@ class INF(TalkerSentence):  # info return by due
         ("StatsOverride", "statsOverride"),
         ("StatsMowTimeMinutesTrip", "statsMowTimeMinutesTrip"),
         ("StatsMowTimeHoursTotal", "statsMowTimeHoursTotal"),
-        ("StatsBatteryChargingCounterTotal", "statsBatteryChargingCounterTotal"),
-        ("StatsBatteryChargingCapacityTrip", "statsBatteryChargingCapacityTrip"),
-        ("StatsBatteryChargingCapacityTotal", "statsBatteryChargingCapacityTotal"),
+        ("StatsBatteryChargingCounterTotal",
+         "statsBatteryChargingCounterTotal"),
+        ("StatsBatteryChargingCapacityTrip",
+         "statsBatteryChargingCapacityTrip"),
+        ("StatsBatteryChargingCapacityTotal",
+         "statsBatteryChargingCapacityTotal"),
         ("StatsBatteryChargingCapacityAverage",
          "statsBatteryChargingCapacityAverage"),
-
-
-
     )
 
 
@@ -261,9 +274,6 @@ class RET(TalkerSentence):
         ("Val8", "val8"),
         ("Val9", "val9"),
         ("Val10", "val10"),
-
-
-
     )
 
 
@@ -276,8 +286,6 @@ class CMD(TalkerSentence):
         ("Val2", "val2"),
         ("Val3", "val3"),
         ("Val4", "val4"),
-
-
     )
 
 
@@ -295,8 +303,6 @@ class VAR(TalkerSentence):
         ("Var4Name", "var4name"),
         ("Var4Value", "var4value"),
         ("EndValue", "endvalue"),
-
-
     )
 
 
@@ -534,16 +540,20 @@ class GST(TalkerSentence):
     fields = (
         ('UTC time of the GGA or GNS fix associated with this sentence.',
          'timestamp', timestamp),
-        ('RMS value of the standard deviation of the range inputs to the navigation process. Range inputs include preudoranges & DGNSS corrections.', 'rms', float),
+        ('RMS value of the standard deviation of the range inputs to the navigation process. Range inputs include preudoranges & DGNSS corrections.',
+         'rms', float),
         ('Standard deviation of semi-major axis of error ellipse (meters)',
          'std_dev_major', float),
         ('Standard deviation of semi-minor axis of error ellipse (meters)',
          'std_dev_minor', float),
         ('Orientation of semi-major axis of error ellipse (degrees from true north)',
          'orientation', float),
-        ('Standard deviation of latitude error (meters)', 'std_dev_latitude', float),
-        ('Standard deviation of longitude error (meters)', 'std_dev_longitude', float),
-        ('Standard deviation of altitude error (meters)', 'std_dev_altitude', float),
+        ('Standard deviation of latitude error (meters)', 'std_dev_latitude',
+         float),
+        ('Standard deviation of longitude error (meters)', 'std_dev_longitude',
+         float),
+        ('Standard deviation of altitude error (meters)', 'std_dev_altitude',
+         float),
     )
 
 
@@ -656,6 +666,7 @@ class RTE(TalkerSentence):
 
 class R00(TalkerSentence):
     fields = ()
+
     @property
     def waypoint_list(self):
         return self.data[:]
@@ -669,9 +680,7 @@ class STN(TalkerSentence):
     """ NOTE: No real data could be found for examples of the actual spec so
             it is a guess that there may be a checksum on the end
     """
-    fields = (
-        ("Talker ID Number", "talker_id_num"),
-    )  # 00 - 99
+    fields = (("Talker ID Number", "talker_id_num"), )  # 00 - 99
 
 
 class TRF(TalkerSentence):
@@ -787,8 +796,8 @@ class ZDA(TalkerSentence):
         ("Month", "month", int),  # 01 to 12
         ("Year", "year", int),  # Year = YYYY
         ("Local Zone Description", "local_zone", int),  # 00 to +/- 13 hours
-        ("Local Zone Minutes Description",
-         "local_zone_minutes", int),  # same sign as hours
+        ("Local Zone Minutes Description", "local_zone_minutes",
+         int),  # same sign as hours
     )
 
     @property
@@ -825,7 +834,6 @@ class HSC(TalkerSentence):
         ("True", "true"),
         ("Heading Magnetic", "heading_magnetic", Decimal),
         ("Magnetic", "magnetic"),
-
     )
 
 
@@ -858,6 +866,7 @@ class MWV(TalkerSentence, ValidStatusFix):
         ("Wind speed units", "wind_speed_units"),  # K/M/N
         ("Status", "status"),
     )
+
 
 # DBT - Depth below trasducer, depth referenced to the transducer
 # Used by simrad devices (f.e. EK500)
@@ -917,8 +926,11 @@ class VLW(TalkerSentence):
         ('Water trip distance', 'trip_distance', Decimal),
         ('Trip distance nautical miles', 'trip_distance_miles'),
         ('Water trip distance since reset', 'trip_distance_reset', Decimal),
-        ('Trip distance nautical miles since reset', 'trip_distance_reset_miles'),
+        ('Trip distance nautical miles since reset',
+         'trip_distance_reset_miles'),
     )
+
+
 # --------------------- Implemented by Joachim Bakke (joabakk)---------------- #
 # ---------------------------------------------------------------------------- #
 
@@ -935,17 +947,17 @@ class ROT(TalkerSentence, ValidStatusFix):
 class RPM(TalkerSentence, ValidStatusFix):
     """ Revolutions
     """
-#        1 2 3   4   5 6
-#        | | |   |   | |
-# $--RPM,a,x,x.x,x.x,A*hh<CR><LF>
+    #        1 2 3   4   5 6
+    #        | | |   |   | |
+    # $--RPM,a,x,x.x,x.x,A*hh<CR><LF>
 
-# Field Number:
-#  1) Sourse, S = Shaft, E = Engine
-#  2) Engine or shaft number
-#  3) Speed, Revolutions per minute
-#  4) Propeller pitch, % of maximum, "-" means astern
-#  5) Status, A means data is valid
-#  6) Checksum
+    # Field Number:
+    #  1) Sourse, S = Shaft, E = Engine
+    #  2) Engine or shaft number
+    #  3) Speed, Revolutions per minute
+    #  4) Propeller pitch, % of maximum, "-" means astern
+    #  5) Status, A means data is valid
+    #  6) Checksum
 
     fields = (
         ("Source", "source"),  # S = Shaft, E = Engine
@@ -965,6 +977,7 @@ class VPW(TalkerSentence):
         ("Speed m/s", "speed_ms", float),
         ("Unit m/s", "unit_ms"),  # M means m/s
     )
+
 
 # VPW - Speed - Measured Parallel to Wind
 
@@ -989,6 +1002,7 @@ class VDR(TalkerSentence):
         ("Speed of Current", "current", float),
         ("Unit", "unit_kn"),  # N means knots
     )
+
 
 # VDR - Set and Drift
 
@@ -1023,6 +1037,7 @@ class VWR(TalkerSentence):
     # apply L/R sign, and sync all fields
     # when setting the speed
 
+
 # VWR - Relative Wind Speed and Angle
 
 #         1  2  3  4  5  6  7  8 9
@@ -1039,7 +1054,6 @@ class VWR(TalkerSentence):
 #  7) Speed
 #  8) K = Kilometers Per Hour
 #  9) Checksum
-
 
 Transducer = namedtuple("Transducer", [
     "type",
@@ -1062,7 +1076,8 @@ class XDR(TalkerSentence):
         return len(self.data) // 4
 
     def get_transducer(self, i):
-        return Transducer(*self.data[i*4:i*4+4])
+        return Transducer(*self.data[i * 4:i * 4 + 4])
+
 
 # ------------------------- Implemented by Casper Vertregt ------------------- #
 # ---------------------------------------------------------------------------- #
@@ -1123,74 +1138,75 @@ class TTM(TalkerSentence):
         ("Acquisition Type", "acquisition"),  # A / M (Automatic / Manual)
     )
 
+
 # ---------------------------------- Not Yet Implemented --------------------- #
 # ---------------------------------------------------------------------------- #
 
 # class FSI(TalkerSentence):
 #    """ Frequency Set Information
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class GLC(TalkerSentence):
 #    """ Geographic Position, Loran-C
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class GXA(TalkerSentence):
 #    """ TRANSIT Position
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class LCD(TalkerSentence):
 #    """ Loran-C Signal Data
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class MTA(TalkerSentence):
 #    """ Air Temperature (to be phased out)
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class OLN(TalkerSentence):
 #    """ Omega Lane Numbers
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class RSD(TalkerSentence):
 #    """ RADAR System Data
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class SFI(TalkerSentence):
 #    """ Scanning Frequency Information
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class XTR(TalkerSentence):
 #    """ Cross-Track Error, Dead Reckoning
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class ZFO(TalkerSentence):
 #    """ UTC & Time from Origin Waypoint
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # class ZTG(TalkerSentence):
 #    """ UTC & Time to Destination Waypoint
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # ---------------------------------------------------------------------------- #
 # -------------------------- Unknown Formats --------------------------------- #
@@ -1199,8 +1215,8 @@ class TTM(TalkerSentence):
 # class ASD(TalkerSentence):
 #    """ Auto-pilot system data (Unknown format)
 #    """
-    #    fields = (
-    # )
+#    fields = (
+# )
 
 # ---------------------------------------------------------------------------- #
 # -------------------------- Obsolete Formats -------------------------------- #
@@ -1209,9 +1225,8 @@ class TTM(TalkerSentence):
 # class DCN(TalkerSentence):
 #    """ Decca Position (obsolete)
 #    """
-    #    fields = (
-    # )
-
+#    fields = (
+# )
 
 # ------------- Implemented by Rocco De Marco (CNR/ISMAR ITALY) -------------- #
 # ---------------------------------------------------------------------------- #
@@ -1229,6 +1244,8 @@ class DTM(TalkerSentence):
         ('Signed altitude', 'altitude'),
         ('Datum code', 'datum_code'),
     )
+
+
 # Examples: $GPDTM,W84,,0.0,N,0.0,E,0.0,W84*6F
 #           $GPDTM,999,CH95,0.08,N,0.07,E,-47.7,W84*1C
 
@@ -1244,13 +1261,13 @@ class MDA(TalkerSentence):
         ('Barometric pressure, bars', 'b_pressure_bar', Decimal),
         ('Bars', 'bars'),  # B = bars
         ('Air temperature, degrees C', 'air_temp', Decimal),
-        ('Celsius', 'a_celsius'),    # C = Celsius
+        ('Celsius', 'a_celsius'),  # C = Celsius
         ('Water temperature, degrees C', 'water_temp', Decimal),
-        ('Celsius', 'w_celsius'),    # C = Celsius
+        ('Celsius', 'w_celsius'),  # C = Celsius
         ('Relative humidity, percent', 'rel_humidity', Decimal),
         ('Absolute humidity, percent', 'abs_humidity', Decimal),
         ('Dew point, degrees C', 'dew_point', Decimal),
-        ('Celsius', 'd_celsius'),    # C = Celsius
+        ('Celsius', 'd_celsius'),  # C = Celsius
         ('Wind direction true', 'direction_true', Decimal),
         ('True', 'true'),  # T = True
         ('Wind direction magnetic', 'direction_magnetic', Decimal),
@@ -1267,7 +1284,8 @@ class MDA(TalkerSentence):
 class VWT(TalkerSentence):
     fields = (
         ('Wind angle relative to the vessel', 'wind_angle_vessel', Decimal),
-        ('Direction, L=Left, R=Right, relative to the vessel head', 'direction'),
+        ('Direction, L=Left, R=Right, relative to the vessel head',
+         'direction'),
         ('Wind speed knots', 'wind_speed_knots', Decimal),
         ('Knots', 'knots'),  # N = Knots
         ('Wind speed meters/second', 'wind_speed_meters', Decimal),
@@ -1290,6 +1308,7 @@ class DBS(TalkerSentence):
         ('Fathoms', 'fathoms'),
     )
 
+
 # DPT - water depth relative to the transducer and offset of the measuring
 # transducer
 # Used by simrad devices (f.e. EK500)
@@ -1301,6 +1320,7 @@ class DPT(TalkerSentence):
         ('Offset from the trasducer, in meters', 'offset', Decimal),
         ('Maximum range scale in use', 'range', Decimal),
     )
+
 
 # GBS - GPS Satellite Fault Detection
 # used by devices such as [MX521] [NV08C-CSM]
@@ -1316,7 +1336,8 @@ class GBS(TalkerSentence):
         ('PRN of most likely failed satellite', 'sat_prn_num_f'),
         ('Probability of missed detection for most likely failed satellite',
          'pro_miss', Decimal),
-        ('Estimate of bias in meters on most likely failed satellite', 'est_bias'),
+        ('Estimate of bias in meters on most likely failed satellite',
+         'est_bias'),
         ('Standard deviation of bias estimate', 'est_bias_dev'),
     )
 
@@ -1324,15 +1345,8 @@ class GBS(TalkerSentence):
 # STALK Message -
 # Used by gadgetpool Seatalk to nmea devices
 class ALK(TalkerSentence, SeaTalk):
-    fields = (
-        ("Command", "cmd"),
-        ("Data Byte 1", "data_byte1"),
-        ("Data Byte 2", "data_byte2"),
-        ("Data Byte 3", "data_byte3"),
-        ("Data Byte 4", "data_byte4"),
-        ("Data Byte 5", "data_byte5"),
-        ("Data Byte 6", "data_byte6"),
-        ("Data Byte 7", "data_byte7"),
-        ("Data Byte 8", "data_byte8"),
-        ("Data Byte 9", "data_byte9")
-    )
+    fields = (("Command", "cmd"), ("Data Byte 1", "data_byte1"),
+              ("Data Byte 2", "data_byte2"), ("Data Byte 3", "data_byte3"),
+              ("Data Byte 4", "data_byte4"), ("Data Byte 5", "data_byte5"),
+              ("Data Byte 6", "data_byte6"), ("Data Byte 7", "data_byte7"),
+              ("Data Byte 8", "data_byte8"), ("Data Byte 9", "data_byte9"))

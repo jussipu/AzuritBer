@@ -992,12 +992,11 @@ void Robot::autoReboot()
     MyRpi.sendCommandToPi("RestartPi");
   }
   else
-  {
     Console.println(F("Due reset after 1 seconds"));
-  }
+
   delay(1000);
   watchdogReset();
-  delay(5000);
+  delay(20000);
 }
 
 // ---- motor RPM (interrupt) --------------------------------------------------------------
@@ -2198,8 +2197,8 @@ void Robot::setup()
   // watchdog enable at the end of the setup
   if (Enable_DueWatchdog)
   {
-    Console.println("Watchdog is enabled and set to 2 secondes");
-    watchdogEnable(2000); // Watchdog trigger after 2 sec if not reseted.
+    Console.println("Watchdog is enabled and set to 5 seconds");
+    watchdogEnable(5000); // Watchdog trigger after 5 sec if not reseted.
   }
   else
     Console.println("Watchdog is disabled");
@@ -2208,7 +2207,7 @@ void Robot::setup()
   if (!strcmp(p, signature)) // signature exist
   {
     resetByWDT = true;
-    Console.println("Watchdog activated reboot done.");
+    Console.println("Watchdog triggered reboot done.");
   }
   else
   {
@@ -2949,7 +2948,11 @@ void Robot::readSensors()
     nextTimeRain = millis() + rainReadDelay * 1000;        // rainReadDelay, seconds from mower.cpp
     rain = ((readSensor(SEN_RAIN) != 0) || (rainWS != 0)); // rainWS is always false if not use
     if (rain)
+    {
       rainCounter++;
+      // if ((timerUse) && (stateCurr == STATE_STATION)) // delay for timer when raining
+      //   nextTimeTimer = millis() + 1800000;           // 30min.
+    }
   }
 }
 
@@ -3118,7 +3121,7 @@ void Robot::setNextState(byte stateNew, byte dir)
       Console.print("Total duration ");
       Console.print(int(millis() - stateStartTime) / 1000);
       Console.println(" secondes ");
-      nextTimeTimer = millis() + 1200000; // only check again the timer after 20 minutes to avoid repetition
+      nextTimeTimer = millis() + 1800000; // only check again the timer after 30 minutes to avoid repetition
     }
     delayToReadVoltageStation = millis() + 1500; // changed from 2500
     //bber14 no accel here ?????
@@ -4249,9 +4252,9 @@ void Robot::checkBattery()
 
           if (RaspberryPIUse)
           {
-            Console.println(F("PCB power OFF after 30 secondes, need to wait until PI Stop power the USB Native Port"));
+            Console.println(F("Battery IDLE trigger "));
+            Console.println(F("PCB power OFF after 30 secondes Wait Until PI Stop "));
             MyRpi.sendCommandToPi("PowerOffPi");
-            //delay(30000); //wait 30Sec  until pi is OFF or the USB native power again the due and the undervoltage never switch OFF
             delayWithWatchdog(30000);
           }
           else
@@ -5824,8 +5827,8 @@ void Robot::loop()
         }
         else
         { //bber20
-          if (millis() - stateStartTime > 10000)
-            checkTimer(); //only check timer after 10 second to avoid restart before charging and check non stop after but real only 60 sec
+          if (millis() - stateStartTime > 30000)
+            checkTimer(); //only check timer after 30 second to avoid restart before charging and check non stop after but real only 60 sec
         }
       }
       else
@@ -5838,8 +5841,8 @@ void Robot::loop()
     }
     else
     {
-      if (millis() - stateStartTime > 10000)
-        checkTimer(); //only check timer after 10 second to avoid restart before charging
+      if (millis() - stateStartTime > 30000)
+        checkTimer(); //only check timer after 30 second to avoid restart before charging
     }
     readDHT22();
     break;

@@ -2,3 +2,7 @@
 PiArdumower/piardu311.py
 PiArdumower/piardu310.py
 .gitignore
+PiArdumower/PiArduDEV.py
+mower.code-workspace
+PiArdumower/pynmea2/types/talkerORG.py
+wifi_check.sh

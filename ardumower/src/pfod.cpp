@@ -1271,7 +1271,6 @@ void RemoteControl::sendStationMenu(bool update)
   sendSlider("k02", F("Accel Distance after Roll"), robot->stationForwDist, "", 1, 200, 0);
   sendSlider("k03", F("Station check Distance"), robot->stationCheckDist, "", 1, 20, 0);
   sendSlider("k06", F("Docking Speed % of MaxSpeed"), robot->dockingSpeed, "", 1, 100, 20);
-  serialPort->println(F("|k04~Force State to Station "));
 
   serialPort->println("}");
 }
@@ -1293,8 +1292,6 @@ void RemoteControl::processStationMenu(String pfodCmd)
     processSlider(pfodCmd, robot->stationCheckDist, 1);
   else if (pfodCmd.startsWith("k06"))
     processSlider(pfodCmd, robot->dockingSpeed, 1);
-  else if (pfodCmd.startsWith("k04"))
-    robot->setNextState(STATE_STATION, 0);
 
   sendStationMenu(true);
 }
@@ -1725,13 +1722,27 @@ void RemoteControl::processCommandMenu(String pfodCmd)
     sendCommandMenu(true);
   }
   else if (pfodCmd == "ru")
-  {
+  { //coming from pi when find a tag to help find a faster start entry (skip part of the tracking wire)
 
     // cmd: find  tag for fast start
     if (robot->areaToGo != 1)
     { // if a distance is set for start point we can't use the fast start
       robot->setNextState(STATE_PERI_STOP_TO_FAST_START, 0);
     }
+    sendCommandMenu(true);
+  }
+  else if (pfodCmd == "rv")
+  { //coming from pi starttimer mqtt addon
+    Console.println("MQTT START FROM STATION");
+    robot->ActualRunningTimer = 0;
+    robot->findedYaw = 999;
+    robot->imuDirPID.reset();
+    //robot->mowPatternCurr = 1;
+    robot->startByTimer = true;
+    robot->mowPatternDuration = 0;
+    robot->totalDistDrive = 0;
+    robot->setActuator(ACT_CHGRELAY, 0);
+    robot->setNextState(STATE_STATION_REV, 0);
     sendCommandMenu(true);
   }
   else if (pfodCmd == "rz")

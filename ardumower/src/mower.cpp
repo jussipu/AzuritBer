@@ -50,7 +50,7 @@ Mower robot;
 
 Mower::Mower()
 {
-  name = "LawnMower";
+  name = "ArduMower";
   // ------- debug to console -------------------------
   debugConsole = true; // debug messages to console
   // ------- wheel motors -----------------------------
@@ -61,7 +61,7 @@ Mower::Mower()
   motorOdoAccel = 1500;         // Time for accel from 0 to 100% in ms
   motorSpeedMaxRpm = 29;        // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
   motorSpeedMaxPwm = 180;       // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorPowerMax = 60;           // motor wheel max power (Watt)
+  motorPowerMax = 65;           // motor wheel max power (Watt)
   motorSenseRightScale = 3.100; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
   motorSenseLeftScale = 3.100;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
   motorPowerIgnoreTime = 2000;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
@@ -94,7 +94,7 @@ Mower::Mower()
   // ------ mower motor -------------------------------
   secondMowMotor = true;       // one mow motor = false; two mow motors = true;
   motorMowAccel = 3000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
-  motorMowSpeedMaxPwm = 225;   // motor mower max PWM
+  motorMowSpeedMaxPwm = 220;   // motor mower max PWM
   motorMowPowerMax = 50.0;     // motor mower max power (Watt)
   motorMowModulate = 0;        // motor mower cutter modulation?
   motorMowRPMSet = 3300;       // motor mower RPM (only for cutter modulation)
@@ -110,7 +110,7 @@ Mower::Mower()
   dropcontact = 0; //contact 0-openers 1-closers    Dropsensor - Kontakt 0-Öffner - 1-Schließer betätigt gegen GND
   // ------ rain ------------------------------------
   rainUse = 1;        // use rain sensor?
-  rainReadDelay = 60; // rain sensor read delay s
+  rainReadDelay = 30; // rain sensor read delay s
   wsRainData = 2;     // WS rain data selection: 1=Last 15 min, 2=Last 60 min, 3=Actual hour
 
   // ------ DHT & Raspberry temp --------------------
@@ -145,7 +145,7 @@ Mower::Mower()
   DistPeriOutRev = 40;           // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30;      // reverse distance when hit obstacle while tracking in cm
   DistPeriOutForw = 60;          // distance to accell
-  DistPeriOutStop = 25;          // slowing distance after crossover the wire
+  DistPeriOutStop = 20;          // slowing distance after crossover the wire
   DistPeriObstacleForw = 25;     // distance while arc circle in peri obstacle avoid
   perimeterPID.Kp = 16.5;        // perimeter PID controller
   perimeterPID.Ki = 8;
@@ -191,8 +191,8 @@ Mower::Mower()
   delayBetweenTwoDmpAutocalib = 360; // in sec
   yawCiblePos = 90;
   yawCibleNeg = -90;
-  DistBetweenLane = 38;
-  maxLenghtByLane = 9; // distance to run in bylane before simulate a wire detection
+  DistBetweenLane = 40;
+  maxLenghtByLane = 15; // distance to run in bylane before simulate a wire detection
   justChangeLaneDir = true;
   mowPatternCurr = MOW_RANDOM; // was MOW_LANES
   compassRollSpeedCoeff = 40;  //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
@@ -204,7 +204,7 @@ Mower::Mower()
   batGoHomeIfBelow = 23.8;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 21.7;  // switch off battery if below voltage (Volt)
   batSwitchOffIfIdle = 15;     // switch off battery if idle (minutes)
-  batFactor = 11.07;           // depend of the resistor divisor on board R12 and R13
+  batFactor = 11.10;           // depend of the resistor divisor on board R12 and R13
   batChgFactor = 10.97;        // depend of the resistor divisor on board R9 and R10
   batFull = 29.4;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 3;   // maximum current your charger can deliver
@@ -220,7 +220,7 @@ Mower::Mower()
   stationRevDist = 90;   // charge station reverse 50 cm
   stationRollAngle = 55; // charge station roll after reverse
   stationForwDist = 40;  // charge station accel distance cm
-  stationCheckDist = 1;  // charge station check distance cm
+  stationCheckDist = 2;  // charge station check distance cm
   UseBumperDock = false; // bumper is pressed when docking or not
   dockingSpeed = 60;     // speed docking is (percent of maxspeed)
   autoResetActive = 0;   // after charging reboot or not
@@ -232,7 +232,7 @@ Mower::Mower()
   odometryRightSwapDir = 0;         // inverse right encoder direction?
 
   // ----- GPS -------------------------------------------
-  gpsUse = 1;                 // use GPS?
+  gpsUse = 0;                 // use GPS?
   stuckIfGpsSpeedBelow = 0.2; // if Gps speed is below given value the mower is stuck
   gpsBaudrate = 9600;         // Gps baud rate setting (use 9600 for m6n and 38400 for m8n)
 
@@ -562,7 +562,7 @@ int Mower::readSensor(char type)
     return (digitalRead(pinDropLeft));
     break; // Dropsensor - Absturzsensor
 
-  // sonar---------------------------------------------------------------------------------------------------
+    // sonar---------------------------------------------------------------------------------------------------
 
   case SEN_SONAR_CENTER:
     return (NewSonarCenter.ping_cm());

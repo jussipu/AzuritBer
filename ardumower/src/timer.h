@@ -91,12 +91,12 @@ void Robot::checkTimer()
           else
             setNextState(STATE_OFF, 0);
         }
-        if ((stateCurr == STATE_OFF) && (stopTimerTriggered) && (perimeterUse) && (resetByWDT))
-        {
-          resetByWDT = false;
-          Console.println(F("WDT reset detected, trying to go home."));
-          setNextState(STATE_PERI_FIND, 0);
-        }
+        // if ((stateCurr == STATE_OFF) && (stopTimerTriggered) && (perimeterUse) && (resetByWDT))
+        // {
+        //   resetByWDT = false;
+        //   Console.println(F("WDT reset detected, trying to go home."));
+        //   setNextState(STATE_PERI_FIND, 0);
+        // }
       }
     }
   }

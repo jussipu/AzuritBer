@@ -1249,6 +1249,14 @@ void RpiRemote::readWrite_var()
       //here need to add all the variable that can send the raspberry and what to do
       if (strncmp(variable_name[i], "mowPatternCurr", 20) == 0)
         robot->mowPatternCurr = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "laneUseNr", 20) == 0)
+        robot->laneUseNr = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "rollDir", 20) == 0)
+        robot->rollDir = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "whereToStart", 20) == 0)
+        robot->whereToStart = atoi(received_value[i]);
+      if (strncmp(variable_name[i], "actualLenghtByLane", 20) == 0)
+        robot->actualLenghtByLane = atoi(received_value[i]);
       if (strncmp(variable_name[i], "motorLeftSpeedRpmSet", 20) == 0)
         robot->motorLeftSpeedRpmSet = atoi(received_value[i]);
       if (strncmp(variable_name[i], "motorLeftSpeedRpmSet", 20) == 0)
@@ -1265,8 +1273,8 @@ void RpiRemote::readWrite_var()
         Console.print("Set New perimeter tracking speed  ");
         Console.println(robot->ActualSpeedPeriPWM);
       }
-      if (strncmp(variable_name[i], "newtagDistance1", 20) == 0)
-        robot->newtagDistance1 = atoi(received_value[i]);
+      // if (strncmp(variable_name[i], "newtagDistance1", 20) == 0)
+      //   robot->newtagDistance1 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "newtagDistance2", 20) == 0)
         robot->newtagDistance2 = atoi(received_value[i]);
       if (strncmp(variable_name[i], "areaToGo", 20) == 0)
