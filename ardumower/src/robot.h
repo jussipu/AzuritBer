@@ -796,6 +796,7 @@ public:
   virtual void deleteRobotStats();
   virtual void newTagFind();
   virtual void autoReboot();
+  virtual void rebootPi();
   // other
   // virtual void beep(int numberOfBeeps, bool shortbeep);
   virtual void printInfo(Stream &s);

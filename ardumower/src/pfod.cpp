@@ -1536,7 +1536,6 @@ void RemoteControl::processTimerDetailMenu(String pfodCmd)
     minutes2time(stopmin, time);
     robot->timer[timerIdx].stopTime = time;
     robot->startByTimer = false;
-    robot->actualLenghtByLane = robot->maxLenghtByLane;
     robot->whereToStart = 0;
     robot->actualLenghtByLane = robot->maxLenghtByLane;
   }
@@ -1680,6 +1679,7 @@ void RemoteControl::sendCommandMenu(bool update)
   serialPort->print(F("|rh~Go to Station"));
   serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
+  serialPort->print(F("|rx~Reboot RasPi"));
   serialPort->print(F("|r1~User switch 1 is "));
   sendOnOff(robot->userSwitch1);
   serialPort->print(F("|r2~User switch 2 is "));
@@ -1822,6 +1822,11 @@ void RemoteControl::processCommandMenu(String pfodCmd)
     // cmd: pattern
     robot->mowPatternCurr = (robot->mowPatternCurr + 1) % 3;
     robot->setNextState(STATE_OFF, 0);
+    sendCommandMenu(true);
+  }
+  else if (pfodCmd == "rx")
+  {
+    robot->rebootPi();
     sendCommandMenu(true);
   }
   else if (pfodCmd == "rt")

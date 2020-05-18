@@ -104,6 +104,18 @@ if (useMqtt):
 
         if (str(message.topic) == "Mower/COMMAND/"
                 or str(message.topic) == "Mower/COMMAND"):
+            if (str(responsetable[0]) == "RESTARTONLYPI"):
+                subprocess.Popen('/home/pi/Documents/PiArdumower/Restart.py')
+            if (str(responsetable[0]) == "RESTARTALL"):
+                send_pfo_message(
+                    'rx',
+                    '1',
+                    '2',
+                    '3',
+                    '4',
+                    '5',
+                    '6',
+                )
             if (str(responsetable[0]) == "HOME"):
                 button_home_click()
             if (str(responsetable[0]) == "STOP"):
@@ -281,7 +293,15 @@ def find_rfid_tag():
                              'motorSpeedMaxPwm',
                              '' + str(mymower.newtagSpeed) + '', '0', '0', '0',
                              '0', '0')
-            send_pfo_message('rz', '1', '2', '3', '4', '5', '6')
+            send_pfo_message(
+                'rz',
+                '1',
+                '2',
+                '3',
+                '4',
+                '5',
+                '6',
+            )
 
         if ((mymower.newtagToDo == "FAST_START")):  #find a faster way to start
             consoleInsertText('RFID Find faster start' + '\n')
@@ -290,7 +310,15 @@ def find_rfid_tag():
                              'motorSpeedMaxPwm',
                              '' + str(mymower.newtagSpeed) + '', '0', '0', '0',
                              '0', '0')
-            send_pfo_message('ru', '1', '2', '3', '4', '5', '6')
+            send_pfo_message(
+                'ru',
+                '1',
+                '2',
+                '3',
+                '4',
+                '5',
+                '6',
+            )
 
         if (mymower.newtagToDo == "SPEED"):  #find the station for example
             consoleInsertText('RFID change tracking speed' + '\n')
@@ -320,7 +348,15 @@ def find_rfid_tag():
                 send_var_message('w', 'newtagDistance2',
                                  '' + str(mymower.newtagDistance2) + '', '0',
                                  '0', '0', '0', '0', '0', '0')
-                send_pfo_message('ry', '1', '2', '3', '4', '5', '6')
+                send_pfo_message(
+                    'ry',
+                    '1',
+                    '2',
+                    '3',
+                    '4',
+                    '5',
+                    '6',
+                )
 
             else:  #we are already in the mowing area so return to station from other area
                 mymower.areaToGo = 1
@@ -342,7 +378,15 @@ def find_rfid_tag():
                                  '0', '0', '0', '0', '0', '0')
                 send_var_message('w', 'areaToGo', '1', '0', '0', '0', '0', '0',
                                  '0', '0')
-                send_pfo_message('ry', '1', '2', '3', '4', '5', '6')
+                send_pfo_message(
+                    'ry',
+                    '1',
+                    '2',
+                    '3',
+                    '4',
+                    '5',
+                    '6',
+                )
                 #stopsender can freeze the Pi so better to put it after the remote
                 ButtonStopArea2_click()
 
@@ -411,30 +455,37 @@ def readWS():
             'http://192.168.1.11/meteohtml.cgi?file=' + str(rainData))
         wsrain = wsrainUrl.read()
         if float(wsrain) > 0:
-            send_var_message('w', 'rainWS', '1', 'nextTimeTimer',
-                                '' + str(int(tempvar)) + '', '0', '0', '0',
-                                '0', '0')
+            send_var_message(
+                'w',
+                'rainWS',
+                '1',
+                'nextTimeTimer',
+                '' + str(int(tempvar)) + '',
+                '0',
+                '0',
+                '0',
+                '0',
+                '0',
+            )
             if int(myRobot.wsRainData) == 1:
                 print(str(float(wsrain)) + ' mm rain in last 15 minutes')
                 consoleInsertText(
-                    str(float(wsrain)) + ' mm rain in last 15 minutes' +
-                    '\n')
+                    str(float(wsrain)) + ' mm rain in last 15 minutes' + '\n')
             elif int(myRobot.wsRainData) == 2:
                 print(str(float(wsrain)) + ' mm rain in last 60 minutes')
                 consoleInsertText(
-                    str(float(wsrain)) + ' mm rain in last 60 minutes' +
-                    '\n')
+                    str(float(wsrain)) + ' mm rain in last 60 minutes' + '\n')
             elif int(myRobot.wsRainData) == 3:
                 print(float(wsrain) + ' mm rain on actual hour')
                 consoleInsertText(
                     str(float(wsrain)) + ' mm rain in actual hour' + '\n')
             else:
                 print('WS rain data source not read from DUE yet')
-                consoleInsertText(
-                    'WS rain data source not read from DUE yet' + '\n')
+                consoleInsertText('WS rain data source not read from DUE yet' +
+                                  '\n')
         else:
-            send_var_message('w', 'rainWS', '0', '0', '0', '0', '0', '0',
-                                '0', '0')
+            send_var_message('w', 'rainWS', '0', '0', '0', '0', '0', '0', '0',
+                             '0')
             if int(myRobot.wsRainData) == 1:
                 print('No rain in last 15 minutes')
                 consoleInsertText('No rain in last 15 minutes' + '\n')
@@ -446,8 +497,8 @@ def readWS():
                 consoleInsertText('No rain in actual hour' + '\n')
             else:
                 print('WS rain data source not read from DUE yet')
-                consoleInsertText(
-                    'WS rain data source not read from DUE yet' + '\n')
+                consoleInsertText('WS rain data source not read from DUE yet' +
+                                  '\n')
 
     else:
         print('Weather station not connected..')
@@ -838,7 +889,15 @@ def checkSerial():  # the main loop is that
             send_var_message('w', 'motorSpeedMaxPwm',
                              '' + str(manualSpeedSlider.get()) + '', '0', '0',
                              '0', '0', '0', '0', '0')
-            send_pfo_message('nf', '1', '2', '3', '4', '5', '6')
+            send_pfo_message(
+                'nf',
+                '1',
+                '2',
+                '3',
+                '4',
+                '5',
+                '6',
+            )
         if myps4.downClick:
             ButtonStop_click()
         if myps4.triangleClick:
@@ -1122,9 +1181,9 @@ def decode_message(message):  # decode the nmea message
 
     if message.sentence_type == 'STU':  # message for status info send on change only
         mymower.status = int(message.status)
-        #bber40
-        if useMqtt:
-            sendMqtt('Mower/Status', str(myRobot.statusNames[mymower.status]))
+        if (useMqtt and Mqqt_client.connected_flag):
+            sendMqtt("Mower/Status", str(myRobot.statusNames[mymower.status]))
+
         if myRobot.statusNames[mymower.status] == 'TRACK_TO_START':
             mymower.areaInMowing = int(message.val1)
             mymower.areaToGo = int(message.val2)
@@ -1722,15 +1781,30 @@ def ButtonSetMainApply_click():
 
 def BtnMowPlotStartRec_click():
     mowPlotterKst.start('/home/pi/Documents/PiArdumower/plotMow.kst')
-    send_req_message('MOW', '' + str(SldMainMowRefresh.get()) + '', '1',
-                     '10000', '0', '0', '0')  # arduino start sending data
+    send_req_message(
+        'MOW',
+        '' + str(SldMainMowRefresh.get()) + '',
+        '1',
+        '10000',
+        '0',
+        '0',
+        '0',
+    )  # arduino start sending data
 
 
 def BtnMowPlotStopRec_click():
     global firstplotMowx
     firstplotMowx = 0  # initialise the first time plot for next plot
     mowPlotterKst.stop()  # close the kst prog
-    send_req_message('MOW', '1', '0', '0', '0', '0', '0')
+    send_req_message(
+        'MOW',
+        '1',
+        '0',
+        '0',
+        '0',
+        '0',
+        '0',
+    )
     filename = '/home/pi/Documents/PiArdumower/log/Plotmow' + time.strftime(
         '%Y%m%d%H%M') + '.CSV'
     try:  # avoid error if file not exit
@@ -1748,15 +1822,30 @@ def BtnMowPlotStopRec_click():
 
 def BtnPeriPlotStartRec_click():
     periPlotterKst.start('/home/pi/Documents/PiArdumower/plotPeri.kst')
-    send_req_message('PERI', '' + str(SldMainPeriRefresh.get()) + '', '1',
-                     '10000', '0', '0', '0')
+    send_req_message(
+        'PERI',
+        '' + str(SldMainPeriRefresh.get()) + '',
+        '1',
+        '10000',
+        '0',
+        '0',
+        '0',
+    )
 
 
 def BtnPeriPlotStopRec_click():
     global firstplotPerx
     firstplotPerx = 0
     periPlotterKst.stop()  # close the kst prog
-    send_req_message('PERI', '1', '0', '0', '0', '0', '0')
+    send_req_message(
+        'PERI',
+        '1',
+        '0',
+        '0',
+        '0',
+        '0',
+        '0',
+    )
     filename = '/home/pi/Documents/PiArdumower/log/PlotPeri' + time.strftime(
         '%Y%m%d%H%M') + '.CSV'
     try:
@@ -1777,15 +1866,30 @@ def BtnBatPlotStartRec_click():
     # it's not the auto record so need to start KST
     if (mymower.autoRecordBatChargeOn != True):
         batPlotterKst.start('/home/pi/Documents/PiArdumower/plotBat.kst')
-    send_req_message('BAT', '' + str(SldMainBatRefresh.get()) + '', '1',
-                     '10000', '0', '0', '0')
+    send_req_message(
+        'BAT',
+        '' + str(SldMainBatRefresh.get()) + '',
+        '1',
+        '10000',
+        '0',
+        '0',
+        '0',
+    )
 
 
 def BtnBatPlotStopRec_click():
     global firstplotBatx
     firstplotBatx = 0
     batPlotterKst.stop()  # close the kst prog
-    send_req_message('BAT', '1', '0', '0', '0', '0', '0')
+    send_req_message(
+        'BAT',
+        '1',
+        '0',
+        '0',
+        '0',
+        '0',
+        '0',
+    )
     filename = ('/home/pi/Documents/PiArdumower/log/PlotBattery' +
                 time.strftime('%Y%m%d%H%M') + '.CSV')
     try:
@@ -1806,24 +1910,55 @@ def BtnBatPlotStopRec_click():
 
 
 def BtnBylaneStartRec_click():
-    send_req_message('BYL', '3', '1', '6000', '0', '0', '0')
+    send_req_message(
+        'BYL',
+        '3',
+        '1',
+        '6000',
+        '0',
+        '0',
+        '0',
+    )
 
 
 def BtnBylaneStopRec_click():
-    send_req_message('BYL', '1', '0', '0', '0', '0', '0')
+    send_req_message(
+        'BYL',
+        '1',
+        '0',
+        '0',
+        '0',
+        '0',
+        '0',
+    )
 
 
 def BtnMotPlotStartRec_click():
     motPlotterKst.start('/home/pi/Documents/PiArdumower/plotMot.kst')
-    send_req_message('MOT', '' + str(SldMainWheelRefresh.get()) + '', '1',
-                     '10000', '0', '0', '0')
+    send_req_message(
+        'MOT',
+        '' + str(SldMainWheelRefresh.get()) + '',
+        '1',
+        '10000',
+        '0',
+        '0',
+        '0',
+    )
 
 
 def BtnMotPlotStopRec_click():
     global firstplotMotx
     firstplotMotx = 0
     motPlotterKst.stop()  # close the kst prog
-    send_req_message('MOT', '1', '0', '0', '0', '0', '0')
+    send_req_message(
+        'MOT',
+        '1',
+        '0',
+        '0',
+        '0',
+        '0',
+        '0',
+    )
     filename = ('/home/pi/Documents/PiArdumower/log/PlotMotor' +
                 time.strftime('%Y%m%d%H%M') + '.CSV')
     try:
@@ -2104,11 +2239,27 @@ def ButtonSaveReceived_click():
 
 
 def button_stop_all_click():
-    send_pfo_message('ro', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'ro',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonInfo_click():
-    send_req_message('INF', '2', '0', '1', '0', '0', '0')
+    send_req_message(
+        'INF',
+        '2',
+        '0',
+        '1',
+        '0',
+        '0',
+        '0',
+    )
     mymower.focusOnPage = 11
     InfoPage.tkraise()
 
@@ -2129,19 +2280,43 @@ def ButtonSchedule_click():
 
 
 def ButtonGyroCal_click():
-    send_pfo_message('g18', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'g18',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
     mymower.focusOnPage = 4
     ConsolePage.tkraise()
 
 
 def ButtonCompasCal_click():
-    send_pfo_message('g19', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'g19',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
     mymower.focusOnPage = 4
     ConsolePage.tkraise()
 
 
 def ButtonSendSettingToEeprom_click():
-    send_pfo_message('sz', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'sz',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
     mymower.focusOnPage = 4
     ConsolePage.tkraise()
 
@@ -2227,7 +2402,7 @@ def ButtonSendSettingByLaneToDue_click():
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
-                            '',''+str(0)+'')
+                            '',''+str(0)+'',)
     Send_reqSetting_message('ByLane','w','2',''+str(myRobot.yawOppositeLane1RollLeft)+\
                             '',''+str(myRobot.yawOppositeLane2RollLeft)+\
                             '',''+str(myRobot.yawOppositeLane3RollLeft)+\
@@ -2237,7 +2412,7 @@ def ButtonSendSettingByLaneToDue_click():
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
-                            '',''+str(0)+'')
+                            '',''+str(0)+'',)
 
 
 def ButtonSendSettingDateTimeToDue_click():
@@ -2250,7 +2425,7 @@ def ButtonSendSettingDateTimeToDue_click():
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
-                            '',''+str(0)+'')
+                            '',''+str(0)+'',)
 
 
 def ButtonSendSettingToDue_click():
@@ -2263,17 +2438,19 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.motorSenseLeftScale)+\
                             '',''+str(myRobot.motorRollDegMax)+\
                             '',''+str(myRobot.motorRollDegMin)+\
-                            '',''+str(myRobot.DistPeriOutRev)+'')
+                            '',''+str(myRobot.DistPeriOutRev)+'',)
+
     Send_reqSetting_message('All','w','2',''+str(myRobot.motorPowerIgnoreTime)+\
                             '',''+str(myRobot.motorForwTimeMax)+\
                             '',''+str(myRobot.motorMowSpeedMaxPwm)+\
                             '',''+str(myRobot.motorMowPowerMax)+\
                             '',''+str(myRobot.motorMowRPMSet)+\
-                            '',''+str(myRobot.motorMowSenseScale)+\
+                            '',''+str(myRobot.motor1MowSenseScale)+\
                             '',''+str(myRobot.motorLeftPID_Kp)+\
                             '',''+str(myRobot.motorLeftPID_Ki)+\
                             '',''+str(myRobot.motorLeftPID_Kd)+\
-                            '',''+str(myRobot.motorMowPID_Kp)+'')
+                            '',''+str(myRobot.motorMowPID_Kp)+'',)
+
     Send_reqSetting_message('All','w','3',''+str(myRobot.motorMowPID_Ki)+\
                             '',''+str(myRobot.motorMowPID_Kd)+\
                             '',''+str(myRobot.motorBiDirSpeedRatio1)+\
@@ -2283,17 +2460,20 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.bumperUse)+\
                             '',''+str(myRobot.sonarUse)+\
                             '',''+str(myRobot.sonarCenterUse)+\
-                            '',''+str(myRobot.sonarLeftUse)+'')
+                            '',''+str(myRobot.sonarLeftUse)+'',)
+
     Send_reqSetting_message('All','w','4',''+str(myRobot.sonarRightUse)+\
                             '',''+str(myRobot.sonarTriggerBelow)+\
                             '',''+str(myRobot.perimeterUse)+\
                             '',''+str(myRobot.perimeter_timedOutIfBelowSmag)+\
-                            '',''+str(myRobot.perimeterTriggerMinSmag)+\
+                            '',''+str(myRobot.perimeterTriggerTimeout)+\
                             '',''+str(myRobot.perimeterOutRollTimeMax)+\
                             '',''+str(myRobot.perimeterOutRollTimeMin)+\
                             '',''+str(myRobot.perimeterOutRevTime)+\
                             '',''+str(myRobot.perimeterTrackRollTime)+\
-                            '',''+str(myRobot.perimeterTrackRevTime)+'')
+                            '',''+str(myRobot.perimeterTrackRevTime)+'',)
+
+
     Send_reqSetting_message('All','w','5',''+str(myRobot.perimeterPID_Kp)+\
                             '',''+str(myRobot.perimeterPID_Ki)+\
                             '',''+str(myRobot.perimeterPID_Kd)+\
@@ -2303,7 +2483,8 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.trakBlockInnerWheel)+\
                             '',''+str(myRobot.lawnSensorUse)+\
                             '',''+str(myRobot.imuUse)+\
-                            '',''+str(myRobot.stopMotorDuringCalib)+'')
+                            '',''+str(myRobot.stopMotorDuringCalib)+'',)
+
     Send_reqSetting_message('All','w','6',''+str(myRobot.imuDirPID_Kp)+\
                             '',''+str(myRobot.imuDirPID_Ki)+\
                             '',''+str(myRobot.imuDirPID_Kd)+\
@@ -2313,7 +2494,8 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.remoteUse)+\
                             '',''+str(myRobot.batMonitor)+\
                             '',''+str(myRobot.batGoHomeIfBelow)+\
-                            '',''+str(myRobot.batSwitchOffIfBelow)+'')
+                            '',''+str(myRobot.batSwitchOffIfBelow)+'',)
+
     Send_reqSetting_message('All','w','7',''+str(myRobot.batSwitchOffIfIdle)+\
                             '',''+str(myRobot.batFactor)+\
                             '',''+str(myRobot.batChgFactor)+\
@@ -2323,7 +2505,9 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.startChargingIfBelow)+\
                             '',''+str(myRobot.stationRevDist)+\
                             '',''+str(myRobot.stationRollAngle)+\
-                            '',''+str(myRobot.stationForwDist)+'')
+                            '',''+str(myRobot.stationForwDist)+'',)
+
+
     Send_reqSetting_message('All','w','8',''+str(myRobot.stationCheckDist)+\
                             '',''+str(myRobot.odometryUse)+\
                             '',''+str(myRobot.odometryTicksPerRevolution)+\
@@ -2333,7 +2517,8 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.odometryRightSwapDir)+\
                             '',''+str(myRobot.twoWayOdometrySensorUse)+\
                             '',''+str(myRobot.buttonUse)+\
-                            '',''+str(myRobot.userSwitch1)+'')
+                            '',''+str(myRobot.userSwitch1)+'',)
+
     Send_reqSetting_message('All','w','9',''+str(myRobot.userSwitch2)+\
                             '',''+str(myRobot.userSwitch3)+\
                             '',''+str(myRobot.timerUse)+\
@@ -2343,7 +2528,9 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.gpsSpeedIgnoreTime)+\
                             '',''+str(myRobot.dropUse)+\
                             '',''+str(myRobot.statsOverride)+\
-                            '',''+str(myRobot.bluetoothUse)+'')
+                            '',''+str(myRobot.bluetoothUse)+'',)
+
+
     Send_reqSetting_message('All','w','10',''+str(myRobot.esp8266Use)+\
                             '',''+str(myRobot.esp8266ConfigString)+\
                             '',''+str(myRobot.tiltUse)+\
@@ -2353,7 +2540,8 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.RollTimeFor45Deg)+\
                             '',''+str(myRobot.DistPeriObstacleAvoid)+\
                             '',''+str(myRobot.circleTimeForObstacle)+\
-                            '',''+str(myRobot.DistPeriOutRev)+'')
+                            '',''+str(myRobot.DistPeriOutRev)+'',)
+
     Send_reqSetting_message('All','w','11',''+str(myRobot.motorRightOffsetFwd)+\
                             '',''+str(myRobot.motorRightOffsetRev)+\
                             '',''+str(myRobot.perimeterMagMaxValue)+\
@@ -2363,7 +2551,9 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.yawSet2)+\
                             '',''+str(myRobot.yawSet3)+\
                             '',''+str(myRobot.yawOppositeLane1RollRight)+\
-                            '',''+str(myRobot.yawOppositeLane2RollRight)+'')
+                            '',''+str(myRobot.yawOppositeLane2RollRight)+'',)
+
+
     Send_reqSetting_message('All','w','12',''+str(myRobot.yawOppositeLane3RollRight)+\
                             '',''+str(myRobot.yawOppositeLane1RollLeft)+\
                             '',''+str(myRobot.yawOppositeLane2RollLeft)+\
@@ -2373,17 +2563,32 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.perimeter_swapCoilPolarityRight)+\
                             '',''+str(myRobot.perimeter_read2Coil)+\
                             '',''+str(myRobot.maxDriftPerSecond)+\
-                            '',''+str(myRobot.delayBetweenTwoDmpAutocalib)+'')
+                            '',''+str(myRobot.delayBetweenTwoDmpAutocalib)+'',)
+
+
     Send_reqSetting_message('All','w','13',''+str(myRobot.maxDurationDmpAutocalib)+\
                             '',''+str(myRobot.mowPatternDurationMax)+\
                             '',''+str(myRobot.DistPeriOutStop)+\
                             '',''+str(myRobot.DHT22Use)+\
                             '',''+str(myRobot.RaspberryPIUse)+\
+                            '',''+str(myRobot.motor2MowSenseScale)+\
+                            '',''+str(myRobot.secondMowMotor)+\
+                            '',''+str(myRobot.rainReadDelay)+\
+                            '',''+str(myRobot.maxTemperature)+\
+                            '',''+str(myRobot.wsRainData)+'',)
+
+    Send_reqSetting_message('All','w','14',''+str(myRobot.useBumperDock)+\
+                            '',''+str(myRobot.dockingSpeed)+\
+                            '',''+str(myRobot.motorLeftSpeedDivider)+\
+                            #'',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
                             '',''+str(0)+\
-                            '',''+str(0)+'')
+                            '',''+str(0)+\
+                            '',''+str(0)+\
+                            '',''+str(0)+'',)
+
     consoleInsertText(
         "All Setting are change into the Due but not save for the moment" +
         '\n')
@@ -2598,7 +2803,15 @@ ButtonReadSettingFromFile.configure(text='Read Setting From File')
 
 def ButtonReboot_click():
     print("reboot")
-    send_pfo_message('h04', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'h04',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 ButtonReboot = tk.Button(tabMain,
@@ -2991,8 +3204,7 @@ tk.Label(
     tabDateTime,
     text=
     'To use the date and time the Use Timer need to be checked into the Main Setting',
-    fg='green',
-).place(x=50, y=300, width=700, height=20)
+    fg='green').place(x=50, y=300, width=700, height=20)
 '''************* Battery setting *****************************'''
 ChkBtnbatMonitor = tk.Checkbutton(tabBattery,
                                   text='Monitor low Battery',
@@ -3660,7 +3872,15 @@ slidermaxLenghtByLane.place(x=410, y=200, width=250, height=50)
 
 
 def ButtonLaneUseNr_click():
-    send_pfo_message('w01', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'w01',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 ButtonLaneUseNr = tk.Button(tabByLane,
@@ -3670,7 +3890,15 @@ ButtonLaneUseNr.place(x=10, y=200, width=100, height=20)
 
 
 def ButtonRollDir_click():
-    send_pfo_message('w20', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'w20',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 ButtonRollDir = tk.Button(tabByLane,
@@ -3814,18 +4042,42 @@ def button_home_click():
                      '0', '0', '0', '0', '0', '0')
     send_var_message('w', 'statusCurr', '3', '0', '0', '0', '0', '0', '0',
                      '0')  # set the status to back to station
-    send_pfo_message('rh', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'rh',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def button_track_click():
-    send_pfo_message('rk', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'rk',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def buttonStartMow_click():
     send_var_message('w', 'mowPatternCurr',
                      '' + str(tk_mowingPattern.get()) + '', '0', '0', '0', '0',
                      '0', '0', '0')
-    send_pfo_message('ra', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'ra',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 AutoPage = tk.Frame(fen1)
@@ -3992,26 +4244,66 @@ def ButtonForward_click():
     send_var_message('w', 'motorSpeedMaxPwm',
                      '' + str(manualSpeedSlider.get()) + '', '0', '0', '0',
                      '0', '0', '0', '0')
-    send_pfo_message('nf', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'nf',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonRight_click():
-    send_pfo_message('nr', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'nr',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonLeft_click():
-    send_pfo_message('nl', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'nl',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonReverse_click():
     ButtonForward.configure(state='disabled')
-    send_pfo_message('nb', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'nb',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonStop_click():
     ButtonForward.configure(state='normal')
     ButtonReverse.configure(state='normal')
-    send_pfo_message('ns', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'ns',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 ManualPage = tk.Frame(fen1)
@@ -4083,11 +4375,27 @@ ButtonBackHome.place(x=680, y=280, height=120, width=120)
 
 
 def ButtonListVar_click():
-    send_pfo_message('h02', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'h02',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonConsoleMode_click():
-    send_pfo_message('h03', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'h03',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonClearConsole_click():
@@ -4623,35 +4931,99 @@ ButtonBackHome.place(x=680, y=280, height=120, width=120)
 
 
 def ButtonOdo1TurnFw_click():
-    send_pfo_message('yt0', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdo5TurnFw_click():
-    send_pfo_message('yt1', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt1',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdo1TurnRev_click():
-    send_pfo_message('yt2', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt2',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdo5TurnRev_click():
-    send_pfo_message('yt3', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt3',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdo3MlFw_click():
-    send_pfo_message('yt4', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt4',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdoRot180_click():
-    send_pfo_message('yt6', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt6',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdoRot360_click():
-    send_pfo_message('yt5', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt5',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 def ButtonOdoRotNonStop_click():
-    send_pfo_message('yt7', '1', '2', '3', '4', '5', '6')
+    send_pfo_message(
+        'yt7',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+    )
 
 
 # def ButtonGoTOArea2_click():
@@ -4709,10 +5081,10 @@ ButtonOdoRotNonStop.configure(text='Rotate Non Stop 100 Turns')
 # ButtonTest = tk.Button(RfidPage, text='seek test',command = test1)
 # ButtonTest.place(x=530, y=260, height=60, width=140)
 
-ButtonTestEmail = tk.Button(TestPage,
-                            text='Send EMail Alert',
-                            command=sendEmail)
-ButtonTestEmail.place(x=30, y=215, height=25, width=200)
+# ButtonTestEmail = tk.Button(TestPage,
+#                             text='Send EMail Alert',
+#                             command=sendEmail)
+# ButtonTestEmail.place(x=30, y=215, height=25, width=200)
 
 ButtonBackHome = tk.Button(TestPage,
                            image=imgBack,
@@ -5114,7 +5486,8 @@ ButtonBackHome.place(x=660, y=280, height=120, width=120)
 
 
 def SliderHourStartGroup_click(var1):
-    print('heure change ' + str(var1))
+    pass
+    #print('heure change ' + str(var1))
 
 
 TabTimer = ttk.Notebook(fen1)
@@ -5350,31 +5723,26 @@ def ButtonSendTimerToDue_click():
         myRobot.TimerstartRollDir[i] = tk_timerStartRollDir[i].get()
         myRobot.TimerstartLaneMaxlengh[i] = tk_timerStartLaneMaxlengh[i].get()
         # the 7 days of the week as byte
-        myRobot.TimerdaysOfWeek[i] = (1 * int(tk_timerDayVar[i][0].get()) +
-                                      2 * int(tk_timerDayVar[i][1].get()) +
-                                      4 * int(tk_timerDayVar[i][2].get()) +
-                                      8 * int(tk_timerDayVar[i][3].get()) +
-                                      16 * int(tk_timerDayVar[i][4].get()) +
-                                      32 * int(tk_timerDayVar[i][5].get()) +
-                                      64 * int(tk_timerDayVar[i][6].get()))
-        Send_reqSetting_message(
-            'Timer', 'w', '' + str(i) + '', '' + str(myRobot.Timeractive[i]) +
-            '', '' + str(myRobot.TimerstartTime_hour[i]) + '',
-            '' + str(myRobot.TimerstartTime_minute[i]) + '',
-            '' + str(myRobot.TimerstopTime_hour[i]) + '',
-            '' + str(myRobot.TimerstopTime_minute[i]) + '',
-            '' + str(myRobot.TimerstartDistance[i]) + '',
-            '' + str(myRobot.TimerstartMowPattern[i]) + '',
-            '' + str(myRobot.TimerstartNrLane[i]) + '',
-            '' + str(myRobot.TimerstartRollDir[i]) + '',
-            '' + str(myRobot.TimerstartLaneMaxlengh[i]))
+        myRobot.TimerdaysOfWeek[i]=1*int(tk_timerDayVar[i][0].get())+2*int(tk_timerDayVar[i][1].get())+4*int(tk_timerDayVar[i][2].get())+\
+                  8*int(tk_timerDayVar[i][3].get())+16*int(tk_timerDayVar[i][4].get())+32*int(tk_timerDayVar[i][5].get())+\
+                  64*int(tk_timerDayVar[i][6].get())
+
+        Send_reqSetting_message('Timer','w',''+str(i)+'',''+str(myRobot.Timeractive[i])+\
+                                '',''+str(myRobot.TimerstartTime_hour[i])+\
+                                '',''+str(myRobot.TimerstartTime_minute[i])+\
+                                '',''+str(myRobot.TimerstopTime_hour[i])+\
+                                '',''+str(myRobot.TimerstopTime_minute[i])+\
+                                '',''+str(myRobot.TimerstartDistance[i])+\
+                                '',''+str(myRobot.TimerstartMowPattern[i])+\
+                                '',''+str(myRobot.TimerstartNrLane[i])+\
+                                '',''+str(myRobot.TimerstartRollDir[i])+\
+                                '',''+str(myRobot.TimerstartLaneMaxlengh[i]),)
 
     for i in range(5):
         myRobot.TimerstartArea[i] = tk_timerStartArea[i].get()
-        Send_reqSetting_message('Timer1', 'w', '' + str(i) + '',
-                                '' + str(myRobot.TimerstartArea[i]) + '',
-                                '' + str(myRobot.TimerdaysOfWeek[i]) + '', '0',
-                                '0', '0', '0', '0', '0', '0', '0')
+        Send_reqSetting_message('Timer1','w',''+str(i)+'',''+str(myRobot.TimerstartArea[i])+\
+                                '',''+str(myRobot.TimerdaysOfWeek[i])+\
+                                '','0','0','0','0','0','0','0','0',)
 
 
 def ButtonReadTimerFromDue_click():
@@ -5402,7 +5770,15 @@ def ButtonPowerOff_click():
         'Info', 'Are you sure you want to shutdown all the PCB ?')
     if returnval:
         button_stop_all_click()
-        send_pfo_message('rt', '1', '2', '3', '4', '5', '6')
+        send_pfo_message(
+            'rt',
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+        )
 
 
 MainPage = tk.Frame(fen1)
@@ -5493,7 +5869,15 @@ def kbd_upKey(e):
         send_var_message('w', 'motorSpeedMaxPwm',
                          '' + str(manualSpeedSlider.get()) + '', '0', '0', '0',
                          '0', '0', '0', '0')
-        send_pfo_message('nf', '1', '2', '3', '4', '5', '6')
+        send_pfo_message(
+            'nf',
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+        )
 
 
 def kbd_downKey(e):
@@ -5514,11 +5898,19 @@ checkSerial()
 consoleInsertText('Read Setting from PCB1.3' + '\n')
 read_all_setting()
 consoleInsertText('Read Area In Mowing from PCB1.3' + '\n')
-send_req_message('PERI', '1000', '1', '1', '0', '0', '0')
-
-if useMqtt:
-    consoleInsertText('Wait 2 minutes before start MQTT if needed' + '\n')
-    mymower.timeToReconnectMqtt = time.time() + 120
+send_req_message(
+    'PERI',
+    '1000',
+    '1',
+    '1',
+    '0',
+    '0',
+    '0',
+)
+if (useMqtt):
+    consoleInsertText('Wait update Date/Time from internet' + '\n')
+    consoleInsertText('Initial start MQTT after 1 minute' + '\n')
+    mymower.timeToReconnectMqtt = time.time() + 60
 else:
     consoleInsertText('Adjust PI time from PCB1.3' + '\n')
     read_time_setting()

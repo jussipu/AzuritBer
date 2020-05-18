@@ -19,7 +19,6 @@ void RpiRemote::run()
     nextTimeRaspberryPISendStat = millis() + 500; //better to put 200
     RaspberryPISendStat();
   }
-
   if ((millis() >= nextTimeRaspberryPISendInfo) && (maxRepetInfoToPi > 0))
   {
     maxRepetInfoToPi = maxRepetInfoToPi - 1;
@@ -139,7 +138,6 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
       lineToSend = lineToSend + i;
       lineToSend = lineToSend + ",";
       lineToSend = lineToSend + robot->timer[i].startArea;
-      ;
       lineToSend = lineToSend + ",";
       lineToSend = lineToSend + robot->timer[i].daysOfWeek;
       lineToSend = lineToSend + ",";
@@ -1291,10 +1289,7 @@ void RpiRemote::readWrite_var()
         robot->whereToResetSpeed = robot->totalDistDrive + robot->newtagDistance1; // when a speed tag is read it's where the speed is back to maxpwm value
         Console.print("Change speed for ");
         Console.print(robot->newtagDistance1);
-        Console.print(" centimeter   actual/Cible  ");
-        Console.print(robot->totalDistDrive);
-        Console.print(" / ");
-        Console.println(robot->whereToResetSpeed);
+        Console.println(" centimeters");
       }
       if (strncmp(variable_name[i], "rainWS", 20) == 0)
         robot->rainWS = atoi(received_value[i]); // rainWS

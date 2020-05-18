@@ -999,6 +999,15 @@ void Robot::autoReboot()
   delay(20000);
 }
 
+void Robot::rebootPi()
+{
+  if (RaspberryPIUse)
+  {
+    Console.println(F("Send a command to Pi for reboot"));
+    MyRpi.sendCommandToPi("RestartPi");
+  }
+}
+
 // ---- motor RPM (interrupt) --------------------------------------------------------------
 // mower motor RPM driver
 void Robot::setMotorMowRPMState(bool motorMowRpmState)
@@ -5807,6 +5816,7 @@ void Robot::loop()
         Console.print("Distance OK, time to start mowing into new area ");
         Console.println(areaInMowing);
         areaToGo = 1; //after mowing the mower need to back to station
+        ActualSpeedPeriPWM = MaxSpeedperiPwm;
         setNextState(STATE_PERI_STOP_TOROLL, rollDir);
         return;
       }
