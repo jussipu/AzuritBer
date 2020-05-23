@@ -66,6 +66,12 @@ if (useMqtt):
         if rc == 0:
             Mqqt_client.connected_flag = True  #set flag
             consoleInsertText("MQTT connected " + '\n')
+            #initialize all for next loop update MQTT data
+            mymower.state = 255
+            mymower.batVoltage = 0
+            mymower.lastMqttBatteryValue = 0
+            mymower.Dht22Temp = 0
+            sendMqtt("Mower/Status", str(myRobot.statusNames[mymower.status]))
 
         else:
             Mqqt_client.connected_flag = False
@@ -142,7 +148,7 @@ if (useMqtt):
                 send_var_message('w', 'whereToStart',
                                  '' + str(responsetable[4]) + '', 'areaToGo',
                                  '' + str(responsetable[5]) + '',
-                                 'actualLenghtBylane',
+                                 'actualLenghtByLane',
                                  '' + str(responsetable[6]) + '', '0', '0',
                                  '0')
                 send_pfo_message(
@@ -842,42 +848,41 @@ def checkSerial():  # the main loop is that
                     consoleInsertText(response2)
 
     if DueConnectedOnPi:
-        try:
-            mymower.dueSerialReceived = Due_Serial.readline()
-            if str(mymower.dueSerialReceived) != "b''":
-                mymower.dueSerialReceived = str(mymower.dueSerialReceived,
-                                                'utf8')
-                if mymower.dueSerialReceived[:1] != '$':  #it is console message because the first digit is not $
-                    if (len(mymower.dueSerialReceived)) > 2:
-                        consoleInsertText(mymower.dueSerialReceived)
+        # try:
+        mymower.dueSerialReceived = Due_Serial.readline()
+        if str(mymower.dueSerialReceived) != "b''":
+            mymower.dueSerialReceived = str(mymower.dueSerialReceived, 'utf8')
+            if mymower.dueSerialReceived[:1] != '$':  #it is console message because the first digit is not $
+                if (len(mymower.dueSerialReceived)) > 2:
+                    consoleInsertText(mymower.dueSerialReceived)
 
-                else:  # here a nmea message
-                    # print(mymower.dueSerialReceived)
-                    message = pynmea2.parse(mymower.dueSerialReceived)
-                    decode_message(message)
+            else:  # here a nmea message
+                # print(mymower.dueSerialReceived)
+                message = pynmea2.parse(mymower.dueSerialReceived)
+                decode_message(message)
 
-                    # try:
-                    #     message = pynmea2.parse(mymower.dueSerialReceived)
-                    #     decode_message(message)
-                    # except :
-                    # #    print('INCOMMING MESSAGE ERROR FROM DUE --> ' + str(mymower.dueSerialReceived))
-                    #     consoleInsertText('INCOMMING MESSAGE ERROR FROM DUE' + '\n')
-                    #     consoleInsertText(str(mymower.dueSerialReceived) + '\n')
+                # try:
+                #     message = pynmea2.parse(mymower.dueSerialReceived)
+                #     decode_message(message)
+                # except :
+                # #    print('INCOMMING MESSAGE ERROR FROM DUE --> ' + str(mymower.dueSerialReceived))
+                #     consoleInsertText('INCOMMING MESSAGE ERROR FROM DUE' + '\n')
+                #     consoleInsertText(str(mymower.dueSerialReceived) + '\n')
 
-        except:
-            try:
-                print('Due serial connection fail, trying to reset')
-                Due_Serial.close()
-                time.sleep(5)
-                Due_Serial.open()
-            except:
-                print('Serial connection reset failed, shutdown 60s')
-                time.sleep(60)
-                fen1.destroy()
-                time.sleep(1)
-                print('Fen1 destroy')
-                time.sleep(1)
-                sys.exit('Impossible to continue')
+        # except:
+        #     try:
+        #         print('Due serial connection fail, trying to reset')
+        #         Due_Serial.close()
+        #         time.sleep(5)
+        #         Due_Serial.open()
+        #     except:
+        #         print('Serial connection reset failed, shutdown 60s')
+        #         time.sleep(60)
+        #         fen1.destroy()
+        #         time.sleep(1)
+        #         print('Fen1 destroy')
+        #         time.sleep(1)
+        #         sys.exit('Impossible to continue')
 
     if mymower.useJoystick:
         myps4.listen()
@@ -990,13 +995,13 @@ def decode_message(message):  # decode the nmea message
     # receive a command from the DUE (need to do something
     if message.sentence_type == 'CMD':
         if message.actuatorname == 'RestartPi':
+            consoleInsertText('TIME TO RESTART' + '\n')
             mymower.focusOnPage = 4
             ConsolePage.tkraise()
             if (useMqtt):
                 consoleInsertText('Close Mqtt Connection' + '\n')
                 Mqqt_DisConnection()
             consoleInsertText('All Console Data are saved' + '\n')
-            consoleInsertText('The GPS Record is stopped' + '\n')
             consoleInsertText('PI Restart into 5 Seconds' + '\n')
             consoleInsertText('Start to save all Console Data' + '\n')
             ButtonSaveReceived_click()  #save the console txt
@@ -1004,27 +1009,21 @@ def decode_message(message):  # decode the nmea message
             subprocess.Popen('/home/pi/Documents/PiArdumower/Restart.py')
             fen1.destroy()
             time.sleep(1)
-            print('Fen1 is destroy')
             sys.exit('Restart ordered by Arduino Due')
         if message.actuatorname == 'PowerOffPi':
             mymower.focusOnPage = 4
             ConsolePage.tkraise()
+            if (useMqtt):
+                consoleInsertText('Close Mqtt Connection' + '\n')
+                Mqqt_DisConnection()
             consoleInsertText('Start to save all Console Data' + '\n')
             ButtonSaveReceived_click()  # save the console txt
             consoleInsertText('All Console Data are saved' + '\n')
-            print('All Console Data are saved')
-            # txtConsoleRecu.insert('1.0', 'Start to stop the GPS Record')
-            # mygpsRecord.stop()
-            # consoleInsertText('The GPS Record is stopped' + '\n')
-            # print('The GPS Record is stopped')
             consoleInsertText('PI start Shutdown into 5 Seconds' + '\n')
             time.sleep(1)
-            print(
-                'Start subprocess /home/pi/Documents/PiArdumower/PowerOff.py')
             subprocess.Popen('/home/pi/Documents/PiArdumower/PowerOff.py')
             fen1.destroy()
             time.sleep(1)
-            print('Fen1 is destroy')
             sys.exit('PowerOFF ordered by Arduino Due')
 
     if message.sentence_type == 'RMC':  # it's the GPS data message
