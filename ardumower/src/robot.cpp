@@ -2145,6 +2145,8 @@ void Robot::setup()
   if (RaspberryPIUse)
     MyRpi.init();
 
+  // TEST BRANCH!!!
+
   //setDefaultTime();
   //init of timer for factory setting
   for (int i = 0; i < MAX_TIMERS; i++)
