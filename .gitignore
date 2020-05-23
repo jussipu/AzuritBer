@@ -7,3 +7,4 @@ mower.code-workspace
 PiArdumower/pynmea2/types/talkerORG.py
 wifi_check.sh
 ardumower/src/RpiRemoteORG.cpp
+ardumower/.gitignore

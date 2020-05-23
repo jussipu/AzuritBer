@@ -5,4 +5,5 @@
 .vscode/ipch
 .vscode/settings.json
 .vscode/extensions.json
+.gitignore
 AzuritBer.code-workspace
