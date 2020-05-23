@@ -72,7 +72,7 @@ void Robot::checkTimer()
               Console.println(whereToStart);
               setNextState(STATE_STATION_REV, 0);
             }
-            if ((stateCurr == STATE_OFF) && (resetByWDT))
+            if ((Enable_DueWatchdog) && (stateCurr == STATE_OFF) && (resetByWDT))
             {
               resetByWDT = false;
               Console.println(F("WDT reset detected, trying to continue mowing."));

@@ -64,7 +64,7 @@ Mower::Mower()
   motorPowerMax = 65;           // motor wheel max power (Watt)
   motorSenseRightScale = 3.100; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
   motorSenseLeftScale = 3.100;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
-  motorPowerIgnoreTime = 2000;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
+  motorPowerIgnoreTime = 1500;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
   motorZeroSettleTime = 2000;   // defaut 3000 how long (ms) to wait for motors to settle at zero speed
   motorRollDegMax = 100;        // max. roll Deg
   motorRollDegMin = 20;         // min. roll Deg
@@ -117,7 +117,7 @@ Mower::Mower()
   DHT22Use = 1;        // use DHT22 sensor?
   maxTemperature = 55; // max temp before switch off
   raspiTempUse = 1;    // use Raspberry temp?
-  raspiTempMax = 80;   // max temp before switch off
+  raspiTempMax = 85;   // max temp before switch off
 
   // ------ RFID ------------------------------------
   rfidUse = 1; // use rfid
@@ -142,10 +142,10 @@ Mower::Mower()
   perimeterOutRevTime = 2200;    // free
   perimeterTrackRollTime = 1500; // roll time during perimeter tracking
   perimeterTrackRevTime = 2200;  // reverse time during perimeter tracking
-  DistPeriOutRev = 40;           // reverse distance when reach the perimeter in cm
+  DistPeriOutRev = 50;           // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30;      // reverse distance when hit obstacle while tracking in cm
   DistPeriOutForw = 60;          // distance to accell
-  DistPeriOutStop = 20;          // slowing distance after crossover the wire
+  DistPeriOutStop = 25;          // slowing distance after crossover the wire
   DistPeriObstacleForw = 25;     // distance while arc circle in peri obstacle avoid
   perimeterPID.Kp = 16.5;        // perimeter PID controller
   perimeterPID.Ki = 8;
@@ -198,7 +198,7 @@ Mower::Mower()
   compassRollSpeedCoeff = 40;  //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
 
   // ------ model R/C ------------------------------------
-  remoteUse = 1; // use model remote control (R/C)?
+  remoteUse = 0; // use model remote control (R/C)?
   // ------ battery -------------------------------------
   batMonitor = true;           // monitor battery and charge voltage?
   batGoHomeIfBelow = 23.8;     // drive home voltage (Volt)
@@ -210,7 +210,7 @@ Mower::Mower()
   batChargingCurrentMax = 3;   // maximum current your charger can deliver
   batFullCurrent = 0.32;       // current flowing when battery is fully charged
   startChargingIfBelow = 28.0; // start charging if battery Voltage is below
-  chargingTimeout = 21600000;  // safety timer for charging (ms)  6 hrs
+  chargingTimeout = 8;         // safety timer for charging (h) 6h -> 8h for temp. 1.5A charger
   chgSenseZero = 511;          // charge current sense zero point
   batSenseFactor = 1.27;       // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
   chgSense = 185.0;            // mV/A empfindlichkeit des Ladestromsensors in mV/A (Für ACS712 5A = 185)
@@ -238,7 +238,7 @@ Mower::Mower()
 
   // ----- other -----------------------------------------
   buttonUse = 1;               // has digital ON/OFF button?
-  RaspberryPIUse = true;       // a raspberryPi is connected to USBNative port
+  RaspberryPIUse = false;      // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; // in minutes
 
   // ----- user-defined switch ---------------------------

@@ -290,7 +290,7 @@ void RemoteControl::sendSettingsMenu(bool update)
     serialPort->print("{:");
   else
     serialPort->print(F("{.Settings"));
-  if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION)) //deactivate the save setting if the mower is not OFF to avoid zombie
+  if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION) || (robot->stateCurr == STATE_STATION_CHARGING)) //deactivate the save setting if the mower is not OFF to avoid zombie
   {
     serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~R/C"));
     serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s15~Drop sensor|s14~GPS RFID|i~Timer|s12~Date/time|sx~Factory settings|s16~ByLane Setting}"));
@@ -924,12 +924,15 @@ void RemoteControl::sendRainMenu(bool update)
   serialPort->print(F(" %"));
   sendSlider("m06", F("DHT max temp"), robot->maxTemperature, "", 1, 80, 40);
 
-  serialPort->print(F("|m09~RaspPi temp Use: "));
-  sendYesNo(robot->raspiTempUse);
-  serialPort->print(F("|m10~RasPi CPU "));
-  serialPort->print(robot->raspiTemp);
-  serialPort->print(F(" C"));
-  sendSlider("m11", F("RasPi max temp"), robot->raspiTempMax, "", 1, 100, 50);
+  if (robot->RaspberryPIUse)
+  {
+    serialPort->print(F("|m09~RaspPi temp Use: "));
+    sendYesNo(robot->raspiTempUse);
+    serialPort->print(F("|m10~RasPi CPU "));
+    serialPort->print(robot->raspiTemp);
+    serialPort->print(F(" C"));
+    sendSlider("m11", F("RasPi max temp"), robot->raspiTempMax, "", 1, 100, 50);
+  }
 
   serialPort->println("}");
 }
@@ -946,9 +949,9 @@ void RemoteControl::processRainMenu(String pfodCmd)
     processSlider(pfodCmd, robot->wsRainData, 1);
   else if (pfodCmd.startsWith("m08"))
     processSlider(pfodCmd, robot->rainReadDelay, 1);
-  else if (pfodCmd == "m09")
+  else if ((pfodCmd == "m09") && (robot->RaspberryPIUse))
     robot->raspiTempUse = !robot->raspiTempUse;
-  else if (pfodCmd.startsWith("m11"))
+  else if ((pfodCmd.startsWith("m11")) && (robot->RaspberryPIUse))
     processSlider(pfodCmd, robot->raspiTempMax, 1);
   sendRainMenu(true);
 }
@@ -1394,7 +1397,7 @@ void RemoteControl::sendTimerDetailMenu(int timerIdx, bool update)
   serialPort->print("|p7");
   serialPort->print(timerIdx);
   serialPort->println(F("~Start Pattern  "));
-  serialPort->print(robot->mowPatternName());
+  serialPort->print(robot->mowPatternNameList(robot->timer[timerIdx].startMowPattern));
 
   serialPort->print("|pd");
   serialPort->print(timerIdx);
@@ -1679,7 +1682,8 @@ void RemoteControl::sendCommandMenu(bool update)
   serialPort->print(F("|rh~Go to Station"));
   serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
-  serialPort->print(F("|rx~Reboot RasPi"));
+  if (robot->RaspberryPIUse)
+    serialPort->print(F("|rx~Reboot RasPi"));
   serialPort->print(F("|r1~User switch 1 is "));
   sendOnOff(robot->userSwitch1);
   serialPort->print(F("|r2~User switch 2 is "));
@@ -1734,7 +1738,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
   else if (pfodCmd == "rv")
   { //coming from pi starttimer mqtt addon
     Console.println("MQTT START FROM STATION");
-    robot->ActualRunningTimer = 0;
+    robot->ActualRunningTimer = 99;
     robot->findedYaw = 999;
     robot->imuDirPID.reset();
     //robot->mowPatternCurr = 1;
@@ -1765,7 +1769,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
     {
       //bber40
       Console.println("MANUAL START FROM STATION");
-      robot->ActualRunningTimer = 0;
+      robot->ActualRunningTimer = 99;
       robot->findedYaw = 999;
       robot->imuDirPID.reset();
       // robot->mowPatternCurr = 1;
@@ -1824,7 +1828,7 @@ void RemoteControl::processCommandMenu(String pfodCmd)
     robot->setNextState(STATE_OFF, 0);
     sendCommandMenu(true);
   }
-  else if (pfodCmd == "rx")
+  else if ((pfodCmd == "rx") && (robot->RaspberryPIUse))
   {
     robot->rebootPi();
     sendCommandMenu(true);

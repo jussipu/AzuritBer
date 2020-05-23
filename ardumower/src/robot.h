@@ -656,7 +656,7 @@ public:
   // ----- other -----------------------------------------
   bool buttonUse;      // has digital ON/OFF button?
   bool RaspberryPIUse; //a raspberryPI is connected to USBNativeport
-
+  bool MyrpiStatusSync;
   unsigned long beepOnOFFDuration; //variable use for the beeper
   bool beepState;                  //for the beeper true when sound
   unsigned long nextTimeBeeper;    // use for beeper
@@ -809,6 +809,7 @@ public:
   //virtual void RaspberryPISendStat ();
   virtual void receivePiPfodCommand(String RpiCmd, float v1, float v2, float v3);
   virtual void printSettingSerial();
+  char *mowPatternNameList(byte mowPatternIndex);
 
 protected:
   // convert ppm time to RC slider value
