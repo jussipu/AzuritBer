@@ -71,6 +71,15 @@ char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION",
 char *mowPatternNames[] = {"RAND", "LANE", "WIRE", "ZIGZAG"};
 char *consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
 
+String rfid_list[10][8] = {
+    {"44907165", "BACK_TO_STATION", "RTS", "240", "75", "0", "0", "0"},
+    {"813FFA64", "BACK_TO_STATION", "RTS", "240", "87", "0", "0", "0"},
+    {"A7D725BE", "BACK_TO_STATION", "RTS", "240", "49", "0", "0", "0"},
+    {"455326BE", "BACK_TO_STATION", "RTS", "240", "35", "0", "0", "0"},
+    {"719926BE", "BACK_TO_STATION", "RTS", "240", "95", "0", "0", "0"},
+    {"8EA126BE", "BACK_TO_STATION", "RTS", "220", "-10", "0", "0", "0"},
+    {"96D52480", "BACK_TO_STATION", "SPEED", "135", "0", "0", "0", "0"}};
+
 unsigned long StartReadAt;
 int distance_find;
 unsigned long EndReadAt;
@@ -335,7 +344,6 @@ void Robot::loadSaveErrorCounters(bool readflag)
 
 void Robot::loadSaveUserSettings(bool readflag)
 {
-
   int addr = ADDR_USER_SETTINGS;
   short magic = 0;
   if (!readflag)
@@ -344,7 +352,6 @@ void Robot::loadSaveUserSettings(bool readflag)
 
   if ((readflag) && (magic != MAGIC))
   {
-
     Console.println(F("EEPROM USERDATA: NO EEPROM USER DATA"));
     Console.println(F("PLEASE CHECK AND SAVE YOUR SETTINGS"));
     addErrorCounter(ERR_EEPROM_DATA);
@@ -2722,12 +2729,90 @@ void Robot::newTagFind()
   if (millis() >= nextTimeSendTagToPi)
   {
     nextTimeSendTagToPi = millis() + 10000;
-    Console.print("Find a tag : ");
+    Console.print("New tag found: ");
     Console.println(rfidTagFind);
     if (rfidUse)
     {
-      if (RaspberryPIUse)
-        MyRpi.SendRfidToPi();
+      String temp_tag = rfidTagFind;
+      String temp_status = statusNames[statusCurr];
+      String newtagToDo = "Null";
+      int newtagSpeed = 0;
+      int rfidRotAngle1 = 0;
+      int rfidDistance1 = 0;
+      int rfidRotAngle2 = 0;
+      int rfidDistance2 = 0;
+
+      for (int i = 0; i < 10; i++)
+      {
+        if ((rfid_list[i][0] == temp_tag) && (rfid_list[i][1] == temp_status))
+        {
+          newtagToDo = rfid_list[i][2];
+          newtagSpeed = rfid_list[i][3].toInt();
+          rfidRotAngle1 = rfid_list[i][4].toInt();
+          rfidDistance1 = rfid_list[i][5].toInt();
+          rfidRotAngle2 = rfid_list[i][6].toInt();
+          rfidDistance2 = rfid_list[i][7].toInt();
+        }
+      }
+      if (newtagToDo == "Null")
+      {
+        Console.print(F("RFID Tag: "));
+        Console.println(temp_tag);
+        Console.print(F("Status: "));
+        Console.println(temp_status);
+        Console.println(F("RFID not found or status not match"));
+      }
+      else
+      {
+        Console.print(F("RFID Tag ToDO is: "));
+        Console.println(newtagToDo);
+        if (newtagToDo == "RTS")
+        {
+          //return to station from station area
+          Console.println(F("RFID Find faster return"));
+          newtagRotAngle1 = rfidRotAngle1;
+          motorSpeedMaxPwm = newtagSpeed;
+          setNextState(STATE_PERI_STOP_TOROLL, 0);
+        }
+        if ((newtagToDo == "FAST_START"))
+        { //find a faster way to start
+          Console.println(F("RFID Find faster start"));
+          newtagRotAngle1 = rfidRotAngle1;
+          motorSpeedMaxPwm = newtagSpeed;
+          setNextState(STATE_PERI_STOP_TO_FAST_START, 0);
+        }
+        if (newtagToDo == "SPEED")
+        { //find the station for example
+          Console.println(F("RFID change tracking speed"));
+          newtagDistance1 = rfidDistance1;
+          ActualSpeedPeriPWM = newtagSpeed;
+        }
+        if (newtagToDo == "NEW_AREA")
+        {
+          if (areaToGo != areaInMowing)
+          {
+            Console.print(F("Go to area ---> "));
+            Console.println(areaToGo);
+            motorSpeedMaxPwm = newtagSpeed;
+            newtagRotAngle1 = rfidRotAngle1;
+            newtagRotAngle2 = rfidRotAngle2;
+            newtagDistance1 = rfidDistance1;
+            newtagDistance2 = rfidDistance2;
+            setNextState(STATE_PERI_STOP_TO_NEWAREA, 0);
+          }
+          else
+          { //we are already in the mowing area so return to station from other area
+            Console.println(F("Return to Station area ---> "));
+            motorSpeedMaxPwm = newtagSpeed;
+            newtagRotAngle1 = newtagRotAngle1;
+            newtagRotAngle2 = newtagRotAngle2;
+            newtagDistance1 = newtagDistance1;
+            newtagDistance2 = newtagDistance2;
+            areaToGo = 1;
+            setNextState(STATE_PERI_STOP_TO_NEWAREA, 0);
+          }
+        }
+      }
     }
   }
 }
@@ -5391,10 +5476,12 @@ void Robot::loop()
   case STATE_REVERSE:
     motorControlOdo();
     if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+    {
       if ((rollDir == RIGHT) && (motorLeftPWMCurr == 0)) //wait until the left motor completly stop because rotation is inverted
         setNextState(STATE_ROLL, rollDir);
       else if (motorRightPWMCurr == 0) //wait until the left motor completly stop because rotation is inverted
         setNextState(STATE_ROLL, rollDir);
+    }
     if (millis() > (stateStartTime + MaxOdoStateDuration))
     {
       if (developerActive)
@@ -6135,6 +6222,7 @@ void Robot::loop()
     if (mowPatternCurr == MOW_LANES)
     { //  *************************LANE***************************************
       if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+      {
         if (rollDir == RIGHT)
         {
           if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
@@ -6143,10 +6231,12 @@ void Robot::loop()
         }
         else if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0))
           setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+      }
     }
     else
     { //  *************************RANDOM***************************************
       if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))
+      {
         if (rollDir == RIGHT)
         {
           if (motorLeftPWMCurr == 0)
@@ -6158,6 +6248,7 @@ void Robot::loop()
         else if (motorRightPWMCurr == 0)
           //wait until the right motor completly stop because rotation is inverted
           setNextState(STATE_PERI_OUT_ROLL, rollDir);
+      }
     }
     if (millis() > (stateStartTime + MaxOdoStateDuration))
     {
