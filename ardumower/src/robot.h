@@ -232,7 +232,7 @@ enum
 };
 
 #define MAX_TIMERS 5
-
+#define MAX_RFIDS 10 //Max number of rfid tags (rows) in rfid_list array
 #define BATTERY_SW_OFF -1
 
 class Robot
@@ -334,7 +334,8 @@ public:
   bool remoteSwitchLastState;
   unsigned long nextTimeRTC;
   String rfidTagFind;
-  bool rfidUse;
+  bool rfidUsePi;
+  bool rfidUseDue;
 
   // --------- wheel motor state ----------------------------
   // wheel motor speed ( <0 backward, >0 forward); range -motorSpeedMaxRpm..motorSpeedMaxRpm
@@ -757,6 +758,7 @@ public:
   unsigned long nextTimeRobotStats;
   byte mowPatternDuration;    // use to know when need to change, the pattern change each x minutes so byte is OK
   byte mowPatternDurationMax; // value enter into PFOD for setting in Minutes
+  bool ChangeMowPattern;      // Change mow pattern bool
   //bb
 
   // --------------------------------------------------

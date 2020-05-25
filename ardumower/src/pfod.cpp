@@ -642,6 +642,8 @@ void RemoteControl::sendMowMenu(bool update)
   serialPort->print(F("|o07~RPM "));
   serialPort->print(robot->motorMowRpmCurr);
   sendSlider("o08", F("RPM set"), robot->motorMowRPMSet, "", 1, 4500, 1);
+  serialPort->print(F("|o15~Change Mow Pattern: "));
+  sendYesNo(robot->ChangeMowPattern);
   sendSlider("o13", F("Mow Pattern Max Duration Minutes"), robot->mowPatternDurationMax, "", 1, 255, 10);
   sendPIDSlider("o09", "RPM", robot->motorMowPID, 0.01, 1.0);
 
@@ -664,6 +666,8 @@ void RemoteControl::processMowMenu(String pfodCmd)
     robot->motorMowModulate = !robot->motorMowModulate;
   else if (pfodCmd.startsWith("o08"))
     processSlider(pfodCmd, robot->motorMowRPMSet, 1);
+  else if (pfodCmd.startsWith("o15"))
+    robot->ChangeMowPattern = !robot->ChangeMowPattern;
   else if (pfodCmd.startsWith("o13"))
     processSlider(pfodCmd, robot->mowPatternDurationMax, 1);
   else if (pfodCmd.startsWith("o09"))
@@ -965,8 +969,10 @@ void RemoteControl::sendGPSMenu(bool update)
   serialPort->print(F("|q00~GPS Use(Need Reboot) "));
   sendSlider("q03", F("GPS Baudrate"), robot->gpsBaudrate, "", 1, 38400, 9600);
   sendYesNo(robot->gpsUse);
-  serialPort->print(F("|q01~RFID Use : "));
-  sendYesNo(robot->rfidUse);
+  serialPort->print(F("|q01~RFID Use Pi: "));
+  sendYesNo(robot->rfidUsePi);
+  serialPort->print(F("|q04~RFID Use Due: "));
+  sendYesNo(robot->rfidUseDue);
   serialPort->print(F("|q02~Last Rfid : "));
   serialPort->print(robot->rfidTagFind);
   serialPort->println("}");
@@ -977,7 +983,9 @@ void RemoteControl::processGPSMenu(String pfodCmd)
   if (pfodCmd == "q00")
     robot->gpsUse = !robot->gpsUse;
   else if (pfodCmd.startsWith("q01"))
-    robot->rfidUse = !robot->rfidUse;
+    robot->rfidUsePi = !robot->rfidUsePi;
+  else if (pfodCmd.startsWith("q04"))
+    robot->rfidUseDue = !robot->rfidUseDue;
   else if (pfodCmd.startsWith("q03"))
     processSlider(pfodCmd, robot->gpsBaudrate, 1);
   sendGPSMenu(true);

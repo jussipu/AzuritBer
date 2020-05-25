@@ -71,7 +71,7 @@ char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION",
 char *mowPatternNames[] = {"RAND", "LANE", "WIRE", "ZIGZAG"};
 char *consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
 
-String rfid_list[10][8] = {
+String rfid_list[MAX_RFIDS][8] = {
     {"44907165", "BACK_TO_STATION", "RTS", "240", "75", "0", "0", "0"},
     {"813FFA64", "BACK_TO_STATION", "RTS", "240", "87", "0", "0", "0"},
     {"A7D725BE", "BACK_TO_STATION", "RTS", "240", "49", "0", "0", "0"},
@@ -97,7 +97,6 @@ Robot::Robot()
   stateTime = 0;
   idleTimeSec = 0;
   statsMowTimeTotalStart = false;
-  mowPatternCurr = MOW_RANDOM;
 
   odometryLeft = odometryRight = 0;
   odometryLeftLastState = odometryLeftLastState2 = odometryRightLastState = odometryRightLastState2 = LOW;
@@ -435,7 +434,7 @@ void Robot::loadSaveUserSettings(bool readflag)
   eereadwrite(readflag, addr, odometryTicksPerCm);
   eereadwrite(readflag, addr, odometryWheelBaseCm);
   eereadwrite(readflag, addr, autoResetActive);
-  eereadwrite(readflag, addr, odometryRightSwapDir);    // bool adress free for something else
+  eereadwrite(readflag, addr, rfidUseDue);              // rfidDue use bool
   eereadwrite(readflag, addr, twoWayOdometrySensorUse); // char YES NO adress free for something else
   eereadwrite(readflag, addr, buttonUse);
   eereadwrite(readflag, addr, userSwitch1);
@@ -495,11 +494,11 @@ void Robot::loadSaveUserSettings(bool readflag)
   eereadwrite(readflag, addr, rainReadDelay);         // rain sensor reading delay
   eereadwrite(readflag, addr, wsRainData);            // weather station var
   eereadwrite(readflag, addr, dockingSpeed);          // docking speed
-  eereadwrite(readflag, addr, rfidUse);               // rfid use bool
+  eereadwrite(readflag, addr, rfidUsePi);             // rfidPi use bool
   eereadwrite(readflag, addr, motorLeftSpeedDivider); //
   eereadwrite(readflag, addr, raspiTempUse);          // Raspberry temp bool
   eereadwrite(readflag, addr, raspiTempMax);          // Raspbery max temp float
-  eereadwrite(readflag, addr, foobar);                // last won't work correctly???
+  eereadwrite(readflag, addr, ChangeMowPattern);      // Change mow pattern bool
   if (readflag)
   {
     Console.print(F("UserSettings are read from EEprom Address : "));
@@ -852,8 +851,10 @@ void Robot::printSettingSerial()
 
   // ----- RFID ----------------------------------------------------------------------
   Console.println(F("---------- RFID ----------------------------------------------"));
-  Console.print(F("rfidUse                                    : "));
-  Console.println(rfidUse, 1);
+  Console.print(F("rfidUsePi                                  : "));
+  Console.println(rfidUsePi, 1);
+  Console.print(F("rfidUseDue                                 : "));
+  Console.println(rfidUseDue, 1);
   // ----- RASPBERRY PI ----------------------------------------------------------------------
   Console.println(F("---------- RASPBERRY PI---------------------------------------"));
   Console.print(F("RaspberryPIUse                             : "));
@@ -862,6 +863,8 @@ void Robot::printSettingSerial()
   Console.println(F("---------- other ---------------------------------------------"));
   Console.print(F("buttonUse                                  : "));
   Console.println(buttonUse, 1);
+  Console.print(F("ChangeMowPattern                           : "));
+  Console.println(ChangeMowPattern);
   Console.print(F("mowPatternDurationMax                      : "));
   Console.println(mowPatternDurationMax);
 
@@ -1334,11 +1337,11 @@ void Robot::OdoRampCompute()
   movingTimeRight = 1000 * distToMoveRight / motorTickPerSecond;
   movingTimeRight = movingTimeRight * motorSpeedMaxPwm / abs(SpeedOdoMaxRight);
   //for small mouvement need to reduce the accel duration
-  if (movingTimeLeft >= motorOdoAccel)
+  if (movingTimeLeft >= (unsigned)motorOdoAccel)
     accelDurationLeft = motorOdoAccel;
   else
     accelDurationLeft = movingTimeLeft / 2;
-  if (movingTimeRight >= motorOdoAccel)
+  if (movingTimeRight >= (unsigned)motorOdoAccel)
     accelDurationRight = motorOdoAccel;
   else
     accelDurationRight = movingTimeRight / 2;
@@ -1808,7 +1811,7 @@ void Robot::motorControlPerimeter()
     return;
   }
 
-  if ((millis() - lastTimeForgetWire) < trackingPerimeterTransitionTimeOut)
+  if ((millis() - lastTimeForgetWire) < (unsigned)trackingPerimeterTransitionTimeOut)
   {
     //PeriCoeffAccel move gently from 3 to 1 and so perimeterPID.y/PeriCoeffAccel increase during 3 secondes
     PeriCoeffAccel = (3000.00 - (millis() - lastTimeForgetWire)) / 1000.00;
@@ -2151,8 +2154,6 @@ void Robot::setup()
   PinMan.begin();
   if (RaspberryPIUse)
     MyRpi.init();
-
-  // TEST BRANCH!!!
 
   //setDefaultTime();
   //init of timer for factory setting
@@ -2731,9 +2732,11 @@ void Robot::newTagFind()
   if (millis() >= nextTimeSendTagToPi)
   {
     nextTimeSendTagToPi = millis() + 10000;
-    Console.print("New tag found: ");
+    Console.print("New RFID tag found: ");
     Console.println(rfidTagFind);
-    if (rfidUse)
+    if ((rfidUsePi) && (RaspberryPIUse))
+      MyRpi.SendRfidToPi();
+    if (rfidUseDue)
     {
       String temp_tag = rfidTagFind;
       String temp_status = statusNames[statusCurr];
@@ -2744,7 +2747,7 @@ void Robot::newTagFind()
       int rfidRotAngle2 = 0;
       int rfidDistance2 = 0;
 
-      for (int i = 0; i < 10; i++)
+      for (int i = 0; i < MAX_RFIDS; i++)
       {
         if ((rfid_list[i][0] == temp_tag) && (rfid_list[i][1] == temp_status))
         {
@@ -2758,34 +2761,43 @@ void Robot::newTagFind()
       }
       if (newtagToDo == "Null")
       {
-        Console.print(F("RFID Tag: "));
+        Console.print("RFID tag: ");
         Console.println(temp_tag);
-        Console.print(F("Status: "));
+        Console.print("Status: ");
         Console.println(temp_status);
-        Console.println(F("RFID not found or status not match"));
+        Console.println("RFID or status not match");
       }
       else
       {
-        Console.print(F("RFID Tag ToDO is: "));
+        Console.print("RFID tag ToDO is: ");
         Console.println(newtagToDo);
-        if (newtagToDo == "RTS")
+        if (newtagToDo == "RTS") //return to station from station area
         {
-          //return to station from station area
-          Console.println(F("RFID Find faster return"));
+          Console.print("Faster return tag. Turning ");
+          Console.print(rfidRotAngle1);
+          Console.print("° and new speed is ");
+          Console.println(newtagSpeed);
           newtagRotAngle1 = rfidRotAngle1;
           motorSpeedMaxPwm = newtagSpeed;
           setNextState(STATE_PERI_STOP_TOROLL, 0);
         }
-        if ((newtagToDo == "FAST_START"))
-        { //find a faster way to start
-          Console.println(F("RFID Find faster start"));
+        if ((newtagToDo == "FAST_START")) //find a faster way to start
+        {
+          Console.print("Faster start tag. Turning ");
+          Console.print(rfidRotAngle1);
+          Console.print("° and new speed is ");
+          Console.println(newtagSpeed);
           newtagRotAngle1 = rfidRotAngle1;
           motorSpeedMaxPwm = newtagSpeed;
           setNextState(STATE_PERI_STOP_TO_FAST_START, 0);
         }
-        if (newtagToDo == "SPEED")
-        { //find the station for example
-          Console.println(F("RFID change tracking speed"));
+        if (newtagToDo == "SPEED") //find the station for example
+        {
+          Console.print("Change tracking speed tag. New speed is ");
+          Console.print(newtagSpeed);
+          Console.print("next ");
+          Console.print(rfidDistance1);
+          Console.println(" cm.");
           newtagDistance1 = rfidDistance1;
           ActualSpeedPeriPWM = newtagSpeed;
         }
@@ -2793,7 +2805,7 @@ void Robot::newTagFind()
         {
           if (areaToGo != areaInMowing)
           {
-            Console.print(F("Go to area ---> "));
+            Console.print("Go to area ---> ");
             Console.println(areaToGo);
             motorSpeedMaxPwm = newtagSpeed;
             newtagRotAngle1 = rfidRotAngle1;
@@ -2804,7 +2816,7 @@ void Robot::newTagFind()
           }
           else
           { //we are already in the mowing area so return to station from other area
-            Console.println(F("Return to Station area ---> "));
+            Console.println("Return to Station area ---> ");
             motorSpeedMaxPwm = newtagSpeed;
             newtagRotAngle1 = newtagRotAngle1;
             newtagRotAngle2 = newtagRotAngle2;
@@ -3315,10 +3327,11 @@ void Robot::setNextState(byte stateNew, byte dir)
 
   case STATE_PERI_OUT_STOP: //in auto mode and forward slow down before stop and reverse
     //-------------------------------Verify if it's time to change mowing pattern
-    if (mowPatternDuration > mowPatternDurationMax)
+    if ((ChangeMowPattern) && (mowPatternDuration > mowPatternDurationMax))
     {
-      Console.println(" mowPatternCurr  change ");
+      Console.print(" mowPatternCurr change to ");
       mowPatternCurr = (mowPatternCurr + 1) % 2; //change the pattern each x minutes
+      Console.println(mowPatternCurr);
       mowPatternDuration = 0;
     }
     justChangeLaneDir = !justChangeLaneDir; //use to know if the lane is not limit distance
@@ -5804,7 +5817,7 @@ void Robot::loop()
     checkSonarPeriTrack();
     if (ActualSpeedPeriPWM != MaxSpeedperiPwm)
     {
-      if (totalDistDrive > whereToResetSpeed)
+      if (totalDistDrive > (unsigned)whereToResetSpeed)
       {
         Console.print("Distance OK, time to reset the initial Speed : ");
         Console.println(ActualSpeedPeriPWM);
@@ -5817,7 +5830,7 @@ void Robot::loop()
       //bber11
       //areaToGo need to be use here to avoid start mowing before reach the rfid tag in area1
       // if ((areaToGo == areaInMowing) && (startByTimer) && (totalDistDrive > whereToStart * 100)) {
-      if ((areaToGo == areaInMowing) && (totalDistDrive >= whereToStart * 100))
+      if ((areaToGo == areaInMowing) && (totalDistDrive >= (unsigned)whereToStart * 100))
       {
         startByTimer = false;
         Console.print("Distance OK, time to start mowing into new area ");
@@ -5993,7 +6006,7 @@ void Robot::loop()
     if (millis() > (stateStartTime + MaxOdoStateDuration))
     {
       if (developerActive)
-        Console.println("Warning can t peri out stop in time ");
+        Console.println("Warning can't peri out stop in time ");
       if (laneUseNr == 1)
         yawToFind = yawSet1;
       if (laneUseNr == 2)

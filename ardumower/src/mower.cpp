@@ -120,7 +120,8 @@ Mower::Mower()
   raspiTempMax = 85;   // max temp before switch off
 
   // ------ RFID ------------------------------------
-  rfidUse = 1; // use rfid
+  rfidUsePi = 0;  // use rfid with pi
+  rfidUseDue = 0; // use rfid with due
   newtagRotAngle1 = 90;
   newtagRotAngle2 = 0;
   newtagDistance1 = 0;
@@ -145,7 +146,7 @@ Mower::Mower()
   DistPeriOutRev = 50;           // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30;      // reverse distance when hit obstacle while tracking in cm
   DistPeriOutForw = 60;          // distance to accell
-  DistPeriOutStop = 25;          // slowing distance after crossover the wire
+  DistPeriOutStop = 20;          // slowing distance after crossover the wire
   DistPeriObstacleForw = 25;     // distance while arc circle in peri obstacle avoid
   perimeterPID.Kp = 16.5;        // perimeter PID controller
   perimeterPID.Ki = 8;
@@ -167,7 +168,7 @@ Mower::Mower()
   // ------ lawn sensor --------------------------------
   lawnSensorUse = 0; // use capacitive Sensor
   // ------  IMU (compass/accel/gyro) ----------------------
-  imuUse = 1;               // use IMU?
+  imuUse = 0;               // use IMU?
   stopMotorDuringCalib = 0; // correct direction by compass?
   imuDirPID.Kp = 4.4;       // direction PID controller
   imuDirPID.Ki = 3.3;
@@ -217,9 +218,9 @@ Mower::Mower()
   chgChange = 0;               // Messwertumkehr von - nach +         1 oder 0
   chgNull = 2;                 // Nullduchgang abziehen (1 oder 2)
   // ------  charging station ---------------------------
-  stationRevDist = 90;   // charge station reverse 50 cm
+  stationRevDist = 100;  // charge station reverse 50 cm
   stationRollAngle = 55; // charge station roll after reverse
-  stationForwDist = 40;  // charge station accel distance cm
+  stationForwDist = 35;  // charge station accel distance cm
   stationCheckDist = 2;  // charge station check distance cm
   UseBumperDock = false; // bumper is pressed when docking or not
   dockingSpeed = 60;     // speed docking is (percent of maxspeed)
@@ -239,6 +240,7 @@ Mower::Mower()
   // ----- other -----------------------------------------
   buttonUse = 1;               // has digital ON/OFF button?
   RaspberryPIUse = false;      // a raspberryPi is connected to USBNative port
+  ChangeMowPattern = false;    // Change mow pattern
   mowPatternDurationMax = 120; // in minutes
 
   // ----- user-defined switch ---------------------------

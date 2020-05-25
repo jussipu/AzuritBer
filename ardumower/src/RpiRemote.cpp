@@ -938,7 +938,7 @@ void RpiRemote::readPi()
 {
   if (!RaspberryPIPort.available())
     return;
-  int StartTrans = millis();
+  // int StartTrans = millis();
 
   while (RaspberryPIPort.available())
   {
