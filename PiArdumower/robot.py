@@ -61,7 +61,7 @@ class robot:
             "ROLLSTOPTOTRACK",
             "STOPTOFASTSTART",
             "CALIBMOTORSPEED",
-            "INC_01",
+            "ACCELFRWRD",
             "INC_02",
             "INC_03",
             "INC_04",
@@ -131,7 +131,7 @@ class robot:
         self.perimeter_swapCoilPolarityRight = 0
         self.perimeter_read2Coil = 0
         self.maxDriftPerSecond = 0
-        self.perimeterTriggerTimeout = 0
+        # self.perimeterTriggerTimeout = 0
         self.perimeterTriggerMinSmag = 0
         self.trackingErrorTimeOut = 0
         self.perimeterOutRollTimeMin = 0

@@ -208,7 +208,7 @@ Mower::Mower()
   batFactor = 11.10;           // depend of the resistor divisor on board R12 and R13
   batChgFactor = 10.97;        // depend of the resistor divisor on board R9 and R10
   batFull = 29.4;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
-  batChargingCurrentMax = 3;   // maximum current your charger can deliver
+  batChargingCurrentMax = 5;   // maximum current your charger can deliver
   batFullCurrent = 0.32;       // current flowing when battery is fully charged
   startChargingIfBelow = 28.0; // start charging if battery Voltage is below
   chargingTimeout = 8;         // safety timer for charging (h) 6h -> 8h for temp. 1.5A charger
@@ -567,7 +567,7 @@ int Mower::readSensor(char type)
     return (digitalRead(pinDropLeft));
     break; // Dropsensor - Absturzsensor
 
-  // sonar---------------------------------------------------------------------------------------------------
+    // sonar---------------------------------------------------------------------------------------------------
 
   case SEN_SONAR_CENTER:
     return (NewSonarCenter.ping_cm());
