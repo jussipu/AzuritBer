@@ -292,12 +292,12 @@ void RemoteControl::sendSettingsMenu(bool update)
     serialPort->print(F("{.Settings"));
   if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION) || (robot->stateCurr == STATE_STATION_CHARGING)) //deactivate the save setting if the mower is not OFF to avoid zombie
   {
-    serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~R/C"));
+    serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry Pi"));
     serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s15~Drop sensor|s14~GPS RFID|i~Timer|s12~Date/time|sx~Factory settings|s16~ByLane Setting}"));
   }
   else
   {
-    serialPort->print(F("|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~R/C"));
+    serialPort->print(F("|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry Pi"));
     serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s15~Drop sensor|s14~GPS RFID|i~Timer|s12~Date/time|sx~Factory settings|s16~ByLane Setting}"));
   }
 }
@@ -966,9 +966,9 @@ void RemoteControl::sendGPSMenu(bool update)
     serialPort->print("{:");
   else
     serialPort->print(F("{.GPS RFID`1000"));
-  serialPort->print(F("|q00~GPS Use(Need Reboot) "));
-  sendSlider("q03", F("GPS Baudrate"), robot->gpsBaudrate, "", 1, 38400, 9600);
+  serialPort->print(F("|q00~GPS Use (Need Reboot) "));
   sendYesNo(robot->gpsUse);
+  sendSlider("q03", F("GPS Baudrate"), robot->gpsBaudrate, "", 1, 38400, 9600);
   serialPort->print(F("|q01~RFID Use Pi: "));
   sendYesNo(robot->rfidUsePi);
   serialPort->print(F("|q04~RFID Use Due: "));
@@ -1125,8 +1125,8 @@ void RemoteControl::sendImuMenu(bool update)
   serialPort->print(F("|g04~Stop mow motor during Calib  "));
   sendYesNo(robot->stopMotorDuringCalib);
   sendPIDSlider("g05", F("Dir"), robot->imuDirPID, 0.1, 20);
-  sendSlider("g06", F("Calibration Max Duration in Sec"), robot->maxDurationDmpAutocalib, "Sec", 1, 100, 10);
-  sendSlider("g07", F("Delay between 2 Calib in Sec"), robot->delayBetweenTwoDmpAutocalib, "Sec", 1, 600, 60);
+  sendSlider("g06", F("Calibration Max Duration in Sec"), robot->maxDurationDmpAutocalib, "Sec", 1, 60, 10);
+  sendSlider("g07", F("Delay between 2 Calib in Sec"), robot->delayBetweenTwoDmpAutocalib, "Sec", 1, 900, 60);
   sendSlider("g08", F("Drift Maxi in Deg Per Second "), robot->maxDriftPerSecond, "Deg", 0.01, 0.3, 0);
   sendSlider("g10", F("Speed to find ComYaw % of motorSpeedMaxRpm "), robot->compassRollSpeedCoeff, "Deg", 1, 80, 30);
   serialPort->print(F("|g18~Accel Gyro Initial Calibration more than 30sec duration"));
@@ -1174,10 +1174,10 @@ void RemoteControl::sendRemoteMenu(bool update)
   if (update)
     serialPort->print("{:");
   else
-    serialPort->print(F("{.Remote R/C or Pi`1000"));
-  serialPort->print(F("|h00~Use RC "));
-  sendYesNo(robot->remoteUse);
-  serialPort->print(F("|h01~Use Rasberry(Need Reboot)"));
+    serialPort->print(F("{.Raspberry Pi`1000"));
+  // serialPort->print(F("|h00~Use RC "));
+  // sendYesNo(robot->remoteUse);
+  serialPort->print(F("|h01~Use Raspberry Pi (Need Reboot) "));
   sendYesNo(robot->RaspberryPIUse);
 
   serialPort->println("}");
@@ -1185,8 +1185,8 @@ void RemoteControl::sendRemoteMenu(bool update)
 
 void RemoteControl::processRemoteMenu(String pfodCmd)
 {
-  if (pfodCmd == "h00")
-    robot->remoteUse = !robot->remoteUse;
+  // if (pfodCmd == "h00")
+  //   robot->remoteUse = !robot->remoteUse;
   if (pfodCmd == "h01")
     robot->RaspberryPIUse = !robot->RaspberryPIUse;
   if (pfodCmd == "h02")
@@ -1691,7 +1691,7 @@ void RemoteControl::sendCommandMenu(bool update)
   serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
   if (robot->RaspberryPIUse)
-    serialPort->print(F("|rx~Reboot RasPi"));
+    serialPort->print(F("|rx~Reboot Raspberry Pi"));
   serialPort->print(F("|r1~User switch 1 is "));
   sendOnOff(robot->userSwitch1);
   serialPort->print(F("|r2~User switch 2 is "));

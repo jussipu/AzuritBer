@@ -555,6 +555,7 @@ public:
   byte actualRollDirToCalibrate;
   float prevYawCalcOdo;
   unsigned long nextTimeImuLoop;
+  unsigned long nextTimeGpsRead;
   int delayBetweenTwoDmpAutocalib;
   int maxDurationDmpAutocalib;
   float maxDriftPerSecond;

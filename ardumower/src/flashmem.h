@@ -25,7 +25,9 @@ int eewrite(int &ee, const T &value)
   unsigned int i;
   for (i = 0; i < sizeof(value); i++)
     Flash.write(ee++, *p++);
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   return i;
 }
 
@@ -36,7 +38,9 @@ int eeread(int &ee, T &value)
   unsigned int i;
   for (i = 0; i < sizeof(value); i++)
     *p++ = Flash.read(ee++);
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   return i;
 }
 
@@ -51,7 +55,9 @@ int eereadwrite(bool readflag, int &ee, T &value)
       *p++ = Flash.read(ee++);
     else
       Flash.write(ee++, *p++);
+#if Enable_DueWatchdog
     watchdogReset();
+#endif
   }
   return i;
 }

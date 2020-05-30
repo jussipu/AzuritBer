@@ -263,9 +263,13 @@ void IMUClass::calibration()
     mpu.setXGyroOffset(gx_offset);
     mpu.setYGyroOffset(gy_offset);
     mpu.setZGyroOffset(gz_offset);
+#if Enable_DueWatchdog
     watchdogReset();
+#endif
     meansensors();
+#if Enable_DueWatchdog
     watchdogReset();
+#endif
     Console.println("Wait ...");
 
     if (abs(mean_ax) <= acel_deadzone)
@@ -318,7 +322,9 @@ void IMUClass::meansensors()
 
     // read raw accel/gyro measurements from device
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+#if Enable_DueWatchdog
     watchdogReset();
+#endif
 
     if (i > 100 && i <= (buffersize + 100))
     { //First 100 measures are discarded
@@ -606,9 +612,13 @@ void IMUClass::calibGyro()
 {
 
   Console.println("Reading sensors for first time... without any offset");
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   meansensors();
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   Console.print("Reading ax: ");
   Console.print(mean_ax);
   Console.print(" ay: ");
@@ -623,11 +633,17 @@ void IMUClass::calibGyro()
   Console.println(mean_gz);
 
   Console.println("\nCalculating offsets...");
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   calibration();
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   meansensors();
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   Console.print("FINISHED reading Value with new offset,If all is OK need to be close 0 exept the az close to 16384");
   Console.print(" New reading ax: ");
   Console.print(mean_ax);
@@ -641,7 +657,9 @@ void IMUClass::calibGyro()
   Console.print(mean_gy);
   Console.print(" gz: ");
   Console.println(mean_gz);
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   Console.print("THE NEW OFFSET ax: ");
   Console.print(ax_offset);
   Console.print(" ay: ");
@@ -654,7 +672,9 @@ void IMUClass::calibGyro()
   Console.print(gy_offset);
   Console.print(" gz: ");
   Console.println(gz_offset);
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   saveCalib();
 }
 
@@ -698,7 +718,9 @@ void IMUClass::calibComStartStop()
     // start
     Console.println(F("com calib..."));
     Console.println(F("rotate sensor 360 degree around all three axis until NO new data are coming"));
+#if Enable_DueWatchdog
     watchdogReset();
+#endif
     foundNewMinMax = false;
     useComCalibration = false;
     state = IMU_CAL_COM;
@@ -712,7 +734,9 @@ void IMUClass::calibComUpdate()
   comLast = com;
   delay(20);
   readHMC5883L();
+#if Enable_DueWatchdog
   watchdogReset();
+#endif
   bool newfound = false;
   if ((abs(com.x - comLast.x) < 10) && (abs(com.y - comLast.y) < 10) && (abs(com.z - comLast.z) < 10))
   {
@@ -757,7 +781,9 @@ void IMUClass::calibComUpdate()
     {
 
       foundNewMinMax = true;
+#if Enable_DueWatchdog
       watchdogReset();
+#endif
       Console.print("x:");
       Console.print(comMin.x);
       Console.print(",");

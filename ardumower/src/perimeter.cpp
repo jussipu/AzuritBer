@@ -336,7 +336,7 @@ bool PerimeterClass::signalTimedOut(byte idx)
 {
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag)
     return true;
-  if (millis() - lastInsideTime[idx] > timeOutSecIfNotInside * 1000)
+  if (millis() - lastInsideTime[idx] > (unsigned)timeOutSecIfNotInside * 1000)
     return true;
   return false;
 }

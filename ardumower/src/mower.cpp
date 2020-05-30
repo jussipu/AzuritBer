@@ -69,7 +69,7 @@ Mower::Mower()
   motorRollDegMax = 100;        // max. roll Deg
   motorRollDegMin = 20;         // min. roll Deg
 
-  motorForwTimeMax = 80000;     // not use max. forward time (ms) / timeout
+  motorForwTimeMax = 90000;     // not use max. forward time (ms) / timeout
   motorBiDirSpeedRatio1 = 0.3;  // bidir mow pattern speed ratio 1
   motorBiDirSpeedRatio2 = 0.92; // bidir mow pattern speed ratio 2
   motorLeftPID.Kp = 1.0;        // motor wheel PID controller
@@ -87,15 +87,15 @@ Mower::Mower()
   UseAccelRight = 1;
   UseBrakeRight = 1;
   AngleRotate = 100;
-  SpeedOdoMin = 60;
+  SpeedOdoMin = 70;
   SpeedOdoMax = 180;
   odoLeftRightCorrection = true; // left-right correction for straight lines used in manual mode
 
   // ------ mower motor -------------------------------
   secondMowMotor = true;       // one mow motor = false; two mow motors = true;
-  motorMowAccel = 3000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
+  motorMowAccel = 4000;        // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
   motorMowSpeedMaxPwm = 220;   // motor mower max PWM
-  motorMowPowerMax = 50.0;     // motor mower max power (Watt)
+  motorMowPowerMax = 60.0;     // motor mower max power (Watt)
   motorMowModulate = 0;        // motor mower cutter modulation?
   motorMowRPMSet = 3300;       // motor mower RPM (only for cutter modulation)
   motor1MowSenseScale = 1.850; // motor 1 mower sense scale (mA=(ADC-zero)/scale)
@@ -189,14 +189,14 @@ Mower::Mower()
   laneUseNr = 2;
   maxDriftPerSecond = 0.05;          // limit the stop time if small drift
   maxDurationDmpAutocalib = 60;      // in sec
-  delayBetweenTwoDmpAutocalib = 360; // in sec
+  delayBetweenTwoDmpAutocalib = 900; // in sec
   yawCiblePos = 90;
   yawCibleNeg = -90;
-  DistBetweenLane = 40;
+  DistBetweenLane = 50;
   maxLenghtByLane = 15; // distance to run in bylane before simulate a wire detection
   justChangeLaneDir = true;
   mowPatternCurr = MOW_RANDOM; // was MOW_LANES
-  compassRollSpeedCoeff = 40;  //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
+  compassRollSpeedCoeff = 40;  //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm, avoid to roll too fast for a correct detection
 
   // ------ model R/C ------------------------------------
   remoteUse = 0; // use model remote control (R/C)?
@@ -475,27 +475,30 @@ void Mower::setup()
 
 void checkMotorFault()
 {
-  //bb to test without motor board uncheck return
+  //bb to test without motor board uncomment return
   //return;
-  if (robot.stateCurr == STATE_OFF)
+  if ((robot.stateCurr == STATE_OFF) || (robot.stateCurr == STATE_ERROR))
     return; //do not generate error if the state if OFF to avoid Buzzer when PI power the DUE via the USB native port
   if (digitalRead(pinMotorLeftFault) == LOW)
   {
     robot.addErrorCounter(ERR_MOTOR_LEFT);
     Console.println(F("Error: motor left fault"));
     robot.setNextState(STATE_ERROR, 0);
+    return;
   }
   if (digitalRead(pinMotorRightFault) == LOW)
   {
     robot.addErrorCounter(ERR_MOTOR_RIGHT);
     Console.println(F("Error: motor right fault"));
     robot.setNextState(STATE_ERROR, 0);
+    return;
   }
   if (digitalRead(pinMotorMowFault) == LOW)
   {
     robot.addErrorCounter(ERR_MOTOR_MOW);
     Console.println(F("Error: motor mow fault"));
     robot.setNextState(STATE_ERROR, 0);
+    return;
   }
 }
 
@@ -564,7 +567,7 @@ int Mower::readSensor(char type)
     return (digitalRead(pinDropLeft));
     break; // Dropsensor - Absturzsensor
 
-    // sonar---------------------------------------------------------------------------------------------------
+  // sonar---------------------------------------------------------------------------------------------------
 
   case SEN_SONAR_CENTER:
     return (NewSonarCenter.ping_cm());
