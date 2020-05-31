@@ -21,7 +21,8 @@
 
 #include "PN5180.h"
 
-enum ISO15693ErrorCode {
+enum ISO15693ErrorCode
+{
   EC_NO_CARD = -1,
   ISO15693_EC_OK = 0,
   ISO15693_EC_NOT_SUPPORTED = 0x01,
@@ -36,11 +37,12 @@ enum ISO15693ErrorCode {
   ISO15693_EC_CUSTOM_CMD_ERROR = 0xA0
 };
 
-class PN5180ISO15693 : public PN5180 {
+class PN5180ISO15693 : public PN5180
+{
 
 public:
   PN5180ISO15693(uint8_t SSpin, uint8_t BUSYpin, uint8_t RSTpin);
-  
+
 private:
   ISO15693ErrorCode issueISO15693Command(uint8_t *cmd, uint8_t cmdLen, uint8_t **resultPtr);
 
@@ -55,10 +57,9 @@ public:
   /*
    * Helper functions
    */
-public:   
+public:
   bool setupRF();
   const __FlashStringHelper *strerror(ISO15693ErrorCode errno);
-    
 };
 
 #endif /* PN5180ISO15693_H */

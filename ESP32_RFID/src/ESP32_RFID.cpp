@@ -35,7 +35,6 @@ void setup()
   Serial.println("Bluetooth Ready");
 
   // rfid reader init
-  nfc.begin();
   Serial.println("Begin the RFID");
   nfc.begin();
   Serial.println("Reset the RFID");
