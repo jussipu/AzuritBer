@@ -16,22 +16,11 @@ from email.mime.base import MIMEBase
 from email import encoders
 import os.path
 import os
-# from tkinter import ttk
-# from threading import Thread
-# from tkinter import messagebox
-# from tkinter import filedialog
-# import tkinter as tk
 import math
-# add to avoid KST plot error on path
-sys.path.insert(0, '/home/pi/Documents/PiArdumower')
 
 # CONFIG
-myOS = 'Linux'
-DueConnectedOnPi = True
 UseWeatherStation = True
 autoRecordBatCharge = False
-GpsConnectedOnPi = False
-NanoConnectedOnPi = False
 useDebugConsole = True
 useEmailAlert = True
 useMqtt = True
@@ -52,7 +41,6 @@ def checkNetwork(url_to_check):
 
 #################################### MQTT MANAGEMENT ###############################################
 
-#bber30 test MQTT see also line 521 for the publish message
 if (useMqtt):
     import paho.mqtt.client as mqtt_client
     KEEP_ALIVE = 60
@@ -93,29 +81,13 @@ if (useMqtt):
               '\n')
         message_txt = str((message.payload), 'utf8')
         responsetable = message_txt.split(";")
-        #Here the main option to do from COMMAND topic
-        # if (str(message.topic) == "Mower/COMMAND/VIDEO/"):
-        #     if (message_txt == "ON"):
-        #         print("Start Video streaming" + '\n')
-        #         myStreamVideo.start(0)
-        #     if (message_txt == 'OFF'):
-        #         print("Stop Video streaming" + '\n')
-        #         myStreamVideo.stop()
 
         if (str(message.topic) == "Mower/COMMAND/"
                 or str(message.topic) == "Mower/COMMAND"):
             if (str(responsetable[0]) == "RESTARTONLYPI"):
                 subprocess.Popen('/home/pi/Documents/PiArdumower/Restart.py')
             if (str(responsetable[0]) == "RESTARTALL"):
-                send_pfo_message(
-                    'rx',
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                )
+                send_pfo_message('rx', '1', '2', '3', '4', '5', '6')
             if (str(responsetable[0]) == "HOME"):
                 button_home_click()
             if (str(responsetable[0]) == "STOP"):
@@ -144,19 +116,9 @@ if (useMqtt):
                                  'actualLenghtBylane',
                                  '' + str(responsetable[6]) + '', '0', '0',
                                  '0')
-                send_pfo_message(
-                    'rv',
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                )
+                send_pfo_message('rv', '1', '2', '3', '4', '5', '6')
 
-    #the on_log and on_publish show debug message in terminal
     Mqqt_client.on_log = Mqqt_on_log
-    #Mqqt_client.on_publish = Mqqt_on_publish
     Mqqt_client.on_message = Mqqt_on_message
     Mqqt_client.on_connect = Mqqt_on_connect
     Mqqt_client.on_disconnect = Mqqt_on_disconnect
@@ -198,26 +160,19 @@ if (useMqtt):
                                     payload=var_payload,
                                     qos=0,
                                     retain=False)
-            #mymower.mqtt_message_id=int(r[1])
-            #print("MQTT send message " + var_topic + " " + var_payload + '\n')
 
         else:
             print("MQTT not connected" + '\n')
             pass
-            #print("MQTT not Connected fail to send " + str(mymower.mqtt_message_id) + " " + var_topic + " " + var_payload + '\n')
 
-    #END ADDon For MQTT
 
 #################################### RFID MANAGEMENT ###############################################
 
 
 def find_rfid_tag():
-    #mymower.lastRfidFind
-    #mymower.lastRfidFind=0
 
     search_code = mymower.lastRfidFind
     search_status = myRobot.statusNames[mymower.status]
-
     mymower.newtagToDo = "Null"
     for i in range(0, len(rfid_list)):
         #if str("b'"+rfid_list[i][0]+"'")== str(search_code):
@@ -246,15 +201,7 @@ def find_rfid_tag():
                              'motorSpeedMaxPwm',
                              '' + str(mymower.newtagSpeed) + '', '0', '0', '0',
                              '0', '0')
-            send_pfo_message(
-                'rz',
-                '1',
-                '2',
-                '3',
-                '4',
-                '5',
-                '6',
-            )
+            send_pfo_message('rz', '1', '2', '3', '4', '5', '6')
 
         if ((mymower.newtagToDo == "FAST_START")):  #find a faster way to start
             print('RFID Find faster start' + '\n')
@@ -263,15 +210,7 @@ def find_rfid_tag():
                              'motorSpeedMaxPwm',
                              '' + str(mymower.newtagSpeed) + '', '0', '0', '0',
                              '0', '0')
-            send_pfo_message(
-                'ru',
-                '1',
-                '2',
-                '3',
-                '4',
-                '5',
-                '6',
-            )
+            send_pfo_message('ru', '1', '2', '3', '4', '5', '6')
 
         if (mymower.newtagToDo == "SPEED"):  #find the station for example
             print('RFID change tracking speed' + '\n')
@@ -300,15 +239,7 @@ def find_rfid_tag():
                 send_var_message('w', 'newtagDistance2',
                                  '' + str(mymower.newtagDistance2) + '', '0',
                                  '0', '0', '0', '0', '0', '0')
-                send_pfo_message(
-                    'ry',
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                )
+                send_pfo_message('ry', '1', '2', '3', '4', '5', '6')
 
             else:  #we are already in the mowing area so return to station from other area
                 mymower.areaToGo = 1
@@ -330,15 +261,7 @@ def find_rfid_tag():
                                  '0', '0', '0', '0', '0', '0')
                 send_var_message('w', 'areaToGo', '1', '0', '0', '0', '0', '0',
                                  '0', '0')
-                send_pfo_message(
-                    'ry',
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                )
+                send_pfo_message('ry', '1', '2', '3', '4', '5', '6')
 
 
 #################################### READ RASPBERRY PI TEMPERATURE #########################################
@@ -406,18 +329,9 @@ def readWS():
             'http://192.168.1.11/meteohtml.cgi?file=' + str(rainData))
         wsrain = wsrainUrl.read()
         if float(wsrain) > 0:
-            send_var_message(
-                'w',
-                'rainWS',
-                '1',
-                'nextTimeTimer',
-                '' + str(int(tempvar)) + '',
-                '0',
-                '0',
-                '0',
-                '0',
-                '0',
-            )
+            send_var_message('w', 'rainWS', '1', 'nextTimeTimer',
+                             '' + str(int(tempvar)) + '', '0', '0', '0', '0',
+                             '0')
             if int(myRobot.wsRainData) == 1:
                 print(str(float(wsrain)) + ' mm rain in last 15 minutes')
             elif int(myRobot.wsRainData) == 2:
@@ -509,15 +423,6 @@ page_list = [
 
 actualRep = os.getcwd()
 dateNow = time.strftime('%d/%m/%y %H:%M:%S', time.localtime())
-
-# fen1 = tk.Tk()
-'''Variable for check button '''
-
-firstFixFlag = False
-firstFixDate = 0
-
-# fen1.title('PiArduMower')
-# fen1.geometry('800x480')
 
 
 class datetime:
@@ -640,8 +545,7 @@ myDate = datetime()
 def checkSerial():  # the main loop is that
 
     while True:
-        if DueConnectedOnPi:
-            # try:
+        try:
             mymower.dueSerialReceived = Due_Serial.readline()
             if str(mymower.dueSerialReceived) != "b''":
                 mymower.dueSerialReceived = str(mymower.dueSerialReceived,
@@ -655,28 +559,16 @@ def checkSerial():  # the main loop is that
                     message = pynmea2.parse(mymower.dueSerialReceived)
                     decode_message(message)
 
-                    # try:
-                    #     message = pynmea2.parse(mymower.dueSerialReceived)
-                    #     decode_message(message)
-                    # except :
-                    # #    print('INCOMMING MESSAGE ERROR FROM DUE --> ' + str(mymower.dueSerialReceived))
-                    #     consoleInsertText('INCOMMING MESSAGE ERROR FROM DUE' + '\n')
-                    #     consoleInsertText(str(mymower.dueSerialReceived) + '\n')
-
-            # except:
-            #     try:
-            #         print('Due serial connection fail, trying to reset')
-            #         Due_Serial.close()
-            #         time.sleep(5)
-            #         Due_Serial.open()
-            #     except:
-            #         print('Serial connection reset failed, shutdown 60s')
-            #         time.sleep(60)
-            #         fen1.destroy()
-            #         time.sleep(1)
-            #         print('Fen1 destroy')
-            #         time.sleep(1)
-            #         sys.exit('Impossible to continue')
+        except:
+            try:
+                print('Due serial connection fail, trying to reset')
+                Due_Serial.close()
+                time.sleep(5)
+                Due_Serial.open()
+            except:
+                print('Serial connection reset failed, shutdown 60s')
+                time.sleep(60)
+                sys.exit('Impossible to continue')
 
         if (mower.speedIsReduce) & (time.time() > mower.timeToResetSpeed):
             mower.speedIsReduce = False
@@ -693,35 +585,17 @@ def checkSerial():  # the main loop is that
             mower.timeToReadRPiTemp = time.time() + 30  # 30s delay
             readRasPiTemp()
 
-        # if useDebugConsole:
-        #     txtRecu.delete('5000.0', tk.END)  # keep only  lines
-        #     txtSend.delete('5000.0', tk.END)  # keep only  lines
-        # txtConsoleRecu.delete('2500.0', tk.END)  # keep only  lines
-        # txtConsoleErr.delete('100.0', tk.END)  # keep lines
-
         if ((useMqtt) & (Mqqt_client.connected_flag == False) &
             (time.time() > mymower.timeToReconnectMqtt)):
-            # if (Mqqt_client.connected_flag):
-            #     if (time.time() > mymower.timeToSendMqttIdle):
-            #         sendMqtt('Mower/Idle', str(mymower.loopsPerSecond))
-            #         mymower.timeToSendMqttIdle = time.time() + 5
-
-            # else:
-            # if (time.time() > mymower.timeToReconnectMqtt):
             print('MQTT not connected retry each 2 minutes' + '\n')
             Mqqt_Connection()
             mymower.timeToReconnectMqtt = time.time() + 120
-
-    # fen1.after(20, checkSerial)  # here is the main loop each 20ms
 
 
 #################################### END OF MAINLOOP ###############################################
 
 
 def decode_message(message):  # decode the nmea message
-    # KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow()
-    if useDebugConsole:
-        txtRecu.insert('1.0', str(message) + '\n')
 
     # receive a command from the DUE (need to do something
     if message.sentence_type == 'CMD':
@@ -729,35 +603,19 @@ def decode_message(message):  # decode the nmea message
             if (useMqtt):
                 print('Close Mqtt Connection' + '\n')
                 Mqqt_DisConnection()
-            print('All Console Data are saved' + '\n')
-            print('The GPS Record is stopped' + '\n')
             print('PI Restart into 5 Seconds' + '\n')
-            print('Start to save all Console Data' + '\n')
-            # ButtonSaveReceived_click()  #save the console txt
             time.sleep(1)
             subprocess.Popen('/home/pi/Documents/PiArdumower/Restart.py')
-            # fen1.destroy()
             time.sleep(1)
-            # print('Fen1 is destroy')
             sys.exit('Restart ordered by Arduino Due')
         if message.actuatorname == 'PowerOffPi':
             mymower.focusOnPage = 4
-            print('Start to save all Console Data' + '\n')
-            # ButtonSaveReceived_click()  # save the console txt
-            print('All Console Data are saved' + '\n')
-            print('All Console Data are saved')
-            # txtConsoleRecu.insert('1.0', 'Start to stop the GPS Record')
-            # mygpsRecord.stop()
-            # print('The GPS Record is stopped' + '\n')
-            # print('The GPS Record is stopped')
             print('PI start Shutdown into 5 Seconds' + '\n')
             time.sleep(1)
             print(
                 'Start subprocess /home/pi/Documents/PiArdumower/PowerOff.py')
             subprocess.Popen('/home/pi/Documents/PiArdumower/PowerOff.py')
-            # fen1.destroy()
             time.sleep(1)
-            # print('Fen1 is destroy')
             sys.exit('PowerOFF ordered by Arduino Due')
 
     if message.sentence_type == 'BYL':  # to refresh the ByLane setting page
@@ -878,7 +736,6 @@ def decode_message(message):  # decode the nmea message
 
         if (myRobot.stateNames[mymower.state] == 'ERR') & (
                 mymower.errorEmailSent == False):
-            # ButtonSaveReceived_click()  # save the console txt
             checkMailSent = sendEmail()
             # if checkMailSent:
             #     mymower.errorEmailSent = True
@@ -900,10 +757,9 @@ def decode_message(message):  # decode the nmea message
             cmdline = cmdline + myDate.hour + ":" + myDate.minute + ":"
             cmdline = cmdline + "0" + "'"
 
-            if myOS == 'Linux':
-                print('Set the new time and date to PI')
-                print(cmdline)
-                os.system(cmdline)
+            print('Set the new time and date to PI')
+            print(cmdline)
+            os.system(cmdline)
 
             dateNow = time.strftime('%d/%m/%y %H:%M:%S', time.localtime())
             print(dateNow)
@@ -1094,93 +950,24 @@ def decode_message(message):  # decode the nmea message
         print(message.debug)
 
 
-# def ButtonSaveReceived_click():
-#     fileName = ('/home/pi/Documents/PiArdumower/log/' +
-#                 time.strftime('%Y%m%d%H%M') + '_Received.txt')
-#     with open(fileName, 'w') as f:
-#         f.write(txtRecu.get('1.0', 'end'))
-#     fileName = ('/home/pi/Documents/PiArdumower/log/' +
-#                 time.strftime('%Y%m%d%H%M') + '_Send.txt')
-#     with open(fileName, 'w') as f:
-#         f.write(txtSend.get('1.0', 'end'))
-#     fileName = ('/home/pi/Documents/PiArdumower/log/' +
-#                 time.strftime('%Y%m%d%H%M') + '_Console.txt')
-#     with open(fileName, 'w') as f:
-#         f.write(txtConsoleRecu.get('1.0', 'end'))
-#     print('All Console file are saved' + '\n')
-
-
 def button_stop_all_click():
-    send_pfo_message(
-        'ro',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('ro', '1', '2', '3', '4', '5', '6')
 
 
 def ButtonInfo_click():
-    send_req_message(
-        'INF',
-        '2',
-        '0',
-        '1',
-        '0',
-        '0',
-        '0',
-    )
+    send_req_message('INF', '2', '0', '1', '0', '0', '0')
 
 
 def ButtonGyroCal_click():
-    send_pfo_message(
-        'g18',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('g18', '1', '2', '3', '4', '5', '6')
 
 
 def ButtonCompasCal_click():
-    send_pfo_message(
-        'g19',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('g19', '1', '2', '3', '4', '5', '6')
 
 
 def ButtonSendSettingToEeprom_click():
-    send_pfo_message(
-        'sz',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
-
-
-# def ButtonSendSettingDateTimeToDue_click():
-#     Send_reqSetting_message('Time','w','1',''+str(tk_date_hour.get())+\
-#                             '',''+str(tk_date_minute.get())+\
-#                             '',''+str(tk_date_dayOfWeek.get())+\
-#                             '',''+str(tk_date_day.get())+\
-#                             '',''+str(tk_date_month.get())+\
-#                             '',''+str(tk_date_year.get())+\
-#                             '',''+str(0)+\
-#                             '',''+str(0)+\
-#                             '',''+str(0)+\
-#                             '',''+str(0)+'',)
+    send_pfo_message('sz', '1', '2', '3', '4', '5', '6')
 
 
 def read_all_setting():
@@ -1243,67 +1030,21 @@ def Send_reqSetting_message(val1, val2, val3, val4, val5, val6, val7, val8,
 
 def send_serial_message(message1):
     try:
-        if DueConnectedOnPi:
-            # checkSerial()
-            Due_Serial.flushOutput()
-            Due_Serial.write(bytes(message1, 'utf-8'))
-            # print('Send Message :' , message1)
-            if useDebugConsole:
-                txtSend.insert('1.0', message1)
+        Due_Serial.flushOutput()
+        Due_Serial.write(bytes(message1, 'utf-8'))
+
     except:
         print('ERREUR while transfert')
         time.sleep(2)
 
 
-''' ------------------- connecting the the PCB1.3 arduino due ------------ '''
-try:
-    if DueConnectedOnPi:
-        if myOS == 'Linux':
-            Due_Serial = serial.Serial('/dev/ttyACM_DUE', 115200, timeout=0)
-        # if os.path.exists('/dev/ttyACM0') == True:
-        #     Due_Serial = serial.Serial('/dev/ttyACM0', 115200, timeout=0)
-        #     print('Find Serial on ttyACM0')
-        # if os.path.exists('/dev/ttyACM1') == True:
-        #     Due_Serial = serial.Serial('/dev/ttyACM1', 115200, timeout=0)
-        #     print('Find Serial on ttyACM1')
-        else:
-            Due_Serial = serial.Serial('COM9', 115200, timeout=0)
-        byteResponse = Due_Serial.readline()
-        print(str(byteResponse))
-
-except:
-    print(' ')
-    print('************************************')
-    print('ERREUR DE CONNECTION WITH PCB1.3 DUE')
-    print('************************************')
-    print(' ')
-    time.sleep(1)
-    #sys.exit('Impossible to continue')
-
-
 def ButtonReboot_click():
     print("reboot")
-    send_pfo_message(
-        'h04',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('h04', '1', '2', '3', '4', '5', '6')
 
 
 def ButtonRollDir_click():
-    send_pfo_message(
-        'w20',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('w20', '1', '2', '3', '4', '5', '6')
 
 
 def button_home_click():
@@ -1312,42 +1053,18 @@ def button_home_click():
                      '0', '0', '0', '0', '0', '0')
     send_var_message('w', 'statusCurr', '3', '0', '0', '0', '0', '0', '0',
                      '0')  # set the status to back to station
-    send_pfo_message(
-        'rh',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('rh', '1', '2', '3', '4', '5', '6')
 
 
 def button_track_click():
-    send_pfo_message(
-        'rk',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('rk', '1', '2', '3', '4', '5', '6')
 
 
 def buttonStartMow_click():
     send_var_message('w', 'mowPatternCurr',
                      '' + str(mymower.mowPatternCurr) + '', '0', '0', '0', '0',
                      '0', '0', '0')
-    send_pfo_message(
-        'ra',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('ra', '1', '2', '3', '4', '5', '6')
 
 
 def buttonBlade_stop_click():
@@ -1362,91 +1079,18 @@ def buttonBlade_start_click():
     send_cmd_message('mowmotor', '1', '0', '0', '4')
 
 
-''' The Console page  ************************************'''
-
-
 def ButtonListVar_click():
-    send_pfo_message(
-        'h02',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('h02', '1', '2', '3', '4', '5', '6')
 
 
 def ButtonConsoleMode_click():
-    send_pfo_message(
-        'h03',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('h03', '1', '2', '3', '4', '5', '6')
 
 
-# ConsolePage = tk.Frame(fen1)
-# ConsolePage.place(x=0, y=0, height=400, width=800)
-
-# txtRecu = tk.Text(ConsolePage)
-# ScrollTxtRecu = tk.Scrollbar(txtRecu)
-# ScrollTxtRecu.pack(side=tk.RIGHT, fill=tk.Y)
-# txtRecu.pack(side=tk.LEFT, fill=tk.Y)
-# ScrollTxtRecu.config(command=txtRecu.yview)
-# txtRecu.config(yscrollcommand=ScrollTxtRecu.set)
-# txtRecu.place(x=0, y=300, anchor='nw', width=480, height=100)
-
-# txtSend = tk.Text(ConsolePage)
-# ScrollTxtSend = tk.Scrollbar(txtSend)
-# ScrollTxtSend.pack(side=tk.RIGHT, fill=tk.Y)
-# txtSend.pack(side=tk.LEFT, fill=tk.Y)
-# ScrollTxtSend.config(command=txtSend.yview)
-# txtSend.config(yscrollcommand=ScrollTxtSend.set)
-# txtSend.place(x=490, y=300, anchor='nw', width=300, height=100)
-
-# txtConsoleRecu = tk.Text(ConsolePage)
-# ScrolltxtConsoleRecu = tk.Scrollbar(txtConsoleRecu)
-# ScrolltxtConsoleRecu.pack(side=tk.RIGHT, fill=tk.Y)
-# txtConsoleRecu.pack(side=tk.LEFT, fill=tk.Y)
-# ScrolltxtConsoleRecu.config(command=txtConsoleRecu.yview)
-# txtConsoleRecu.config(yscrollcommand=ScrolltxtConsoleRecu.set)
-# txtConsoleRecu.place(x=0, y=5, anchor='nw', width=800, height=290)
-
-# # Console window
-# txtConsoleErr = tk.Text(ConsolePage)
-# ScrolltxtConsoleErr = tk.Scrollbar(txtConsoleErr)
-# ScrolltxtConsoleErr.pack(side=tk.RIGHT, fill=tk.Y)
-# txtConsoleErr.pack(side=tk.LEFT, fill=tk.Y)
-# ScrolltxtConsoleErr.config(command=txtConsoleErr.yview)
-# txtConsoleErr.config(yscrollcommand=ScrolltxtConsoleErr.set)
-# txtConsoleErr.place(x=2 * 400,
-#                     y=10,
-#                     anchor='nw',
-#                     width=800 - (2 * 400),
-#                     height=370)
-''' THE RFID PAGE ***************************************************'''
-
-# Read the file and create the list
+# Read tags from file
 with open('/home/pi/Documents/PiArdumower/tag_list.bin', 'rb') as fp:
-    # rfid_list=[['01254456700','FR0',60,0,0,0,0,0],['01254456711','FR1',61,1,1,0,0,0]]
     rfid_list = pickle.load(fp)
     print('RFID file loaded OK')
-    # print(rfid_list)
-
-# def handler(event):
-#     current = combobox.current()
-#     if current != -1:
-#         print(myRobot.stateNames[current])
-
-# combobox = ttk.Combobox(RfidPage,values=myRobot.stateNames, height=60, width=140)
-# combobox.bind('<<ComboboxSelected>>', handler)
-# combobox.current(0)
-# combobox.place(x=530, y=310, height=60, width=140)
-''' THE ERROR PAGE ***************************************************'''
 
 
 def ButtonResetCounters_click():
@@ -1454,36 +1098,37 @@ def ButtonResetCounters_click():
     time.sleep(5)
 
 
-''' THE MAIN PAGE ***************************************************'''
-
-
 def ButtonPowerOff_click():
     button_stop_all_click()
-    send_pfo_message(
-        'rt',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-    )
+    send_pfo_message('rt', '1', '2', '3', '4', '5', '6')
 
 
-checkSerial()
+''' ------------------- connecting the the PCB1.3 arduino due ------------ '''
+try:
+    Due_Serial = serial.Serial('/dev/ttyACM_DUE', 115200, timeout=0)
+    # if os.path.exists('/dev/ttyACM0') == True:
+    #     Due_Serial = serial.Serial('/dev/ttyACM0', 115200, timeout=0)
+    #     print('Find Serial on ttyACM0')
+    # if os.path.exists('/dev/ttyACM1') == True:
+    #     Due_Serial = serial.Serial('/dev/ttyACM1', 115200, timeout=0)
+    #     print('Find Serial on ttyACM1')
+
+    byteResponse = Due_Serial.readline()
+    print(str(byteResponse))
+
+except:
+    print(' ')
+    print('************************************')
+    print('ERREUR DE CONNECTION WITH PCB1.3 DUE')
+    print('************************************')
+    print(' ')
+    time.sleep(1)
+    #sys.exit('Impossible to continue')
 
 print('Read Setting from PCB1.3' + '\n')
 read_all_setting()
 print('Read Area In Mowing from PCB1.3' + '\n')
-send_req_message(
-    'PERI',
-    '1000',
-    '1',
-    '1',
-    '0',
-    '0',
-    '0',
-)
+send_req_message('PERI', '1000', '1', '1', '0', '0', '0')
 if (useMqtt):
     print('Wait update Date/Time from internet' + '\n')
     print('Initial start MQTT after 1 minute' + '\n')
@@ -1492,4 +1137,4 @@ else:
     print('Adjust PI time from PCB1.3' + '\n')
     read_time_setting()
 
-# fen1.mainloop()
+checkSerial()
