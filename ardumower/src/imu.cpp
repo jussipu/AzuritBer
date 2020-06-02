@@ -24,7 +24,6 @@
 #include "helper_3dmath.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "mower.h"
-#include "i2c.h"
 #include "robot.h"
 //#include "buzzer.h"
 #include "flashmem.h"

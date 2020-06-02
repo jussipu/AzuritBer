@@ -317,7 +317,7 @@ void Mower::setup()
   Buzzer.begin();
   Console.begin(CONSOLE_BAUDRATE);
   I2Creset();
-  Wire1.begin();
+  Wire.begin();
   // Flash.test();
 
   /* while (!checkAT24C32()){
