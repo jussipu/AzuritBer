@@ -2252,32 +2252,33 @@ void Robot::setup()
   // Console.print ("        Free memory is :   ");
   // Console.println (freeMemory ());
 
-  // watchdog enable at the end of the setup
-  if (Enable_DueWatchdog)
-  {
-    Console.println("Watchdog is enabled and set to 10 seconds");
-    watchdogEnable(10000); // Watchdog trigger after 10 sec if not reseted.
-  }
-  else
-    Console.println("Watchdog is disabled");
-
-// watchdog reset detect
 #if Enable_DueWatchdog
+  // watchdog reset detect
   if (Enable_DueWatchdog)
   {
     if (!strcmp(p, signature)) // signature exist
     {
       resetByWDT = true;
-      Console.println("Watchdog triggered reboot done.");
+      Console.println("Watchdog triggered reboot.");
     }
     else
     {
       resetByWDT = false;
       memcpy(p, signature, sizeof signature); // copy signature into RAM
-      Console.println("Normal cold boot done.");
+      Console.println("Normal power on boot.");
     }
   }
 #endif
+
+  // watchdog enable at the end of the setup
+  if (Enable_DueWatchdog)
+  {
+    Console.println("Watchdog is enabled and set to 5 seconds");
+    watchdogEnable(5000); // Watchdog trigger after 5 sec if not reseted.
+  }
+  else
+    Console.println("Watchdog is disabled");
+
   nextTimeInfo = millis();
 }
 
@@ -3037,18 +3038,17 @@ void Robot::readSensors()
     }
   }
 
-  // if ((timerUse) && (millis() >= nextTimeRTC)) {
-  if (millis() >= nextTimeRTC)
+  if ((timerUse) && (millis() >= nextTimeRTC))
+  // if (millis() >= nextTimeRTC)
   {
-
     nextTimeRTC = millis() + 20000;
     readSensor(SEN_RTC); // read RTC
-    //Console.print(F("RTC date received: "));
-    //Console.println(date2str(datetime.date));
-    //Console.print(F("RTC time received: "));
-    //Console.print(datetime.time.hour);
-    //Console.print(F(":"));
-    //Console.println(datetime.time.minute);
+    // Console.print("RTC date: ");
+    // Console.println(date2str(datetime.date));
+    // Console.print("RTC time: ");
+    // Console.print(datetime.time.hour);
+    // Console.print(":");
+    // Console.println(datetime.time.minute);
   }
 
   if (millis() >= nextTimeBattery)
@@ -4121,10 +4121,11 @@ void Robot::setNextState(byte stateNew, byte dir)
     UseBrakeLeft = 1;
     UseAccelRight = 1;
     UseBrakeRight = 1;
-    Console.print(" imu.comYaw ");
-    Console.print(abs(100 * imu.comYaw));
     Console.print(" imu.ypr.yaw ");
     Console.print(abs(100 * imu.ypr.yaw));
+#if UseCompass
+    Console.print(" imu.comYaw ");
+    Console.print(abs(100 * imu.comYaw));
     Console.print(" distancePI(imu.comYaw, imu.ypr.yaw) ");
     Console.println(distancePI(imu.comYaw, imu.ypr.yaw));
     if (distancePI(imu.comYaw, yawCiblePos * PI / 180) > 0)
@@ -4145,6 +4146,14 @@ void Robot::setNextState(byte stateNew, byte dir)
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
       stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
     }
+#else
+    actualRollDirToCalibrate = RIGHT;
+    Console.println(" >>> >>> >>> >>> >>> >>> 0");
+    motorLeftSpeedRpmSet = motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
+    motorRightSpeedRpmSet = -motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
+    stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+    stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 4 * PI * odometryWheelBaseCm);
+#endif
     OdoRampCompute();
     break;
 
@@ -5262,7 +5271,11 @@ void Robot::loop()
     checkTimer();
   beeper();
 
+#if UseCompass
   if ((stateCurr != STATE_STATION_CHARGING) || (stateCurr != STATE_STATION) || (stateCurr != STATE_PERI_TRACK))
+#else
+  if ((stateCurr != STATE_STATION_CHARGING) || (stateCurr != STATE_PERI_TRACK))
+#endif
   {
     if ((imuUse) && (millis() >= nextTimeImuLoop))
     {
@@ -5848,6 +5861,7 @@ void Robot::loop()
     break;
 
   case STATE_ROLL_TO_FIND_YAW:
+#if UseCompass
     motorControlOdo();
     imu.run();
     if ((yawToFind - 2 < (imu.comYaw / PI * 180)) && (yawToFind + 2 > (imu.comYaw / PI * 180)))
@@ -5861,6 +5875,11 @@ void Robot::loop()
         Console.println("Warning can't roll to find yaw in time The Compass is certainly HS ");
       setNextState(STATE_STOP_CALIBRATE, rollDir);
     }
+#else
+    motorControlOdo();
+    imu.run();
+    setNextState(STATE_STOP_CALIBRATE, rollDir);
+#endif
     break;
 
   //not use actually
@@ -6086,19 +6105,27 @@ void Robot::loop()
           yawToFind = yawSet2;
         if (laneUseNr == 3)
           yawToFind = yawSet3;
+#if UseCompass
         setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);
+#else
+        setNextState(STATE_STOP_CALIBRATE, rollDir);
+#endif
       }
     if (millis() > (stateStartTime + MaxOdoStateDuration))
     {
       if (developerActive)
-        Console.println("Warning can't peri out stop in time ");
+        Console.println("Warning can't stop to find yaw in time ");
       if (laneUseNr == 1)
         yawToFind = yawSet1;
       if (laneUseNr == 2)
         yawToFind = yawSet2;
       if (laneUseNr == 3)
         yawToFind = yawSet3;
-      setNextState(STATE_ROLL_TO_FIND_YAW, rollDir); //if the motor can't rech the odocible in slope
+#if UseCompass
+      setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);
+#else
+      setNextState(STATE_STOP_CALIBRATE, rollDir);
+#endif
     }
     break;
 
@@ -6172,17 +6199,24 @@ void Robot::loop()
     setBeeper(2000, 150, 150, 160, 50);
     if (millis() > nextTimeAddYawMedian)
     { // compute a median of accelGyro and Compass  yaw
+#if UseCompass
       compassYawMedian.add(imu.comYaw);
+#endif
       accelGyroYawMedian.add(imu.ypr.yaw);
       nextTimeAddYawMedian = millis() + 70; // the value are read each 70ms
     }
     if (accelGyroYawMedian.getCount() > 56)
     { //we have the value of 4 secondes try to verify if the drift is less than x deg/sec
       Console.println("4 sec of read value, verify if the drift is stop");
-      if (abs(accelGyroYawMedian.getHighest() - accelGyroYawMedian.getLowest()) < 4 * maxDriftPerSecond * PI / 180)
-      {                                                                                                                                    //drift is OK restart mowing
+      if (abs(accelGyroYawMedian.getHighest() - accelGyroYawMedian.getLowest()) < 4 * maxDriftPerSecond * PI / 180) //drift is OK restart mowing
+      {
+#if UseCompass
         imu.CompassGyroOffset = distancePI(scalePI(accelGyroYawMedian.getMedian() - imu.CompassGyroOffset), compassYawMedian.getMedian()); //change the Gyro offset according to Compass Yaw
-        Console.println("Drift is OK");
+#else
+        imu.CompassGyroOffset = 0;
+        findedYaw = 0;
+#endif
+        Console.println("OK next state out rev");
         setBeeper(0, 0, 0, 0, 0); //stop sound immediatly
         if (stopMotorDuringCalib)
           motorMowEnable = true; //restart the mow motor
@@ -6208,7 +6242,9 @@ void Robot::loop()
       mowPatternCurr = MOW_RANDOM;
       if (stopMotorDuringCalib)
         motorMowEnable = true; //stop the mow motor
-      Console.println("WAIT to stop drift of GYRO is not OK mowing Drift too important");
+      Console.println("Drift too important it's not possible to have a correct bylane mowing");
+      Console.println("***************** CHECK THE GYRO CALIBRATION ************************");
+
       nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
       setBeeper(0, 0, 0, 0, 0);
       if (perimeterInside)

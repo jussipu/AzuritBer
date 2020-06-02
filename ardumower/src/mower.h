@@ -105,8 +105,6 @@
 #define pinUserSwitch3 48   // user-defined switch 3
 #define pinRain 44          // rain sensor
 
-// IMU (compass/gyro/accel): I2C  (SCL, SDA)
-
 // ------- baudrates---------------------------------
 
 #define BLUETOOTH_BAUDRATE 19200 // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
@@ -126,7 +124,7 @@
 #define CONSOLE_BAUDRATE 115200 // baudrate used for Raspberry PI console
 
 // Watchdog true/false
-#define Enable_DueWatchdog false
+#define Enable_DueWatchdog true
 
 #define RaspberryPIPort SerialUSB
 #define ESP8266port Serial1
@@ -139,7 +137,9 @@
 // ------- I2C addresses --------------------------------------------------------------
 #define DS1307_ADDRESS B1101000
 #define AT24C32_ADDRESS B1010000
-
+#if UseCompass
+#define HMC5883L (0x1E) // HMC5883L compass sensor (GY-80 PCB)
+#endif
 // ---- choose only one perimeter signal code ----
 #define SIGCODE_1 // Ardumower default perimeter signal
 //#define SIGCODE_2  // Ardumower alternative perimeter signal

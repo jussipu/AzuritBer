@@ -50,29 +50,22 @@ uint8_t fifoBuffer[64]; // FIFO storage buffer
 int16_t ax, ay, az, gx, gy, gz;
 int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz, state = 0;
 int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset;
-
-// orientation/motion vars
-//Quaternion q;           // [w, x, y, z]         quaternion container
-//VectorInt16 aa;         // [x, y, z]            accel sensor measurements
-//VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
-//VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
-//VectorFloat gravity;    // [x, y, z]            gravity vector
-//float euler[3];         // [psi, theta, phi]    Euler angle container
 float yprtest[3]; // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
-// packet structure for InvenSense teapot demo
-//uint8_t teapotPacket[14] = { '$', 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0x00, 0x00, '\r', '\n' };
-
+#if UseCompass
 #define ADDR 600
 #define MAGIC 6
-#define HMC5883L (0x1E) // HMC5883L compass sensor (GY-80 PCB)
+#else
+#define ADDR 1000
+#define MAGIC 6
+#endif
 
 void IMUClass::begin()
 {
 
   if (!robot.imuUse)
     return;
-
+#if UseCompass
   //initialisation of CompassHMC5833L
   Console.println(F("--------------------------------- IMU INITIALISATION -------------------"));
   uint8_t data = 0;
@@ -87,13 +80,18 @@ void IMUClass::begin()
   //}
   comOfs.x = comOfs.y = comOfs.z = 0;
   comScale.x = comScale.y = comScale.z = 2;
+#else
+  Console.println(F("--------------------------------- GYRO INITIALISATION -------------------"));
+#endif
   loadCalib();
   printCalib();
+#if UseCompass
   useComCalibration = true;
   I2CwriteTo(HMC5883L, 0x00, 0x70); // config A:  8 samples averaged, 75Hz frequency, no artificial bias.
   I2CwriteTo(HMC5883L, 0x01, 0x20); // config B: gain
   I2CwriteTo(HMC5883L, 0x02, 00);   // mode: continuous
-  delay(2000);                      //    wait 2 second before doing the first reading
+#endif
+  delay(2000); //    wait 2 second before doing the first reading
 
   //initialisation of MPU6050
   mpu.initialize();
@@ -107,14 +105,7 @@ void IMUClass::begin()
   mpu.setXGyroOffset(gx_offset);  //-1
   mpu.setYGyroOffset(gy_offset);  //-3
   mpu.setZGyroOffset(gz_offset);  //-2
-  /*
-    mpu.setXAccelOffset(-1929); //-1929
-    mpu.setYAccelOffset(471); //471
-    mpu.setZAccelOffset(1293); // 1293
-    mpu.setXGyroOffset(-1);//-1
-    mpu.setYGyroOffset(-3);//-3
-    mpu.setZGyroOffset(-2);//-2
-  */
+
   CompassGyroOffset = 0;
 
   // make sure it worked (returns 0 if so)
@@ -138,15 +129,17 @@ void IMUClass::begin()
   run();
   Console.print(F("AccelGyro Yaw: "));
   Console.print(ypr.yaw);
+#if UseCompass
   Console.print(F("  Compass Yaw: "));
   Console.print(comYaw);
-
   CompassGyroOffset = distancePI(ypr.yaw, comYaw);
   Console.print(F("  Diff between compass and accelGyro in Radian and Deg"));
   Console.print(CompassGyroOffset);
   Console.print(" / ");
   Console.println(CompassGyroOffset * 180 / PI);
-
+#else
+  CompassGyroOffset = 0;
+#endif
   Console.println(F("--------------------------------- IMU READY ------------------------------"));
 }
 
@@ -358,12 +351,13 @@ void IMUClass::run()
 
   if (devStatus != 0)
     return;
-
+#if UseCompass
   if (state == IMU_CAL_COM)
   { //don't read the MPU6050 if compass calibration
     calibComUpdate();
     return;
   }
+#endif
   //-------------------read the mpu6050 DMP into yprtest array--------------------------------
   mpu.resetFIFO();
 
@@ -419,7 +413,7 @@ void IMUClass::run()
   }
 
   gyroAccYaw = yprtest[0]; // the Gyro Yaw very accurate but drift
-
+#if UseCompass
   // ------------------put the CompassHMC5883 value into comYaw-------------------------------------
   readHMC5883L();
   //tilt compensed yaw ????????????
@@ -427,30 +421,18 @@ void IMUClass::run()
   comTilt.y = com.x * sin(ypr.roll) * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
   comTilt.z = -com.x * cos(ypr.roll) * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);
   comYaw = scalePI(atan2(comTilt.y, comTilt.x)); // the compass yaw not accurate but reliable
-  //last traitement to verify drift
-  /*
-    Console.print ("IMU.YAW ");
-    Console.print (gyroAccYaw);
-    Console.print (" Compass.YAW ");
-    Console.print (comYaw);
-    Console.print (" firstStartCompassYaw ");
-    Console.println (firstStartCompassYaw);
-    //Console.print (" stopYawCompass ");
-
-  */
-
-  // / CompassGyroOffset=distancePI( scalePI(ypr.yaw-CompassGyroOffset), comYaw);
+//last traitement to verify drift
+#else
+  //reset the gyro to 0 when the mower is in station to always start the first mowing lane heading correctly
+  if (robot.stateCurr == STATE_STATION)
+  {
+    CompassGyroOffset = distancePI(scalePI(gyroAccYaw), 0);
+  }
+#endif
   ypr.yaw = scalePI(gyroAccYaw + CompassGyroOffset);
-
-  /*
-    if (millis() > timeToAdjustGyroToCompass) {
-      Console.println(ypr.yaw);
-      //firstStartCompassYaw = comYaw - gyroAccYaw;
-      timeToAdjustGyroToCompass = millis() + 200;
-    }
-  */
 }
 
+#if UseCompass
 void IMUClass::readHMC5883L()
 {
 
@@ -486,6 +468,7 @@ void IMUClass::readHMC5883L()
     com.z = z;
   }
 }
+#endif
 
 void IMUClass::loadSaveCalib(bool readflag)
 {
@@ -506,9 +489,11 @@ void IMUClass::loadSaveCalib(bool readflag)
   eereadwrite(readflag, addr, gx_offset);
   eereadwrite(readflag, addr, gy_offset);
   eereadwrite(readflag, addr, gz_offset);
+#if UseCompass
   //compass offset
   eereadwrite(readflag, addr, comOfs);
   eereadwrite(readflag, addr, comScale);
+#endif
   Console.print(F("Calibration address Start = "));
   Console.println(ADDR);
   Console.print(F("Calibration address Stop = "));
@@ -540,12 +525,14 @@ void IMUClass::printCalib()
   Console.print(gy_offset);
   Console.print(" gz: ");
   Console.println(gz_offset);
+#if UseCompass
   Console.print("COMPASS OFFSET X.Y.Z AND SCALE X.Y.Z   --> ");
   Console.print(F("comOfs="));
   printPt(comOfs);
   Console.print(F("comScale="));
   printPt(comScale);
   Console.println(F("."));
+#endif
 }
 
 void IMUClass::loadCalib()
@@ -581,6 +568,7 @@ void IMUClass::saveCalib()
   loadSaveCalib(false);
 }
 
+#if UseCompass
 void IMUClass::deleteCompassCalib()
 {
 
@@ -590,6 +578,8 @@ void IMUClass::deleteCompassCalib()
   comScale.x = comScale.y = comScale.z = 2;
   Console.println("Compass calibration deleted");
 }
+#endif
+
 void IMUClass::deleteAccelGyroCalib()
 {
 
@@ -678,6 +668,7 @@ void IMUClass::calibGyro()
   saveCalib();
 }
 
+#if UseCompass
 void IMUClass::calibComStartStop()
 {
 
@@ -800,3 +791,4 @@ void IMUClass::calibComUpdate()
     }
   }
 }
+#endif

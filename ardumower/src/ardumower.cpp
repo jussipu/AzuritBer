@@ -1,7 +1,7 @@
 /*
         DUE and ODOMETRY MANDATORY VERSION
-        PCB1.3
-        FOR BY LANE USE, IMU GY-88 MANDATORY
+        PCB 1.3
+        GY-88 or GY-521 MANDATORY with AD0 shunt
 
         Use DUE programming port for programming and console!
 

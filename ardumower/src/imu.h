@@ -1,27 +1,14 @@
-/*
-// IMU (GY-88)
-//  Gyro:    MPU6050
-//  Compass: HMC5883L 
-How to use:
-  
-	IMU.begin();    
-	while (true){
-	  if (IMU.needGyroCal())) {     	    
-	    IMU.startGyroCalibration();      
-    }		
-	  IMU.run();	
-		float yaw = IMU.getYaw();
-	}
-		
-*/
+// GY-88
+// Gyro:     MPU6050
+// Compass:  HMC5883L
+
+// GY-521
+// Gyro:     MPU6050
 
 #ifndef IMU_H
 #define IMU_H
 
 #include "helper_3dmath.h"
-//#include "adafruit/Adafruit_Sensor.h"
-//#include "adafruit/Adafruit_BNO055.h"
-//#include "adafruit/imumaths.h"
 
 // Sensor sensitivities
 #define QUAT_SENS 1073741824.0
@@ -119,45 +106,16 @@ public:
   point_float_t comTilt; // compass sensor data (tilt corrected)
   point_float_t comOfs;
   point_float_t comScale;
-  float comYaw; // compass heading (radiant, raw)
   bool useComCalibration;
+#if UseCompass
+  float comYaw; // compass heading (radiant, raw)
   // calibrate compass sensor
   void calibComStartStop();
   void calibComUpdate();
   bool newMinMaxFound();
+  void deleteCompassCalib();
+#endif
   void calibGyro();
-  // ----------------------
-  /*  // ---- compass ------
-   bool calibFound;
-   //adafruit_bno055_offsets_t calibData; // BNO055 calibration
-   point_float_t comR; // raw compass (uncalibrated)
-   point_float_t comAcc; // compass acceleration sensor
-   float comRoll; // compass roll
-   float comPitch; // compass pitch
-    point_float_t comLast;
-    point_float_t comMin; // compass sensor data (raw)
-    point_float_t comMax; // compass sensor data (raw)  
-    point_float_t comTilt; // compass sensor data (tilt corrected)
-    point_float_t comOfs;
-    point_float_t comScale;  
-  
-   point_float_t comAccMin; // compass acceleration sensor seen min
-   point_float_t comAccMax; // compass acceleration sensor seen max
-   long gyroBias[3];    // gyro bias 
-   long accelCal[3];   // accel calibration
-   float comCalA_1[9]; // compass calibration A_1
-   float comCalB[3];   // compass calibration B
-   point_float_t comAccOfs; // compass acceleration sensor ofs
-   point_float_t comAccScale;  // compass acceleration sensor scale
-      bool useComAccCalibration;
-   int calibComAccAxisCounter ;   
-   float yawAtGyroCalibrationTime;
-   unsigned long timeAtGyroCalibrationTime;
-   float statsYawMax;
-   float statsYawMin;
-   int statsGyroCalibrationTimeMax; 
-   */
-
   void meansensors();
   void calibration();
 
@@ -172,7 +130,6 @@ public:
   void stopCompassCalibration();
   void loadCalib();
   void saveCalib();
-  void deleteCompassCalib();
   void deleteAccelGyroCalib();
 
   void calibrateAccel();
@@ -197,16 +154,15 @@ protected:
   void printPt(point_float_t p);
   void loadSaveCalib(bool readflag);
   void initSensors();
-  //void readCompassMPU9150();
+
   void readCompassHMC5883();
-  // void readAccelerationADXL345B();
-  //void readCompassBNO055();
-  //void readCompassCMPS11();
 
   void printCalib();
-  //void initAccelerationADXL345B();
+
   void initCompassHMC5833L();
+#if UseCompass
   void readHMC5883L();
+#endif
 };
 
 extern IMUClass IMU;

@@ -1108,10 +1108,16 @@ void RemoteControl::sendImuMenu(bool update)
     serialPort->print(F("{.IMU`1000"));
   serialPort->println(F("|g00~ Use :(Need Restart) "));
   sendYesNo(robot->imuUse);
+#if UseCompass
   serialPort->println(F("|g01~Gyro Yaw/Compass Yaw"));
+#else
+  serialPort->println(F("|g01~Gyro Yaw"));
+#endif
   serialPort->print(robot->imu.ypr.yaw / PI * 180);
+#if UseCompass
   serialPort->print(F(" / "));
   serialPort->print(robot->imu.comYaw / PI * 180);
+#endif
   serialPort->print(F(" deg"));
   serialPort->print(F("|g09~DriveHeading "));
   serialPort->print(robot->imuDriveHeading);
@@ -1128,11 +1134,14 @@ void RemoteControl::sendImuMenu(bool update)
   sendSlider("g06", F("Calibration Max Duration in Sec"), robot->maxDurationDmpAutocalib, "Sec", 1, 60, 10);
   sendSlider("g07", F("Delay between 2 Calib in Sec"), robot->delayBetweenTwoDmpAutocalib, "Sec", 1, 900, 60);
   sendSlider("g08", F("Drift Maxi in Deg Per Second "), robot->maxDriftPerSecond, "Deg", 0.01, 0.3, 0);
+#if UseCompass
   sendSlider("g10", F("Speed to find ComYaw % of motorSpeedMaxRpm "), robot->compassRollSpeedCoeff, "Deg", 1, 80, 30);
+#endif
   serialPort->print(F("|g18~Accel Gyro Initial Calibration more than 30sec duration"));
+#if UseCompass
   serialPort->print(F("|g19~Compass calibration click to start and again to stop"));
-
   serialPort->print(F("|g20~Delete Compass calibration"));
+#endif
   serialPort->println("}");
 }
 
@@ -1153,19 +1162,19 @@ void RemoteControl::processImuMenu(String pfodCmd)
     processSlider(pfodCmd, robot->delayBetweenTwoDmpAutocalib, 1);
   else if (pfodCmd.startsWith("g08"))
     processSlider(pfodCmd, robot->maxDriftPerSecond, 0.01);
-  else if (pfodCmd.startsWith("g10"))
-    processSlider(pfodCmd, robot->compassRollSpeedCoeff, 1);
   else if (pfodCmd == "g18")
   {
     robot->imu.deleteAccelGyroCalib();
     robot->imu.calibGyro();
   }
+#if UseCompass
+  else if (pfodCmd.startsWith("g10"))
+    processSlider(pfodCmd, robot->compassRollSpeedCoeff, 1);
   else if (pfodCmd == "g19")
     robot->imu.calibComStartStop();
-
   else if (pfodCmd == "g20")
     robot->imu.deleteCompassCalib();
-
+#endif
   sendImuMenu(true);
 }
 

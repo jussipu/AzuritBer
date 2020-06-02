@@ -46,6 +46,9 @@
 
 //#define USE_DEVELOPER_TEST  1   // uncomment for new perimeter signal test (developers)
 
+// IMU: Use compass or not
+#define UseCompass false // true = GY-88 / false = GY-521
+
 Mower robot;
 
 Mower::Mower()
@@ -314,7 +317,7 @@ void Mower::setup()
   Buzzer.begin();
   Console.begin(CONSOLE_BAUDRATE);
   I2Creset();
-  Wire.begin();
+  Wire1.begin();
   // Flash.test();
 
   /* while (!checkAT24C32()){
