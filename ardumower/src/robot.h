@@ -239,7 +239,6 @@ enum
 class Robot
 {
 public:
-  bool debugConsole;
   String name;
   bool developerActive;
   // --------- state machine --------------------------

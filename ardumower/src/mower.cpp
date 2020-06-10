@@ -54,8 +54,6 @@ Mower robot;
 Mower::Mower()
 {
   name = "ArduMower";
-  // ------- debug to console -------------------------
-  debugConsole = true; // debug messages to console
   // ------- wheel motors -----------------------------
   motorAccel = 1500; // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
   //bb
